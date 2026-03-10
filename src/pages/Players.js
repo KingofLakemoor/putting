@@ -5,7 +5,6 @@ function Players() {
   const [players, setPlayers] = useState([]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [handicap, setHandicap] = useState('');
 
   useEffect(() => {
     setPlayers(getPlayers());
@@ -17,8 +16,7 @@ function Players() {
 
     const newPlayer = {
       name,
-      email,
-      handicap: handicap ? parseFloat(handicap) : null
+      email
     };
 
     const created = addPlayer(newPlayer);
@@ -27,7 +25,6 @@ function Players() {
     // Reset form
     setName('');
     setEmail('');
-    setHandicap('');
   };
 
   return (
@@ -43,7 +40,6 @@ function Players() {
                 <tr>
                   <th>Name</th>
                   <th>Email</th>
-                  <th>Handicap</th>
                 </tr>
               </thead>
               <tbody>
@@ -51,7 +47,6 @@ function Players() {
                   <tr key={player.player_id}>
                     <td>{player.name}</td>
                     <td>{player.email}</td>
-                    <td>{player.handicap !== null ? player.handicap : '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -80,17 +75,6 @@ function Players() {
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="handicap">Handicap (Optional)</label>
-              <input
-                type="number"
-                id="handicap"
-                step="0.1"
-                value={handicap}
-                onChange={(e) => setHandicap(e.target.value)}
               />
             </div>
 

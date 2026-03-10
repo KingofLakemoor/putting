@@ -10,8 +10,7 @@ function RoundDetails() {
 
   // Form State
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
-  const [totalPutts, setTotalPutts] = useState('');
-  const [pointsEarned, setPointsEarned] = useState('');
+  const [roundScore, setRoundScore] = useState('');
 
   useEffect(() => {
     // Load round
@@ -28,7 +27,7 @@ function RoundDetails() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!selectedPlayerId || totalPutts === '' || pointsEarned === '') return;
+    if (!selectedPlayerId || roundScore === '') return;
 
     // Check if player already has a score for this round
     if (scores.some(s => s.player_id === selectedPlayerId)) {
@@ -39,8 +38,7 @@ function RoundDetails() {
     const newScore = {
       player_id: selectedPlayerId,
       round_id: id,
-      total_putts: parseInt(totalPutts),
-      points_earned: parseInt(pointsEarned)
+      score: parseInt(roundScore)
     };
 
     const created = addScore(newScore);
@@ -48,8 +46,7 @@ function RoundDetails() {
 
     // Reset form
     setSelectedPlayerId('');
-    setTotalPutts('');
-    setPointsEarned('');
+    setRoundScore('');
   };
 
   if (!round) {
@@ -62,14 +59,10 @@ function RoundDetails() {
     return {
       ...score,
       playerName: player ? player.name : 'Unknown Player',
-      handicap: player ? player.handicap : null
     };
   }).sort((a, b) => {
-    // Sort by points earned descending, then by putts descending
-    if (b.points_earned !== a.points_earned) {
-      return b.points_earned - a.points_earned;
-    }
-    return b.total_putts - a.total_putts;
+    // Sort by score ascending (lower is better)
+    return a.score - b.score;
   });
 
   // Get un-scored players for the dropdown
@@ -100,8 +93,7 @@ function RoundDetails() {
                 <tr>
                   <th>Rank</th>
                   <th>Player</th>
-                  <th>Total Putts</th>
-                  <th>Points Earned</th>
+                  <th>Score</th>
                 </tr>
               </thead>
               <tbody>
@@ -109,8 +101,7 @@ function RoundDetails() {
                   <tr key={score.score_id}>
                     <td>{index + 1}</td>
                     <td>{score.playerName}</td>
-                    <td>{score.total_putts}</td>
-                    <td><strong>{score.points_earned}</strong></td>
+                    <td><strong>{score.score}</strong></td>
                   </tr>
                 ))}
               </tbody>
@@ -143,28 +134,16 @@ function RoundDetails() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="putts">Total Putts *</label>
+                  <label htmlFor="score">Score *</label>
                   <input
                     type="number"
-                    id="putts"
+                    id="score"
                     min="0"
-                    value={totalPutts}
-                    onChange={(e) => setTotalPutts(e.target.value)}
+                    value={roundScore}
+                    onChange={(e) => setRoundScore(e.target.value)}
                     required
                   />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="points">Points Earned *</label>
-                  <input
-                    type="number"
-                    id="points"
-                    min="0"
-                    value={pointsEarned}
-                    onChange={(e) => setPointsEarned(e.target.value)}
-                    required
-                  />
-                  <small>e.g., 10 for 1st, 8 for 2nd, etc.</small>
+                  <small>Lower score is better</small>
                 </div>
 
                 <button type="submit" className="btn-primary">Submit Score</button>

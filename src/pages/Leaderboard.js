@@ -8,30 +8,29 @@ function Leaderboard() {
     const players = getPlayers();
     const scores = getScores();
 
-    // Calculate aggregated points and total putts
+    // Calculate aggregated score
     const playerStats = players.map(player => {
       const playerScores = scores.filter(s => s.player_id === player.player_id);
 
-      const totalPoints = playerScores.reduce((sum, score) => sum + (parseInt(score.points_earned) || 0), 0);
-      const totalPutts = playerScores.reduce((sum, score) => sum + (parseInt(score.total_putts) || 0), 0);
+      const totalScore = playerScores.reduce((sum, score) => sum + (parseInt(score.score) || 0), 0);
 
       return {
         ...player,
-        totalPoints,
-        totalPutts,
+        totalScore,
         roundsPlayed: playerScores.length
       };
     });
 
-    // Sort by points descending, then total putts descending
-    playerStats.sort((a, b) => {
-      if (b.totalPoints !== a.totalPoints) {
-        return b.totalPoints - a.totalPoints;
-      }
-      return b.totalPutts - a.totalPutts;
+    // Filter out players who haven't played any rounds yet to avoid
+    // 0 scores automatically placing them at the top.
+    const activePlayers = playerStats.filter(p => p.roundsPlayed > 0);
+
+    // Sort by score ascending (lower is better)
+    activePlayers.sort((a, b) => {
+      return a.totalScore - b.totalScore;
     });
 
-    setLeaderboard(playerStats);
+    setLeaderboard(activePlayers);
   }, []);
 
   return (
@@ -46,10 +45,8 @@ function Leaderboard() {
             <tr>
               <th>Rank</th>
               <th>Player</th>
-              <th>Total Points</th>
-              <th>Total Putts</th>
+              <th>Score</th>
               <th>Rounds Played</th>
-              <th>Handicap</th>
             </tr>
           </thead>
           <tbody>
@@ -57,10 +54,8 @@ function Leaderboard() {
               <tr key={player.player_id}>
                 <td>{index + 1}</td>
                 <td>{player.name}</td>
-                <td><strong>{player.totalPoints}</strong></td>
-                <td>{player.totalPutts}</td>
+                <td><strong>{player.totalScore}</strong></td>
                 <td>{player.roundsPlayed}</td>
-                <td>{player.handicap || '-'}</td>
               </tr>
             ))}
           </tbody>
