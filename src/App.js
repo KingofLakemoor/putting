@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Leaderboard from './pages/Leaderboard';
 import Players from './pages/Players';
@@ -10,6 +10,21 @@ import Admin from './pages/Admin';
 import './App.css';
 
 function App() {
+  // Use "dark" as the default theme
+  const [theme, setTheme] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme ? savedTheme : 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
+  };
+
   return (
     <Router>
       <div className="App">
@@ -29,6 +44,11 @@ function App() {
             </li>
             <li>
               <Link to="/admin">Admin</Link>
+            </li>
+            <li>
+              <button className="theme-toggle-btn" onClick={toggleTheme}>
+                {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+              </button>
             </li>
           </ul>
         </nav>
