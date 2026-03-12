@@ -267,6 +267,28 @@ button,
   color: #7f8c8d;
 }
 
+/* Admin Specific */
+.admin-page h2 {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.admin-tabs button {
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  width: auto;
+}
+
+.admin-tabs button.btn-secondary {
+  background-color: transparent;
+  color: #7f8c8d;
+}
+
+.admin-tabs button.btn-secondary:hover {
+  background-color: #ecf0f1;
+  color: #2c3e50;
+}
+
 /* Scorecard Specific */
 .scorecard-table-wrapper {
   overflow-x: auto;
