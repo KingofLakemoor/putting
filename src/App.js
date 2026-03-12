@@ -6,6 +6,7 @@ import Rounds from './pages/Rounds';
 import RoundDetails from './pages/RoundDetails';
 import Scorecard from './pages/Scorecard';
 import ReportScores from './pages/ReportScores';
+import Admin from './pages/Admin';
 import './App.css';
 
 function App() {
@@ -26,6 +27,9 @@ function App() {
             <li>
               <Link to="/rounds">Rounds</Link>
             </li>
+            <li>
+              <Link to="/admin">Admin</Link>
+            </li>
           </ul>
         </nav>
 
@@ -37,6 +41,7 @@ function App() {
             <Route path="/rounds" element={<Rounds />} />
             <Route path="/rounds/:id" element={<RoundDetails />} />
             <Route path="/rounds/:id/scorecard" element={<Scorecard />} />
+            <Route path="/admin" element={<Admin />} />
           </Routes>
         </main>
       </div>
