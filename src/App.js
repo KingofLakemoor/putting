@@ -5,6 +5,7 @@ import Players from './pages/Players';
 import Rounds from './pages/Rounds';
 import RoundDetails from './pages/RoundDetails';
 import Scorecard from './pages/Scorecard';
+import ReportScores from './pages/ReportScores';
 import './App.css';
 
 function App() {
@@ -14,7 +15,10 @@ function App() {
         <nav className="App-nav">
           <ul>
             <li>
-              <Link to="/">Leaderboard</Link>
+              <Link to="/">Report Scores</Link>
+            </li>
+            <li>
+              <Link to="/leaderboard">Leaderboard</Link>
             </li>
             <li>
               <Link to="/players">Players</Link>
@@ -27,7 +31,8 @@ function App() {
 
         <main className="App-main">
           <Routes>
-            <Route path="/" element={<Leaderboard />} />
+            <Route path="/" element={<ReportScores />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/players" element={<Players />} />
             <Route path="/rounds" element={<Rounds />} />
             <Route path="/rounds/:id" element={<RoundDetails />} />
