@@ -150,7 +150,7 @@ function Scorecard() {
     <div className="page-container">
       <div className="round-header-details">
         <Link to={`/rounds/${id}`} className="back-link">&larr; Back to Round Details</Link>
-        <h2>Scorecard: {new Date(round.date).toLocaleDateString()} - {round.location}</h2>
+        <h2>Scorecard: {new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' })} - {round.location}</h2>
       </div>
 
       {!isReviewing ? (

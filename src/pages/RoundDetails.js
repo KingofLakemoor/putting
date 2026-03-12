@@ -77,7 +77,7 @@ function RoundDetails() {
           <Link to="/rounds" className="back-link">&larr; Back to Rounds</Link>
           <h2>Round Details</h2>
           <div className="round-meta">
-            <p><strong>Date:</strong> {new Date(round.date).toLocaleDateString()}</p>
+            <p><strong>Date:</strong> {new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' })}</p>
             <p><strong>Location:</strong> {round.location}</p>
             <p><strong>Status:</strong> {round.status}</p>
           </div>

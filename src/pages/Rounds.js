@@ -46,7 +46,7 @@ function Rounds() {
               {rounds.map(round => (
                 <div key={round.round_id} className="round-card">
                   <div className="round-header">
-                    <h3>{new Date(round.date).toLocaleDateString()} - {round.location}</h3>
+                    <h3>{new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' })} - {round.location}</h3>
                     <span className={`status-badge ${round.status.toLowerCase()}`}>{round.status}</span>
                   </div>
                   <div className="round-details">
