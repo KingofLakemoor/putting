@@ -177,6 +177,11 @@ button,
   background-color: #2980b9;
 }
 
+.btn-primary:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
 .btn-secondary {
   background-color: #ecf0f1;
   color: #2c3e50;
@@ -260,4 +265,86 @@ button,
 .round-meta p {
   margin-bottom: 0.5rem;
   color: #7f8c8d;
+}
+
+/* Scorecard Specific */
+.scorecard-table-wrapper {
+  overflow-x: auto;
+  margin-top: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.scorecard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.scorecard-table th,
+.scorecard-table td {
+  padding: 0.75rem;
+  text-align: center;
+  border-bottom: 1px solid #e9ecef;
+  border-right: 1px solid #e9ecef;
+}
+
+.scorecard-table th {
+  background-color: #2c3e50;
+  color: white;
+  font-weight: 600;
+}
+
+.scorecard-table td:first-child,
+.scorecard-table th:first-child {
+  width: 60px;
+  background-color: #f8f9fa;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.scorecard-table tr:last-child td {
+  border-bottom: none;
+}
+
+.score-input {
+  width: 100%;
+  max-width: 80px;
+  padding: 0.5rem;
+  text-align: center;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1.1rem;
+  margin: 0 auto;
+  display: block;
+}
+
+.score-input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* Hide number spinner for score inputs */
+.score-input::-webkit-outer-spin-button,
+.score-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.score-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.scorecard-review {
+  background-color: #f8f9fa;
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.review-card {
+  text-align: center;
+  padding: 2rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }

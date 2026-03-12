@@ -4,6 +4,7 @@ import Leaderboard from './pages/Leaderboard';
 import Players from './pages/Players';
 import Rounds from './pages/Rounds';
 import RoundDetails from './pages/RoundDetails';
+import Scorecard from './pages/Scorecard';
 import './App.css';
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
             <Route path="/players" element={<Players />} />
             <Route path="/rounds" element={<Rounds />} />
             <Route path="/rounds/:id" element={<RoundDetails />} />
+            <Route path="/rounds/:id/scorecard" element={<Scorecard />} />
           </Routes>
         </main>
       </div>

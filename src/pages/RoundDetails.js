@@ -72,14 +72,21 @@ function RoundDetails() {
 
   return (
     <div className="page-container">
-      <div className="round-header-details">
-        <Link to="/rounds" className="back-link">&larr; Back to Rounds</Link>
-        <h2>Round Details</h2>
-        <div className="round-meta">
-          <p><strong>Date:</strong> {new Date(round.date).toLocaleDateString()}</p>
-          <p><strong>Location:</strong> {round.location}</p>
-          <p><strong>Status:</strong> {round.status}</p>
+      <div className="round-header-details" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <Link to="/rounds" className="back-link">&larr; Back to Rounds</Link>
+          <h2>Round Details</h2>
+          <div className="round-meta">
+            <p><strong>Date:</strong> {new Date(round.date).toLocaleDateString()}</p>
+            <p><strong>Location:</strong> {round.location}</p>
+            <p><strong>Status:</strong> {round.status}</p>
+          </div>
         </div>
+        {round.status === 'Active' && (
+          <Link to={`/rounds/${id}/scorecard`} className="btn-primary" style={{ width: 'auto', display: 'inline-block' }}>
+            Fill Scorecard
+          </Link>
+        )}
       </div>
 
       <div className="layout-grid">
