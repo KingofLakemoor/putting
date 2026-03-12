@@ -246,7 +246,7 @@ function AdminRounds() {
           <tbody>
             {rounds.map(round => (
               <tr key={round.round_id}>
-                <td>{new Date(round.date).toLocaleDateString()}</td>
+                <td>{new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' })}</td>
                 <td>{round.location}</td>
                 <td>
                   <select
@@ -321,7 +321,7 @@ function AdminScores() {
 
   const getRoundDetails = (id) => {
     const round = rounds.find(r => r.round_id === id);
-    return round ? `${new Date(round.date).toLocaleDateString()} - ${round.location}` : 'Unknown Round';
+    return round ? `${new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' })} - ${round.location}` : 'Unknown Round';
   };
 
   return (
