@@ -3,7 +3,8 @@ import { getPlayers, addPlayer } from '../db';
 
 function Players() {
   const [players, setPlayers] = useState([]);
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
 
   useEffect(() => {
@@ -12,10 +13,12 @@ function Players() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!firstName.trim() || !lastName.trim()) return;
+
+    const formattedName = `${firstName.trim()} ${lastName.trim().charAt(0).toUpperCase()}.`;
 
     const newPlayer = {
-      name,
+      name: formattedName,
       email
     };
 
@@ -23,7 +26,8 @@ function Players() {
     setPlayers([...players, created]);
 
     // Reset form
-    setName('');
+    setFirstName('');
+    setLastName('');
     setEmail('');
   };
 
@@ -58,12 +62,23 @@ function Players() {
           <h2>Add New Player</h2>
           <form onSubmit={handleSubmit} className="add-form">
             <div className="form-group">
-              <label htmlFor="name">Full Name *</label>
+              <label htmlFor="firstName">First Name *</label>
               <input
                 type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                id="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="lastName">Last Name *</label>
+              <input
+                type="text"
+                id="lastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
                 required
               />
             </div>
