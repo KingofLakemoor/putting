@@ -25,8 +25,23 @@ export const getCourses = () => {
       name: 'Putting World',
       holes: Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 }))
     };
-    saveData(COURSES_KEY, [defaultCourse]);
-    return [defaultCourse];
+    const dobsonRanch = {
+      course_id: uuidv4(),
+      name: 'Dobson Ranch',
+      holes: [
+        { hole: 1, par: 2 },
+        { hole: 2, par: 2 },
+        { hole: 3, par: 3 },
+        { hole: 4, par: 2 },
+        { hole: 5, par: 3 },
+        { hole: 6, par: 2 },
+        { hole: 7, par: 3 },
+        { hole: 8, par: 2 },
+        { hole: 9, par: 3 }
+      ]
+    };
+    saveData(COURSES_KEY, [defaultCourse, dobsonRanch]);
+    return [defaultCourse, dobsonRanch];
   }
   return courses;
 };

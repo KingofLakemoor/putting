@@ -393,6 +393,7 @@ function AdminCourses() {
 
   // Form State
   const [name, setName] = useState('');
+  const [courseSize, setCourseSize] = useState(18);
   const [holes, setHoles] = useState(Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 })));
 
   const loadCourses = () => {
@@ -409,6 +410,18 @@ function AdminCourses() {
     setHoles(newHoles);
   };
 
+  const handleCourseSizeChange = (e) => {
+    const size = parseInt(e.target.value, 10);
+    setCourseSize(size);
+    // When size changes, we generate a new holes array but try to preserve existing pars if possible
+    setHoles(prevHoles => {
+      return Array.from({ length: size }, (_, i) => {
+        const existingHole = prevHoles.find(h => h.hole === i + 1);
+        return existingHole ? existingHole : { hole: i + 1, par: 2 };
+      });
+    });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!name.trim()) return;
@@ -421,6 +434,7 @@ function AdminCourses() {
     }
 
     setName('');
+    setCourseSize(18);
     setHoles(Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 })));
     loadCourses();
   };
@@ -428,7 +442,9 @@ function AdminCourses() {
   const handleEdit = (course) => {
     setEditingId(course.course_id);
     setName(course.name);
-    setHoles(course.holes || Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 })));
+    const loadedHoles = course.holes || Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 }));
+    setHoles(loadedHoles);
+    setCourseSize(loadedHoles.length);
   };
 
   const handleDelete = (id) => {
@@ -441,6 +457,7 @@ function AdminCourses() {
   const cancelEdit = () => {
     setEditingId(null);
     setName('');
+    setCourseSize(18);
     setHoles(Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 })));
   };
 
@@ -487,6 +504,18 @@ function AdminCourses() {
               onChange={(e) => setName(e.target.value)}
               required
             />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="courseSize">Number of Holes</label>
+            <select
+              id="courseSize"
+              value={courseSize}
+              onChange={handleCourseSizeChange}
+            >
+              <option value={9}>9 Holes</option>
+              <option value={18}>18 Holes</option>
+            </select>
           </div>
 
           <div className="form-group">
