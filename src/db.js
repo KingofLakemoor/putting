@@ -1,24 +1,26 @@
 import { v4 as uuidv4 } from 'uuid';
+import { db } from './firebase';
+import {
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where
+} from 'firebase/firestore';
 
 const PLAYERS_KEY = 'putting_league_players';
 const ROUNDS_KEY = 'putting_league_rounds';
 const SCORES_KEY = 'putting_league_scores';
 const COURSES_KEY = 'putting_league_courses';
 
-// Helper to get data from localStorage
-const getData = (key) => {
-  const data = localStorage.getItem(key);
-  return data ? JSON.parse(data) : [];
-};
-
-// Helper to save data to localStorage
-const saveData = (key, data) => {
-  localStorage.setItem(key, JSON.stringify(data));
-};
-
 // --- Courses ---
-export const getCourses = () => {
-  const courses = getData(COURSES_KEY);
+export const getCourses = async () => {
+  const querySnapshot = await getDocs(collection(db, COURSES_KEY));
+  const courses = querySnapshot.docs.map(doc => doc.data());
+
   if (courses.length === 0) {
     const defaultCourse = {
       course_id: uuidv4(),
@@ -40,147 +42,136 @@ export const getCourses = () => {
         { hole: 9, par: 3 }
       ]
     };
-    saveData(COURSES_KEY, [defaultCourse, dobsonRanch]);
+
+    await setDoc(doc(db, COURSES_KEY, defaultCourse.course_id), defaultCourse);
+    await setDoc(doc(db, COURSES_KEY, dobsonRanch.course_id), dobsonRanch);
+
     return [defaultCourse, dobsonRanch];
   }
   return courses;
 };
 
-export const addCourse = (course) => {
-  const courses = getCourses();
+export const addCourse = async (course) => {
+  const course_id = uuidv4();
   const newCourse = {
-    course_id: uuidv4(),
+    course_id,
     ...course
   };
-  courses.push(newCourse);
-  saveData(COURSES_KEY, courses);
+  await setDoc(doc(db, COURSES_KEY, course_id), newCourse);
   return newCourse;
 };
 
-export const updateCourse = (course_id, updatedData) => {
-  let courses = getCourses();
-  courses = courses.map(course =>
-    course.course_id === course_id ? { ...course, ...updatedData } : course
-  );
-  saveData(COURSES_KEY, courses);
+export const updateCourse = async (course_id, updatedData) => {
+  const courseRef = doc(db, COURSES_KEY, course_id);
+  await updateDoc(courseRef, updatedData);
 };
 
-export const deleteCourse = (course_id) => {
-  let courses = getCourses();
-  courses = courses.filter(course => course.course_id !== course_id);
-  saveData(COURSES_KEY, courses);
+export const deleteCourse = async (course_id) => {
+  await deleteDoc(doc(db, COURSES_KEY, course_id));
 };
 
 // --- Players ---
-export const getPlayers = () => getData(PLAYERS_KEY);
+export const getPlayers = async () => {
+  const querySnapshot = await getDocs(collection(db, PLAYERS_KEY));
+  return querySnapshot.docs.map(doc => doc.data());
+};
 
-export const addPlayer = (player) => {
-  const players = getPlayers();
+export const addPlayer = async (player) => {
+  const player_id = player.uid || uuidv4();
   const newPlayer = {
-    player_id: uuidv4(),
+    player_id,
     ...player
   };
-  players.push(newPlayer);
-  saveData(PLAYERS_KEY, players);
+  await setDoc(doc(db, PLAYERS_KEY, player_id), newPlayer);
   return newPlayer;
 };
 
-export const updatePlayer = (player_id, updatedData) => {
-  let players = getPlayers();
-  players = players.map(player =>
-    player.player_id === player_id ? { ...player, ...updatedData } : player
-  );
-  saveData(PLAYERS_KEY, players);
+export const updatePlayer = async (player_id, updatedData) => {
+  const playerRef = doc(db, PLAYERS_KEY, player_id);
+  await updateDoc(playerRef, updatedData);
 };
 
-export const deletePlayer = (player_id) => {
-  let players = getPlayers();
-  players = players.filter(player => player.player_id !== player_id);
-  saveData(PLAYERS_KEY, players);
+export const deletePlayer = async (player_id) => {
+  await deleteDoc(doc(db, PLAYERS_KEY, player_id));
 
   // Also delete associated scores
-  let scores = getScores();
-  scores = scores.filter(score => score.player_id !== player_id);
-  saveData(SCORES_KEY, scores);
+  const scoresQuery = query(collection(db, SCORES_KEY), where("player_id", "==", player_id));
+  const querySnapshot = await getDocs(scoresQuery);
+  const deletePromises = querySnapshot.docs.map(docSnapshot => deleteDoc(doc(db, SCORES_KEY, docSnapshot.id)));
+  await Promise.all(deletePromises);
 };
 
 // --- Rounds ---
-export const getRounds = () => getData(ROUNDS_KEY);
+export const getRounds = async () => {
+  const querySnapshot = await getDocs(collection(db, ROUNDS_KEY));
+  return querySnapshot.docs.map(doc => doc.data());
+};
 
-export const addRound = (round) => {
-  const rounds = getRounds();
+export const addRound = async (round) => {
+  const round_id = uuidv4();
   const newRound = {
-    round_id: uuidv4(),
+    round_id,
     status: 'Active', // Default status
     ...round
   };
-  rounds.push(newRound);
-  saveData(ROUNDS_KEY, rounds);
+  await setDoc(doc(db, ROUNDS_KEY, round_id), newRound);
   return newRound;
 };
 
-export const updateRoundStatus = (round_id, status) => {
-  let rounds = getRounds();
-  rounds = rounds.map(round =>
-    round.round_id === round_id ? { ...round, status } : round
-  );
-  saveData(ROUNDS_KEY, rounds);
+export const updateRoundStatus = async (round_id, status) => {
+  const roundRef = doc(db, ROUNDS_KEY, round_id);
+  await updateDoc(roundRef, { status });
 };
 
-export const updateRoundSeason = (round_id, season) => {
-  let rounds = getRounds();
-  rounds = rounds.map(round =>
-    round.round_id === round_id ? { ...round, season } : round
-  );
-  saveData(ROUNDS_KEY, rounds);
+export const updateRoundSeason = async (round_id, season) => {
+  const roundRef = doc(db, ROUNDS_KEY, round_id);
+  await updateDoc(roundRef, { season });
 };
 
-export const deleteRound = (round_id) => {
-  let rounds = getRounds();
-  rounds = rounds.filter(round => round.round_id !== round_id);
-  saveData(ROUNDS_KEY, rounds);
+export const deleteRound = async (round_id) => {
+  await deleteDoc(doc(db, ROUNDS_KEY, round_id));
 
   // Also delete associated scores
-  let scores = getScores();
-  scores = scores.filter(score => score.round_id !== round_id);
-  saveData(SCORES_KEY, scores);
+  const scoresQuery = query(collection(db, SCORES_KEY), where("round_id", "==", round_id));
+  const querySnapshot = await getDocs(scoresQuery);
+  const deletePromises = querySnapshot.docs.map(docSnapshot => deleteDoc(doc(db, SCORES_KEY, docSnapshot.id)));
+  await Promise.all(deletePromises);
 };
 
 // --- Scores ---
-export const getScores = () => getData(SCORES_KEY);
+export const getScores = async () => {
+  const querySnapshot = await getDocs(collection(db, SCORES_KEY));
+  return querySnapshot.docs.map(doc => doc.data());
+};
 
-export const addScore = (score) => {
-  const scores = getScores();
+export const addScore = async (score) => {
+  const score_id = uuidv4();
   const newScore = {
-    score_id: uuidv4(),
+    score_id,
     timestamp: new Date().toISOString(),
     ...score
   };
-  scores.push(newScore);
-  saveData(SCORES_KEY, scores);
+  await setDoc(doc(db, SCORES_KEY, score_id), newScore);
   return newScore;
 };
 
-export const getScoresForRound = (round_id) => {
-  const scores = getScores();
-  return scores.filter(score => score.round_id === round_id);
+export const getScoresForRound = async (round_id) => {
+  const scoresQuery = query(collection(db, SCORES_KEY), where("round_id", "==", round_id));
+  const querySnapshot = await getDocs(scoresQuery);
+  return querySnapshot.docs.map(doc => doc.data());
 };
 
-export const getScoresForPlayer = (player_id) => {
-  const scores = getScores();
-  return scores.filter(score => score.player_id === player_id);
+export const getScoresForPlayer = async (player_id) => {
+  const scoresQuery = query(collection(db, SCORES_KEY), where("player_id", "==", player_id));
+  const querySnapshot = await getDocs(scoresQuery);
+  return querySnapshot.docs.map(doc => doc.data());
 };
 
-export const updateScore = (score_id, scoreValue) => {
-  let scores = getScores();
-  scores = scores.map(score =>
-    score.score_id === score_id ? { ...score, score: scoreValue } : score
-  );
-  saveData(SCORES_KEY, scores);
+export const updateScore = async (score_id, scoreValue) => {
+  const scoreRef = doc(db, SCORES_KEY, score_id);
+  await updateDoc(scoreRef, { score: scoreValue });
 };
 
-export const deleteScore = (score_id) => {
-  let scores = getScores();
-  scores = scores.filter(score => score.score_id !== score_id);
-  saveData(SCORES_KEY, scores);
+export const deleteScore = async (score_id) => {
+  await deleteDoc(doc(db, SCORES_KEY, score_id));
 };

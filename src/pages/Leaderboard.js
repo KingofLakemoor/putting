@@ -8,48 +8,52 @@ function Leaderboard() {
   const [filter, setFilter] = useState('global');
 
   useEffect(() => {
-    const players = getPlayers();
-    let scores = getScores();
-    const allRounds = getRounds();
+    const fetchData = async () => {
+      const players = await getPlayers();
+      let scores = await getScores();
+      const allRounds = await getRounds();
 
-    setRounds(allRounds);
+      setRounds(allRounds);
 
-    const uniqueSeasons = [...new Set(allRounds.map(r => r.season).filter(Boolean))];
-    setSeasons(uniqueSeasons);
+      const uniqueSeasons = [...new Set(allRounds.map(r => r.season).filter(Boolean))];
+      setSeasons(uniqueSeasons);
 
-    if (filter !== 'global') {
-      if (filter.startsWith('season_')) {
-        const seasonName = filter.substring(7);
-        const roundIdsInSeason = allRounds.filter(r => r.season === seasonName).map(r => r.round_id);
-        scores = scores.filter(s => roundIdsInSeason.includes(s.round_id));
-      } else {
-        scores = scores.filter(s => String(s.round_id) === String(filter));
+      if (filter !== 'global') {
+        if (filter.startsWith('season_')) {
+          const seasonName = filter.substring(7);
+          const roundIdsInSeason = allRounds.filter(r => r.season === seasonName).map(r => r.round_id);
+          scores = scores.filter(s => roundIdsInSeason.includes(s.round_id));
+        } else {
+          scores = scores.filter(s => String(s.round_id) === String(filter));
+        }
       }
-    }
 
-    // Calculate aggregated score
-    const playerStats = players.map(player => {
-      const playerScores = scores.filter(s => s.player_id === player.player_id);
+      // Calculate aggregated score
+      const playerStats = players.map(player => {
+        const playerScores = scores.filter(s => s.player_id === player.player_id);
 
-      const totalScore = playerScores.reduce((sum, score) => sum + (parseInt(score.score) || 0), 0);
+        const totalScore = playerScores.reduce((sum, score) => sum + (parseInt(score.score) || 0), 0);
 
-      return {
-        ...player,
-        totalScore,
-        roundsPlayed: playerScores.length
-      };
-    });
+        return {
+          ...player,
+          totalScore,
+          roundsPlayed: playerScores.length
+        };
+      });
 
-    // Filter out players who haven't played any rounds yet to avoid
-    // 0 scores automatically placing them at the top.
-    const activePlayers = playerStats.filter(p => p.roundsPlayed > 0);
+      // Filter out players who haven't played any rounds yet to avoid
+      // 0 scores automatically placing them at the top.
+      const activePlayers = playerStats.filter(p => p.roundsPlayed > 0);
 
-    // Sort by score ascending (lower is better)
-    activePlayers.sort((a, b) => {
-      return a.totalScore - b.totalScore;
-    });
+      // Sort by score ascending (lower is better)
+      activePlayers.sort((a, b) => {
+        return a.totalScore - b.totalScore;
+      });
 
-    setLeaderboard(activePlayers);
+      setLeaderboard(activePlayers);
+    };
+
+    fetchData();
   }, [filter]);
 
   return (

@@ -13,19 +13,22 @@ function RoundDetails() {
   const [roundScore, setRoundScore] = useState('');
 
   useEffect(() => {
-    // Load round
-    const allRounds = getRounds();
-    const currentRound = allRounds.find(r => r.round_id === id);
-    setRound(currentRound);
+    const loadData = async () => {
+      // Load round
+      const allRounds = await getRounds();
+      const currentRound = allRounds.find(r => r.round_id === id);
+      setRound(currentRound);
 
-    // Load players and scores
-    if (currentRound) {
-      setPlayers(getPlayers());
-      setScores(getScoresForRound(id));
-    }
+      // Load players and scores
+      if (currentRound) {
+        setPlayers(await getPlayers());
+        setScores(await getScoresForRound(id));
+      }
+    };
+    loadData();
   }, [id]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedPlayerId || roundScore === '') return;
 
@@ -41,7 +44,7 @@ function RoundDetails() {
       score: parseInt(roundScore)
     };
 
-    const created = addScore(newScore);
+    const created = await addScore(newScore);
     setScores([...scores, created]);
 
     // Reset form

@@ -10,12 +10,15 @@ function Rounds() {
   const [courses, setCourses] = useState([]);
 
   useEffect(() => {
-    setRounds(getRounds());
-    setScores(getScores());
-    setCourses(getCourses());
+    const loadData = async () => {
+      setRounds(await getRounds());
+      setScores(await getScores());
+      setCourses(await getCourses());
+    };
+    loadData();
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!date || !courseId) return;
 
@@ -27,7 +30,7 @@ function Rounds() {
       course_id: courseId
     };
 
-    const created = addRound(newRound);
+    const created = await addRound(newRound);
     setRounds([...rounds, created]);
 
     // Reset form
