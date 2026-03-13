@@ -41,14 +41,14 @@ function SignIn() {
         throw new Error('First and last name are required for sign up.');
       }
 
-      await signup(email, password);
+      const { user } = await signup(email, password);
 
       const formattedName = `${firstName.trim()} ${lastName.trim().charAt(0).toUpperCase()}.`;
-      const players = getPlayers();
+      const players = await getPlayers();
       const existingPlayer = players.find(p => p.email && p.email.toLowerCase() === email.toLowerCase());
 
       if (!existingPlayer) {
-        addPlayer({ name: formattedName, email });
+        await addPlayer({ name: formattedName, email, uid: user.uid });
       }
 
       navigate(from, { replace: true });

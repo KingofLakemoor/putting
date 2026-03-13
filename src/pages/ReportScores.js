@@ -6,9 +6,12 @@ function ReportScores() {
   const [activeRounds, setActiveRounds] = useState([]);
 
   useEffect(() => {
-    const allRounds = getRounds();
-    const active = allRounds.filter(r => r.status === 'Active');
-    setActiveRounds(active);
+    const loadData = async () => {
+      const allRounds = await getRounds();
+      const active = allRounds.filter(r => r.status === 'Active');
+      setActiveRounds(active);
+    };
+    loadData();
   }, []);
 
   return (

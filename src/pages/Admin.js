@@ -102,23 +102,23 @@ function AdminPlayers() {
   const [email, setEmail] = useState('');
   const [editingId, setEditingId] = useState(null);
 
-  const loadPlayers = () => {
-    setPlayers(getPlayers());
+  const loadPlayers = async () => {
+    setPlayers(await getPlayers());
   };
 
   useEffect(() => {
     loadPlayers();
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
 
     if (editingId) {
-      updatePlayer(editingId, { name, email });
+      await updatePlayer(editingId, { name, email });
       setEditingId(null);
     } else {
-      addPlayer({ name, email });
+      await addPlayer({ name, email });
     }
 
     setName('');
@@ -132,9 +132,9 @@ function AdminPlayers() {
     setEmail(player.email || '');
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this player? This will also delete their scores.")) {
-      deletePlayer(id);
+      await deletePlayer(id);
       loadPlayers();
     }
   };
@@ -215,27 +215,27 @@ function AdminPlayers() {
 function AdminRounds() {
   const [rounds, setRounds] = useState([]);
 
-  const loadRounds = () => {
-    setRounds(getRounds());
+  const loadRounds = async () => {
+    setRounds(await getRounds());
   };
 
   useEffect(() => {
     loadRounds();
   }, []);
 
-  const handleStatusChange = (id, newStatus) => {
-    updateRoundStatus(id, newStatus);
+  const handleStatusChange = async (id, newStatus) => {
+    await updateRoundStatus(id, newStatus);
     loadRounds();
   };
 
-  const handleSeasonChange = (id, newSeason) => {
-    updateRoundSeason(id, newSeason);
+  const handleSeasonChange = async (id, newSeason) => {
+    await updateRoundSeason(id, newSeason);
     loadRounds();
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this round? This will also delete all associated scores.")) {
-      deleteRound(id);
+      await deleteRound(id);
       loadRounds();
     }
   };
@@ -300,10 +300,10 @@ function AdminScores() {
   const [editingId, setEditingId] = useState(null);
   const [scoreValue, setScoreValue] = useState('');
 
-  const loadData = () => {
-    setScores(getScores());
-    setRounds(getRounds());
-    setPlayers(getPlayers());
+  const loadData = async () => {
+    setScores(await getScores());
+    setRounds(await getRounds());
+    setPlayers(await getPlayers());
   };
 
   useEffect(() => {
@@ -315,10 +315,10 @@ function AdminScores() {
     setScoreValue(score.score);
   };
 
-  const handleSave = (id) => {
+  const handleSave = async (id) => {
     const numValue = parseInt(scoreValue, 10);
     if (!isNaN(numValue)) {
-      updateScore(id, numValue);
+      await updateScore(id, numValue);
       setEditingId(null);
       loadData();
     }
@@ -329,9 +329,9 @@ function AdminScores() {
     setScoreValue('');
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this score?")) {
-      deleteScore(id);
+      await deleteScore(id);
       loadData();
     }
   };
@@ -411,8 +411,8 @@ function AdminCourses() {
   const [courseSize, setCourseSize] = useState(18);
   const [holes, setHoles] = useState(Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 })));
 
-  const loadCourses = () => {
-    setCourses(getCourses());
+  const loadCourses = async () => {
+    setCourses(await getCourses());
   };
 
   useEffect(() => {
@@ -437,15 +437,15 @@ function AdminCourses() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
 
     if (editingId) {
-      updateCourse(editingId, { name, holes });
+      await updateCourse(editingId, { name, holes });
       setEditingId(null);
     } else {
-      addCourse({ name, holes });
+      await addCourse({ name, holes });
     }
 
     setName('');
@@ -462,9 +462,9 @@ function AdminCourses() {
     setCourseSize(loadedHoles.length);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this course?")) {
-      deleteCourse(id);
+      await deleteCourse(id);
       loadCourses();
     }
   };

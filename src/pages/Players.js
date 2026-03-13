@@ -8,10 +8,10 @@ function Players() {
   const [email, setEmail] = useState('');
 
   useEffect(() => {
-    setPlayers(getPlayers());
+    getPlayers().then(setPlayers);
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim()) return;
 
@@ -22,7 +22,7 @@ function Players() {
       email
     };
 
-    const created = addPlayer(newPlayer);
+    const created = await addPlayer(newPlayer);
     setPlayers([...players, created]);
 
     // Reset form

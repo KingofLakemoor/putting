@@ -26,38 +26,41 @@ function Scorecard() {
   const [opponentTotal, setOpponentTotal] = useState(0);
 
   useEffect(() => {
-    // Load round data
-    const allRounds = getRounds();
-    const currentRound = allRounds.find(r => r.round_id === id);
-    setRound(currentRound);
+    const loadData = async () => {
+      // Load round data
+      const allRounds = await getRounds();
+      const currentRound = allRounds.find(r => r.round_id === id);
+      setRound(currentRound);
 
-    // Load course data
-    const allCourses = getCourses();
-    if (currentRound && currentRound.course_id) {
-      setCourse(allCourses.find(c => c.course_id === currentRound.course_id));
-    } else if (currentRound) {
-      // Legacy fallback
-      setCourse(allCourses.find(c => c.name === currentRound.location));
-    }
-
-    // Load all players
-    const allPlayers = getPlayers();
-    setPlayers(allPlayers);
-
-    // Load draft from localStorage if exists
-    const draftKey = `scorecard_draft_${id}`;
-    const draft = localStorage.getItem(draftKey);
-    if (draft) {
-      try {
-        const parsed = JSON.parse(draft);
-        if (parsed.playerId) setPlayerId(parsed.playerId);
-        if (parsed.opponentId) setOpponentId(parsed.opponentId);
-        if (parsed.playerScores) setPlayerScores(parsed.playerScores);
-        if (parsed.opponentScores) setOpponentScores(parsed.opponentScores);
-      } catch (e) {
-        console.error("Failed to parse draft", e);
+      // Load course data
+      const allCourses = await getCourses();
+      if (currentRound && currentRound.course_id) {
+        setCourse(allCourses.find(c => c.course_id === currentRound.course_id));
+      } else if (currentRound) {
+        // Legacy fallback
+        setCourse(allCourses.find(c => c.name === currentRound.location));
       }
-    }
+
+      // Load all players
+      const allPlayers = await getPlayers();
+      setPlayers(allPlayers);
+
+      // Load draft from localStorage if exists
+      const draftKey = `scorecard_draft_${id}`;
+      const draft = localStorage.getItem(draftKey);
+      if (draft) {
+        try {
+          const parsed = JSON.parse(draft);
+          if (parsed.playerId) setPlayerId(parsed.playerId);
+          if (parsed.opponentId) setOpponentId(parsed.opponentId);
+          if (parsed.playerScores) setPlayerScores(parsed.playerScores);
+          if (parsed.opponentScores) setOpponentScores(parsed.opponentScores);
+        } catch (e) {
+          console.error("Failed to parse draft", e);
+        }
+      }
+    };
+    loadData();
   }, [id]);
 
   // Soft save
@@ -118,12 +121,12 @@ function Scorecard() {
     setIsReviewing(true);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Basic validation
     if (!playerId) return;
 
     // We can check if they already have scores here
-    const roundScores = getScoresForRound(id);
+    const roundScores = await getScoresForRound(id);
 
     let alreadyScored = roundScores.some(s => s.player_id === playerId);
     if (alreadyScored) {
@@ -137,7 +140,7 @@ function Scorecard() {
     }
 
     // Submit primary player score
-    addScore({
+    await addScore({
       player_id: playerId,
       round_id: id,
       score: playerTotal
@@ -145,7 +148,7 @@ function Scorecard() {
 
     // Submit opponent score if selected
     if (opponentId) {
-      addScore({
+      await addScore({
         player_id: opponentId,
         round_id: id,
         score: opponentTotal
