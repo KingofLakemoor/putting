@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getPlayers, addPlayer } from '../db';
 
 function SignIn() {
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -32,7 +36,21 @@ function SignIn() {
     try {
       setError('');
       setLoading(true);
+
+      if (!firstName.trim() || !lastName.trim()) {
+        throw new Error('First and last name are required for sign up.');
+      }
+
       await signup(email, password);
+
+      const formattedName = `${firstName.trim()} ${lastName.trim().charAt(0).toUpperCase()}.`;
+      const players = getPlayers();
+      const existingPlayer = players.find(p => p.email && p.email.toLowerCase() === email.toLowerCase());
+
+      if (!existingPlayer) {
+        addPlayer({ name: formattedName, email });
+      }
+
       navigate(from, { replace: true });
     } catch (err) {
       setError('Failed to create an account. ' + err.message);
@@ -42,10 +60,34 @@ function SignIn() {
 
   return (
     <div className="page-container">
-      <h2>Sign In</h2>
+      <h2>{isSignUp ? 'Sign Up' : 'Sign In'}</h2>
       <div className="form-section" style={{ maxWidth: '400px', margin: '0 auto' }}>
         {error && <div className="error-alert" style={{ color: '#e0777d', marginBottom: '1rem' }}>{error}</div>}
-        <form className="add-form">
+        <form className="add-form" onSubmit={isSignUp ? handleSignUp : handleLogin}>
+          {isSignUp && (
+            <>
+              <div className="form-group">
+                <label htmlFor="firstName">First Name</label>
+                <input
+                  type="text"
+                  id="firstName"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required={isSignUp}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="lastName">Last Name</label>
+                <input
+                  type="text"
+                  id="lastName"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required={isSignUp}
+                />
+              </div>
+            </>
+          )}
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
@@ -66,23 +108,39 @@ function SignIn() {
               required
             />
           </div>
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
             <button
+              type="submit"
               disabled={loading}
-              onClick={handleLogin}
               className="btn-primary"
-              style={{ flex: 1 }}
+              style={{ width: '100%' }}
             >
-              Log In
+              {isSignUp ? 'Sign Up' : 'Log In'}
             </button>
-            <button
-              disabled={loading}
-              onClick={handleSignUp}
-              className="btn-secondary"
-              style={{ flex: 1 }}
-            >
-              Sign Up
-            </button>
+
+            <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+              <span style={{ color: 'var(--text-color)' }}>
+                {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setError('');
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--primary-color)',
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                  padding: 0,
+                  font: 'inherit'
+                }}
+              >
+                {isSignUp ? 'Sign In' : 'Sign Up'}
+              </button>
+            </div>
           </div>
         </form>
       </div>
