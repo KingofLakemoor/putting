@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getPlayers, getRounds, addScore, getScoresForRound } from '../db';
+import { getPlayers, getRounds, addScore, getScoresForRound, getCourses } from '../db';
 
 const HOLES = Array.from({ length: 18 }, (_, i) => i + 1);
 
@@ -10,6 +10,7 @@ function Scorecard() {
 
   const [round, setRound] = useState(null);
   const [players, setPlayers] = useState([]);
+  const [course, setCourse] = useState(null);
 
   // Dropdown Selections
   const [playerId, setPlayerId] = useState('');
@@ -31,6 +32,15 @@ function Scorecard() {
     const allRounds = getRounds();
     const currentRound = allRounds.find(r => r.round_id === id);
     setRound(currentRound);
+
+    // Load course data
+    const allCourses = getCourses();
+    if (currentRound && currentRound.course_id) {
+      setCourse(allCourses.find(c => c.course_id === currentRound.course_id));
+    } else if (currentRound) {
+      // Legacy fallback
+      setCourse(allCourses.find(c => c.name === currentRound.location));
+    }
 
     // Load all players
     const allPlayers = getPlayers();
@@ -82,6 +92,17 @@ function Scorecard() {
       const val = parseInt(score, 10);
       return sum + (isNaN(val) ? 0 : val);
     }, 0);
+  };
+
+  const getParForHole = (holeNum) => {
+    if (!course || !course.holes) return '-';
+    const holeData = course.holes.find(h => h.hole === holeNum);
+    return holeData ? holeData.par : '-';
+  };
+
+  const getTotalPar = () => {
+    if (!course || !course.holes) return 0;
+    return course.holes.reduce((sum, h) => sum + h.par, 0);
   };
 
   const handleReview = () => {
@@ -195,6 +216,7 @@ function Scorecard() {
               <thead>
                 <tr>
                   <th>Hole</th>
+                  <th>Par</th>
                   <th>{playerObj ? playerObj.name : 'Player Score'}</th>
                   {opponentId && <th>{opponentObj ? opponentObj.name : 'Opponent Score'}</th>}
                 </tr>
@@ -203,6 +225,7 @@ function Scorecard() {
                 {HOLES.map(hole => (
                   <tr key={hole}>
                     <td className="hole-number">{hole}</td>
+                    <td className="hole-par">{getParForHole(hole)}</td>
                     <td>
                       <input
                         type="number"
@@ -245,6 +268,8 @@ function Scorecard() {
               <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: '1rem 0', color: '#3498db' }}>
                 Total Score: {playerTotal}
               </p>
+              <p>Course Par: {getTotalPar()}</p>
+              <p>Score vs Par: {playerTotal - getTotalPar() > 0 ? `+${playerTotal - getTotalPar()}` : playerTotal - getTotalPar()}</p>
             </div>
 
             {opponentId && (
@@ -253,6 +278,8 @@ function Scorecard() {
                 <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: '1rem 0', color: '#e74c3c' }}>
                   Total Score: {opponentTotal}
                 </p>
+                <p>Course Par: {getTotalPar()}</p>
+                <p>Score vs Par: {opponentTotal - getTotalPar() > 0 ? `+${opponentTotal - getTotalPar()}` : opponentTotal - getTotalPar()}</p>
               </div>
             )}
           </div>

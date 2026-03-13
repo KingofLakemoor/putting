@@ -1,25 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getRounds, addRound, getScores } from '../db';
+import { getRounds, addRound, getScores, getCourses } from '../db';
 
 function Rounds() {
   const [rounds, setRounds] = useState([]);
   const [date, setDate] = useState('');
-  const [location, setLocation] = useState('');
+  const [courseId, setCourseId] = useState('');
   const [scores, setScores] = useState([]);
+  const [courses, setCourses] = useState([]);
 
   useEffect(() => {
     setRounds(getRounds());
     setScores(getScores());
+    setCourses(getCourses());
   }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!date || !location.trim()) return;
+    if (!date || !courseId) return;
+
+    const selectedCourse = courses.find(c => c.course_id === courseId);
 
     const newRound = {
       date,
-      location
+      location: selectedCourse ? selectedCourse.name : 'Unknown Location',
+      course_id: courseId
     };
 
     const created = addRound(newRound);
@@ -27,7 +32,7 @@ function Rounds() {
 
     // Reset form
     setDate('');
-    setLocation('');
+    setCourseId('');
   };
 
   const getParticipantCount = (roundId) => {
@@ -76,14 +81,20 @@ function Rounds() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="location">Location / Venue *</label>
-              <input
-                type="text"
-                id="location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
+              <label htmlFor="course">Location / Venue *</label>
+              <select
+                id="course"
+                value={courseId}
+                onChange={(e) => setCourseId(e.target.value)}
                 required
-              />
+              >
+                <option value="">-- Select Course --</option>
+                {courses.map(course => (
+                  <option key={course.course_id} value={course.course_id}>
+                    {course.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <button type="submit" className="btn-primary">Create Round</button>

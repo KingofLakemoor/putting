@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, updateRoundStatus, deleteRound, getScores, updateScore, deleteScore } from '../db';
+import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, updateRoundStatus, deleteRound, getScores, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse } from '../db';
 
 function Admin() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -78,12 +78,19 @@ function Admin() {
         >
           Manage Scores
         </button>
+        <button
+          className={activeTab === 'courses' ? 'btn-primary' : 'btn-secondary'}
+          onClick={() => setActiveTab('courses')}
+        >
+          Manage Courses
+        </button>
       </div>
 
       <div className="admin-content">
         {activeTab === 'players' && <AdminPlayers />}
         {activeTab === 'rounds' && <AdminRounds />}
         {activeTab === 'scores' && <AdminScores />}
+        {activeTab === 'courses' && <AdminCourses />}
       </div>
     </div>
   );
@@ -379,3 +386,137 @@ function AdminScores() {
 }
 
 export default Admin;
+
+function AdminCourses() {
+  const [courses, setCourses] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+
+  // Form State
+  const [name, setName] = useState('');
+  const [holes, setHoles] = useState(Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 })));
+
+  const loadCourses = () => {
+    setCourses(getCourses());
+  };
+
+  useEffect(() => {
+    loadCourses();
+  }, []);
+
+  const handleHoleParChange = (index, parValue) => {
+    const newHoles = [...holes];
+    newHoles[index].par = parseInt(parValue, 10) || 1;
+    setHoles(newHoles);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    if (editingId) {
+      updateCourse(editingId, { name, holes });
+      setEditingId(null);
+    } else {
+      addCourse({ name, holes });
+    }
+
+    setName('');
+    setHoles(Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 })));
+    loadCourses();
+  };
+
+  const handleEdit = (course) => {
+    setEditingId(course.course_id);
+    setName(course.name);
+    setHoles(course.holes || Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 })));
+  };
+
+  const handleDelete = (id) => {
+    if (window.confirm("Are you sure you want to delete this course?")) {
+      deleteCourse(id);
+      loadCourses();
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setName('');
+    setHoles(Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 })));
+  };
+
+  return (
+    <div className="layout-grid">
+      <div className="list-section">
+        <h3>Courses List</h3>
+        {courses.length === 0 ? (
+          <p>No courses available.</p>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Course Name</th>
+                <th>Total Par</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {courses.map(course => (
+                <tr key={course.course_id}>
+                  <td>{course.name}</td>
+                  <td>{course.holes ? course.holes.reduce((sum, h) => sum + h.par, 0) : 'N/A'}</td>
+                  <td>
+                    <button onClick={() => handleEdit(course)} className="btn-secondary" style={{ marginRight: '0.5rem', padding: '0.5rem 1rem' }}>Edit</button>
+                    <button onClick={() => handleDelete(course.course_id)} className="btn-secondary" style={{ backgroundColor: '#e74c3c', color: 'white', padding: '0.5rem 1rem' }}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="form-section">
+        <h3>{editingId ? 'Edit Course' : 'Add New Course'}</h3>
+        <form onSubmit={handleSubmit} className="add-form">
+          <div className="form-group">
+            <label htmlFor="courseName">Course Name *</label>
+            <input
+              type="text"
+              id="courseName"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Hole Pars</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+              {holes.map((holeObj, index) => (
+                <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <label htmlFor={`hole-${holeObj.hole}`} style={{ fontSize: '0.8rem', marginBottom: '2px' }}>Hole {holeObj.hole}</label>
+                  <input
+                    type="number"
+                    id={`hole-${holeObj.hole}`}
+                    min="1"
+                    value={holeObj.par}
+                    onChange={(e) => handleHoleParChange(index, e.target.value)}
+                    style={{ width: '100%', padding: '0.25rem' }}
+                    required
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button type="submit" className="btn-primary" style={{ marginBottom: '1rem', marginTop: '1rem' }}>
+            {editingId ? 'Update Course' : 'Add Course'}
+          </button>
+          {editingId && (
+            <button type="button" onClick={cancelEdit} className="btn-secondary" style={{ width: '100%' }}>Cancel Edit</button>
+          )}
+        </form>
+      </div>
+    </div>
+  );
+}
