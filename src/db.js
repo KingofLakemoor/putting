@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 const PLAYERS_KEY = 'putting_league_players';
 const ROUNDS_KEY = 'putting_league_rounds';
 const SCORES_KEY = 'putting_league_scores';
+const COURSES_KEY = 'putting_league_courses';
 
 // Helper to get data from localStorage
 const getData = (key) => {
@@ -13,6 +14,46 @@ const getData = (key) => {
 // Helper to save data to localStorage
 const saveData = (key, data) => {
   localStorage.setItem(key, JSON.stringify(data));
+};
+
+// --- Courses ---
+export const getCourses = () => {
+  const courses = getData(COURSES_KEY);
+  if (courses.length === 0) {
+    const defaultCourse = {
+      course_id: uuidv4(),
+      name: 'Putting World',
+      holes: Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 }))
+    };
+    saveData(COURSES_KEY, [defaultCourse]);
+    return [defaultCourse];
+  }
+  return courses;
+};
+
+export const addCourse = (course) => {
+  const courses = getCourses();
+  const newCourse = {
+    course_id: uuidv4(),
+    ...course
+  };
+  courses.push(newCourse);
+  saveData(COURSES_KEY, courses);
+  return newCourse;
+};
+
+export const updateCourse = (course_id, updatedData) => {
+  let courses = getCourses();
+  courses = courses.map(course =>
+    course.course_id === course_id ? { ...course, ...updatedData } : course
+  );
+  saveData(COURSES_KEY, courses);
+};
+
+export const deleteCourse = (course_id) => {
+  let courses = getCourses();
+  courses = courses.filter(course => course.course_id !== course_id);
+  saveData(COURSES_KEY, courses);
 };
 
 // --- Players ---
