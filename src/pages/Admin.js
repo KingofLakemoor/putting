@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, updateRoundStatus, deleteRound, getScores, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse } from '../db';
+import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, updateRoundStatus, updateRoundSeason, deleteRound, getScores, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse } from '../db';
 
 function Admin() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -228,6 +228,11 @@ function AdminRounds() {
     loadRounds();
   };
 
+  const handleSeasonChange = (id, newSeason) => {
+    updateRoundSeason(id, newSeason);
+    loadRounds();
+  };
+
   const handleDelete = (id) => {
     if (window.confirm("Are you sure you want to delete this round? This will also delete all associated scores.")) {
       deleteRound(id);
@@ -246,6 +251,7 @@ function AdminRounds() {
             <tr>
               <th>Date</th>
               <th>Location</th>
+              <th>Season</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -255,6 +261,15 @@ function AdminRounds() {
               <tr key={round.round_id}>
                 <td>{new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' })}</td>
                 <td>{round.location}</td>
+                <td>
+                  <input
+                    type="text"
+                    defaultValue={round.season || ''}
+                    onBlur={(e) => handleSeasonChange(round.round_id, e.target.value)}
+                    placeholder="e.g. Summer 2024"
+                    style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #ced4da', width: '120px' }}
+                  />
+                </td>
                 <td>
                   <select
                     value={round.status}

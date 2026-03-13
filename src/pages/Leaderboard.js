@@ -4,6 +4,7 @@ import { getPlayers, getScores, getRounds } from '../db';
 function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [rounds, setRounds] = useState([]);
+  const [seasons, setSeasons] = useState([]);
   const [filter, setFilter] = useState('global');
 
   useEffect(() => {
@@ -13,8 +14,17 @@ function Leaderboard() {
 
     setRounds(allRounds);
 
-    if (filter !== 'global' && filter !== 'season') {
-      scores = scores.filter(s => String(s.round_id) === String(filter));
+    const uniqueSeasons = [...new Set(allRounds.map(r => r.season).filter(Boolean))];
+    setSeasons(uniqueSeasons);
+
+    if (filter !== 'global') {
+      if (filter.startsWith('season_')) {
+        const seasonName = filter.substring(7);
+        const roundIdsInSeason = allRounds.filter(r => r.season === seasonName).map(r => r.round_id);
+        scores = scores.filter(s => roundIdsInSeason.includes(s.round_id));
+      } else {
+        scores = scores.filter(s => String(s.round_id) === String(filter));
+      }
     }
 
     // Calculate aggregated score
@@ -45,7 +55,7 @@ function Leaderboard() {
   return (
     <div className="page-container">
       <div className="leaderboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>{filter === 'global' ? 'Global Rankings' : filter === 'season' ? 'Season Rankings' : 'Event Leaderboard'}</h2>
+        <h2>{filter.startsWith('season_') ? `${filter.substring(7)} Rankings` : filter === 'global' ? 'Global Rankings' : 'Event Leaderboard'}</h2>
         <div className="form-group" style={{ width: 'auto', marginBottom: 0 }}>
           <select
             value={filter}
@@ -53,7 +63,15 @@ function Leaderboard() {
             style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}
           >
             <option value="global">Global Rankings</option>
-            <option value="season">Season Rankings</option>
+            {seasons.length > 0 && (
+              <optgroup label="Seasons">
+                {seasons.map(season => (
+                  <option key={`season_${season}`} value={`season_${season}`}>
+                    {season} Rankings
+                  </option>
+                ))}
+              </optgroup>
+            )}
             <optgroup label="Events / Rounds">
               {rounds.map(round => (
                 <option key={round.round_id} value={round.round_id}>
