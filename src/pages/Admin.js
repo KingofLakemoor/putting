@@ -400,8 +400,6 @@ function AdminScores() {
   );
 }
 
-export default Admin;
-
 function AdminCourses() {
   const [courses, setCourses] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -564,3 +562,5 @@ function AdminCourses() {
     </div>
   );
 }
+
+export default Admin;
