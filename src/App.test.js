@@ -1,8 +1,17 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import App from './App';
+import { AuthProvider } from './contexts/AuthContext';
 
-test('renders leaderboard link', () => {
-  render(<App />);
-  const linkElements = screen.getAllByText(/Leaderboard/i);
-  expect(linkElements.length).toBeGreaterThan(0);
+test('renders sign in initially', async () => {
+  await act(async () => {
+    render(
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    );
+  });
+
+  // Unauthenticated users are shown the sign in form, not the leaderboard link initially
+  const signInHeader = screen.getByText(/Sign In/i);
+  expect(signInHeader).toBeInTheDocument();
 });
