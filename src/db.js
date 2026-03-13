@@ -127,6 +127,14 @@ export const updateRoundStatus = (round_id, status) => {
   saveData(ROUNDS_KEY, rounds);
 };
 
+export const updateRoundSeason = (round_id, season) => {
+  let rounds = getRounds();
+  rounds = rounds.map(round =>
+    round.round_id === round_id ? { ...round, season } : round
+  );
+  saveData(ROUNDS_KEY, rounds);
+};
+
 export const deleteRound = (round_id) => {
   let rounds = getRounds();
   rounds = rounds.filter(round => round.round_id !== round_id);
