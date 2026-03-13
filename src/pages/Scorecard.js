@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getPlayers, getRounds, addScore, getScoresForRound, getCourses } from '../db';
 
-const HOLES = Array.from({ length: 18 }, (_, i) => i + 1);
-
 function Scorecard() {
   const { id } = useParams(); // round_id
   const navigate = useNavigate();
@@ -162,6 +160,11 @@ function Scorecard() {
   };
 
   if (!round) return <div className="page-container">Loading...</div>;
+
+  // Compute holes array dynamically based on the course
+  const HOLES = course && course.holes
+    ? course.holes.map(h => h.hole)
+    : Array.from({ length: 18 }, (_, i) => i + 1);
 
   // Find player names for review screen
   const playerObj = players.find(p => p.player_id === playerId);
