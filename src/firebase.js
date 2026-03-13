@@ -1,18 +1,15 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
-// Your web app's Firebase configuration
-// In a real app, these would come from environment variables.
-// For the purpose of this task, we can use empty strings or placeholders,
-// but Firebase requires some configuration to initialize.
-// We'll use dummy configuration as we don't have real credentials.
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "dummy-api-key",
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || "dummy-auth-domain.firebaseapp.com",
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || "dummy-project-id",
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || "dummy-project-id.appspot.com",
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || "123456789",
-  appId: process.env.REACT_APP_FIREBASE_APP_ID || "1:123456789:web:abcdef"
+  apiKey: "AIzaSyAARcGids538YyiOqB1WcXh_ZqPuJExVHE",
+  authDomain: "putting-63c6c.firebaseapp.com",
+  projectId: "putting-63c6c",
+  storageBucket: "putting-63c6c.firebasestorage.app",
+  messagingSenderId: "868951185666",
+  appId: "1:868951185666:web:35d2b37c2f785c91a48a1b",
+  measurementId: "G-92N4JG5RY5"
 };
 
 // Initialize Firebase
