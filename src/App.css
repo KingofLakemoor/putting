@@ -464,3 +464,128 @@ button,
   border-radius: 8px;
   box-shadow: 0 2px 4px var(--shadow-color-light);
 }
+
+/* Mobile Optimization */
+.desktop-only {
+  display: block;
+}
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+  .mobile-only {
+    display: block !important;
+  }
+
+  .App-nav {
+    padding: 1rem;
+  }
+
+  .App-nav ul {
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .page-container {
+    padding: 1rem;
+  }
+
+  .mobile-hole-card {
+    background-color: var(--form-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .mobile-hole-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .mobile-hole-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--heading-color);
+  }
+
+  .mobile-hole-par {
+    font-size: 1.2rem;
+    color: var(--meta-text);
+  }
+
+  .mobile-score-row {
+    margin-bottom: 1.5rem;
+  }
+
+  .mobile-score-label {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+  }
+
+  .score-input-large {
+    width: 100%;
+    max-width: 150px;
+    font-size: 2rem;
+    padding: 1rem;
+    text-align: center;
+    border: 2px solid var(--input-border);
+    border-radius: 8px;
+    background-color: var(--container-bg);
+    color: var(--text-color);
+    margin: 0 auto;
+    display: block;
+  }
+
+  .score-input-large:focus {
+    outline: none;
+    border-color: var(--btn-primary-bg);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+  }
+
+  /* Hide number spinner */
+  .score-input-large::-webkit-outer-spin-button,
+  .score-input-large::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .score-input-large[type=number] {
+    -moz-appearance: textfield;
+  }
+
+  .mobile-hole-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .mobile-hole-nav button {
+    flex: 1;
+    padding: 1rem;
+    font-size: 1.1rem;
+  }
+
+  .review-cards {
+    flex-direction: column;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
+  }
+}

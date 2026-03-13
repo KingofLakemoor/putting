@@ -20,6 +20,7 @@ function Scorecard() {
 
   // View state
   const [isReviewing, setIsReviewing] = useState(false);
+  const [currentHoleIndex, setCurrentHoleIndex] = useState(0);
 
   // Computed totals
   const [playerTotal, setPlayerTotal] = useState(0);
@@ -101,6 +102,18 @@ function Scorecard() {
     return holeData ? holeData.par : '-';
   };
 
+  const handleNextHole = () => {
+    if (currentHoleIndex < HOLES.length - 1) {
+      setCurrentHoleIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePrevHole = () => {
+    if (currentHoleIndex > 0) {
+      setCurrentHoleIndex(prev => prev - 1);
+    }
+  };
+
   const getTotalPar = () => {
     if (!course || !course.holes) return 0;
     return course.holes.reduce((sum, h) => sum + h.par, 0);
@@ -162,12 +175,12 @@ function Scorecard() {
     navigate(`/rounds/${id}`);
   };
 
-  if (!round) return <div className="page-container">Loading...</div>;
-
   // Compute holes array dynamically based on the course
   const HOLES = course && course.holes
     ? course.holes.map(h => h.hole)
     : Array.from({ length: 18 }, (_, i) => i + 1);
+
+  if (!round) return <div className="page-container">Loading...</div>;
 
   // Find player names for review screen
   const playerObj = players.find(p => p.player_id === playerId);
@@ -217,48 +230,112 @@ function Scorecard() {
             </div>
           </div>
 
-          <div className="scorecard-table-wrapper">
-            <table className="scorecard-table">
-              <thead>
-                <tr>
-                  <th>Hole</th>
-                  <th>Par</th>
-                  <th>{playerObj ? playerObj.name : 'Player Score'}</th>
-                  {opponentId && <th>{opponentObj ? opponentObj.name : 'Opponent Score'}</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {HOLES.map(hole => (
-                  <tr key={hole}>
-                    <td className="hole-number">{hole}</td>
-                    <td className="hole-par">{getParForHole(hole)}</td>
-                    <td>
-                      <input
-                        type="number"
-                        min="1"
-                        className="score-input"
-                        value={playerScores[hole] || ''}
-                        onChange={(e) => handleScoreChange(hole, true, e.target.value)}
-                      />
-                    </td>
-                    {opponentId && (
+          {/* Mobile Hole-by-Hole View */}
+          {HOLES.length > 0 && (
+            <div className="mobile-only">
+              <div className="mobile-hole-card">
+                <div className="mobile-hole-header">
+                  <span className="mobile-hole-title">Hole {HOLES[currentHoleIndex]}</span>
+                  <span className="mobile-hole-par">Par {getParForHole(HOLES[currentHoleIndex])}</span>
+                </div>
+
+                <div className="mobile-score-row">
+                  <label className="mobile-score-label">{playerObj ? playerObj.name : 'Player'}</label>
+                  <input
+                    type="number"
+                    min="1"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    className="score-input-large"
+                    value={playerScores[HOLES[currentHoleIndex]] || ''}
+                    onChange={(e) => handleScoreChange(HOLES[currentHoleIndex], true, e.target.value)}
+                  />
+                </div>
+
+                {opponentId && (
+                  <div className="mobile-score-row">
+                    <label className="mobile-score-label">{opponentObj ? opponentObj.name : 'Opponent'}</label>
+                    <input
+                      type="number"
+                      min="1"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      className="score-input-large"
+                      value={opponentScores[HOLES[currentHoleIndex]] || ''}
+                      onChange={(e) => handleScoreChange(HOLES[currentHoleIndex], false, e.target.value)}
+                    />
+                  </div>
+                )}
+
+                <div className="mobile-hole-nav">
+                  <button
+                    onClick={handlePrevHole}
+                    className="btn-secondary"
+                    disabled={currentHoleIndex === 0}
+                  >
+                    &larr; Prev
+                  </button>
+                  <button
+                    onClick={handleNextHole}
+                    className="btn-primary"
+                    disabled={currentHoleIndex === HOLES.length - 1}
+                  >
+                    Next &rarr;
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Desktop Table View */}
+          <div className="desktop-only">
+            <div className="scorecard-table-wrapper">
+              <table className="scorecard-table">
+                <thead>
+                  <tr>
+                    <th>Hole</th>
+                    <th>Par</th>
+                    <th>{playerObj ? playerObj.name : 'Player Score'}</th>
+                    {opponentId && <th>{opponentObj ? opponentObj.name : 'Opponent Score'}</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {HOLES.map(hole => (
+                    <tr key={hole}>
+                      <td className="hole-number">{hole}</td>
+                      <td className="hole-par">{getParForHole(hole)}</td>
                       <td>
                         <input
                           type="number"
                           min="1"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           className="score-input"
-                          value={opponentScores[hole] || ''}
-                          onChange={(e) => handleScoreChange(hole, false, e.target.value)}
+                          value={playerScores[hole] || ''}
+                          onChange={(e) => handleScoreChange(hole, true, e.target.value)}
                         />
                       </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      {opponentId && (
+                        <td>
+                          <input
+                            type="number"
+                            min="1"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            className="score-input"
+                            value={opponentScores[hole] || ''}
+                            onChange={(e) => handleScoreChange(hole, false, e.target.value)}
+                          />
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <div style={{ marginTop: '2rem', textAlign: 'right' }}>
+          <div style={{ marginTop: '2rem', textAlign: 'center' }}>
             <button onClick={handleReview} className="btn-primary" disabled={!playerId}>
               Review Scorecard
             </button>
