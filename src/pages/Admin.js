@@ -7,12 +7,16 @@ const ADMIN_EMAILS = [
   'coordinator@example.com' // Placeholder for putting coordinator email
 ];
 
+const ADMIN_UIDS = [
+  'rLxGIo4WVzVfF43UIPRqXV4tAjs2'
+];
+
 function Admin() {
   const [activeTab, setActiveTab] = useState('players');
   const { currentUser } = useAuth();
 
   // Protect the route by checking if the user is in the hardcoded list of admins
-  if (!currentUser || !ADMIN_EMAILS.includes(currentUser.email)) {
+  if (!currentUser || (!ADMIN_EMAILS.includes(currentUser.email) && !ADMIN_UIDS.includes(currentUser.uid))) {
     return (
       <div className="page-container">
         <h2>Unauthorized Access</h2>
