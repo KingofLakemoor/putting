@@ -1,53 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, updateRoundStatus, updateRoundSeason, deleteRound, getScores, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse } from '../db';
+import { useAuth } from '../contexts/AuthContext';
+
+const ADMIN_EMAILS = [
+  'admin@example.com', // Placeholder for your admin email
+  'coordinator@example.com' // Placeholder for putting coordinator email
+];
 
 function Admin() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [password, setPassword] = useState('');
   const [activeTab, setActiveTab] = useState('players');
+  const { currentUser } = useAuth();
 
-  useEffect(() => {
-    const loggedIn = localStorage.getItem('putting_league_admin_logged_in');
-    if (loggedIn === 'true') {
-      setIsLoggedIn(true);
-    }
-  }, []);
-
-  const handleLogin = (e) => {
-    e.preventDefault();
-    // Simple mock password
-    if (password === 'admin') {
-      localStorage.setItem('putting_league_admin_logged_in', 'true');
-      setIsLoggedIn(true);
-    } else {
-      alert('Incorrect password');
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('putting_league_admin_logged_in');
-    setIsLoggedIn(false);
-  };
-
-  if (!isLoggedIn) {
+  // Protect the route by checking if the user is in the hardcoded list of admins
+  if (!currentUser || !ADMIN_EMAILS.includes(currentUser.email)) {
     return (
       <div className="page-container">
-        <h2>Admin Login</h2>
-        <div className="form-section" style={{ maxWidth: '400px', margin: '0 auto' }}>
-          <form onSubmit={handleLogin} className="add-form">
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <button type="submit" className="btn-primary">Login</button>
-          </form>
-        </div>
+        <h2>Unauthorized Access</h2>
+        <p>You do not have permission to access the admin dashboard. Contact the administrator if you believe this is a mistake.</p>
       </div>
     );
   }
@@ -56,7 +25,6 @@ function Admin() {
     <div className="page-container admin-page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2>Admin Dashboard</h2>
-        <button onClick={handleLogout} className="btn-secondary">Logout</button>
       </div>
 
       <div className="admin-tabs" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid #ecf0f1', paddingBottom: '1rem' }}>
