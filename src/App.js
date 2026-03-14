@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Leaderboard from './pages/Leaderboard';
-import Players from './pages/Players';
-import Rounds from './pages/Rounds';
 import RoundDetails from './pages/RoundDetails';
 import Scorecard from './pages/Scorecard';
 import ReportScores from './pages/ReportScores';
@@ -51,12 +49,6 @@ function App() {
                 <Link to="/leaderboard">Leaderboard</Link>
               </li>
               <li>
-                <Link to="/players">Players</Link>
-              </li>
-              <li>
-                <Link to="/rounds">Rounds</Link>
-              </li>
-              <li>
                 <Link to="/admin">Admin</Link>
               </li>
               <li>
@@ -78,8 +70,6 @@ function App() {
             <Route path="/signin" element={<SignIn />} />
             <Route path="/" element={<PrivateRoute><ReportScores /></PrivateRoute>} />
             <Route path="/leaderboard" element={<PrivateRoute><Leaderboard /></PrivateRoute>} />
-            <Route path="/players" element={<PrivateRoute><Players /></PrivateRoute>} />
-            <Route path="/rounds" element={<PrivateRoute><Rounds /></PrivateRoute>} />
             <Route path="/rounds/:id" element={<PrivateRoute><RoundDetails /></PrivateRoute>} />
             <Route path="/rounds/:id/scorecard" element={<PrivateRoute><Scorecard /></PrivateRoute>} />
             <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
