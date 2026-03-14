@@ -19,7 +19,7 @@ function ReportScores() {
       <h2>Report Scores</h2>
       {activeRounds.length === 0 ? (
         <p>
-          There are currently no active rounds. Please navigate to the <Link to="/rounds">Rounds</Link> page to create one.
+          Have an idea for a putting league? Let Club 602 know on <a href="https://www.instagram.com/club_602/">Instagram</a>.
         </p>
       ) : (
         <div className="rounds-list">

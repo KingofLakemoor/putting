@@ -71,7 +71,8 @@ function Admin() {
 
 function AdminPlayers() {
   const [players, setPlayers] = useState([]);
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [editingId, setEditingId] = useState(null);
 
@@ -85,23 +86,41 @@ function AdminPlayers() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!firstName.trim() || !lastName.trim()) return;
+
+    const formattedName = `${firstName.trim()} ${lastName.trim().charAt(0).toUpperCase()}.`;
 
     if (editingId) {
-      await updatePlayer(editingId, { name, email });
+      await updatePlayer(editingId, { name: formattedName, email });
       setEditingId(null);
     } else {
-      await addPlayer({ name, email });
+      await addPlayer({ name: formattedName, email });
     }
 
-    setName('');
+    setFirstName('');
+    setLastName('');
     setEmail('');
     loadPlayers();
   };
 
   const handleEdit = (player) => {
     setEditingId(player.player_id);
-    setName(player.name);
+
+    // Attempt to split the name. "First Last Initial." or "First Last"
+    const nameParts = player.name ? player.name.split(' ') : [];
+    if (nameParts.length >= 2) {
+      setFirstName(nameParts.slice(0, -1).join(' '));
+      // Remove trailing period if present
+      let lName = nameParts[nameParts.length - 1];
+      if (lName.endsWith('.')) {
+          lName = lName.slice(0, -1);
+      }
+      setLastName(lName);
+    } else {
+      setFirstName(player.name || '');
+      setLastName('');
+    }
+
     setEmail(player.email || '');
   };
 
@@ -114,7 +133,8 @@ function AdminPlayers() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setName('');
+    setFirstName('');
+    setLastName('');
     setEmail('');
   };
 
@@ -153,12 +173,23 @@ function AdminPlayers() {
         <h3>{editingId ? 'Edit Player' : 'Add New Player'}</h3>
         <form onSubmit={handleSubmit} className="add-form">
           <div className="form-group">
-            <label htmlFor="playerName">Full Name *</label>
+            <label htmlFor="playerFirstName">First Name *</label>
             <input
               type="text"
-              id="playerName"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              id="playerFirstName"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="playerLastName">Last Name *</label>
+            <input
+              type="text"
+              id="playerLastName"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
               required
             />
           </div>

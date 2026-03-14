@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getPlayers, addPlayer } from '../db';
+import { getPlayers, addPlayer, updatePlayer } from '../db';
 
 function SignIn() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -49,6 +49,9 @@ function SignIn() {
 
       if (!existingPlayer) {
         await addPlayer({ name: formattedName, email, uid: user.uid });
+      } else {
+        // Merge the newly created account with the existing player data for that email
+        await updatePlayer(existingPlayer.player_id, { name: formattedName, uid: user.uid });
       }
 
       navigate(from, { replace: true });
