@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, updateRoundStatus, updateRoundSeason, deleteRound, getScores, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse } from '../db';
+import { Link } from 'react-router-dom';
+import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, addRound, updateRoundStatus, updateRoundSeason, deleteRound, getScores, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse } from '../db';
 import { useAuth } from '../contexts/AuthContext';
 
 const ADMIN_EMAILS = [
@@ -186,81 +187,142 @@ function AdminPlayers() {
 
 function AdminRounds() {
   const [rounds, setRounds] = useState([]);
+  const [date, setDate] = useState('');
+  const [courseId, setCourseId] = useState('');
+  const [courses, setCourses] = useState([]);
 
-  const loadRounds = async () => {
+  const loadData = async () => {
     setRounds(await getRounds());
+    setCourses(await getCourses());
   };
 
   useEffect(() => {
-    loadRounds();
+    loadData();
   }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!date || !courseId) return;
+
+    const selectedCourse = courses.find(c => c.course_id === courseId);
+
+    const newRound = {
+      date,
+      location: selectedCourse ? selectedCourse.name : 'Unknown Location',
+      course_id: courseId
+    };
+
+    await addRound(newRound);
+
+    // Reset form
+    setDate('');
+    setCourseId('');
+    loadData();
+  };
 
   const handleStatusChange = async (id, newStatus) => {
     await updateRoundStatus(id, newStatus);
-    loadRounds();
+    loadData();
   };
 
   const handleSeasonChange = async (id, newSeason) => {
     await updateRoundSeason(id, newSeason);
-    loadRounds();
+    loadData();
   };
 
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this round? This will also delete all associated scores.")) {
       await deleteRound(id);
-      loadRounds();
+      loadData();
     }
   };
 
   return (
-    <div className="list-section">
-      <h3>Rounds / Events Management</h3>
-      {rounds.length === 0 ? (
-        <p>No rounds added yet.</p>
-      ) : (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Location</th>
-              <th>Season</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rounds.map(round => (
-              <tr key={round.round_id}>
-                <td>{new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' })}</td>
-                <td>{round.location}</td>
-                <td>
-                  <input
-                    type="text"
-                    defaultValue={round.season || ''}
-                    onBlur={(e) => handleSeasonChange(round.round_id, e.target.value)}
-                    placeholder="e.g. Summer 2024"
-                    style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #ced4da', width: '120px' }}
-                  />
-                </td>
-                <td>
-                  <select
-                    value={round.status}
-                    onChange={(e) => handleStatusChange(round.round_id, e.target.value)}
-                    style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #ced4da' }}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Archived">Archived</option>
-                  </select>
-                </td>
-                <td>
-                  <button onClick={() => handleDelete(round.round_id)} className="btn-secondary" style={{ backgroundColor: '#e74c3c', color: 'white', padding: '0.5rem 1rem' }}>Delete</button>
-                </td>
+    <div className="layout-grid">
+      <div className="list-section">
+        <h3>Rounds / Events Management</h3>
+        {rounds.length === 0 ? (
+          <p>No rounds added yet.</p>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Location</th>
+                <th>Season</th>
+                <th>Status</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+            </thead>
+            <tbody>
+              {rounds.map(round => (
+                <tr key={round.round_id}>
+                  <td>{new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' })}</td>
+                  <td>{round.location}</td>
+                  <td>
+                    <input
+                      type="text"
+                      defaultValue={round.season || ''}
+                      onBlur={(e) => handleSeasonChange(round.round_id, e.target.value)}
+                      placeholder="e.g. Summer 2024"
+                      style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #ced4da', width: '120px' }}
+                    />
+                  </td>
+                  <td>
+                    <select
+                      value={round.status}
+                      onChange={(e) => handleStatusChange(round.round_id, e.target.value)}
+                      style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #ced4da' }}
+                    >
+                      <option value="Active">Active</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Archived">Archived</option>
+                    </select>
+                  </td>
+                  <td>
+                    <Link to={`/rounds/${round.round_id}`} className="btn-secondary" style={{ marginRight: '0.5rem', padding: '0.5rem 1rem', display: 'inline-block', textDecoration: 'none' }}>Manage Scores</Link>
+                    <button onClick={() => handleDelete(round.round_id)} className="btn-secondary" style={{ backgroundColor: '#e74c3c', color: 'white', padding: '0.5rem 1rem' }}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      <div className="form-section">
+        <h3>Create New Round</h3>
+        <form onSubmit={handleSubmit} className="add-form">
+          <div className="form-group">
+            <label htmlFor="date">Date *</label>
+            <input
+              type="date"
+              id="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="course">Location / Venue *</label>
+            <select
+              id="course"
+              value={courseId}
+              onChange={(e) => setCourseId(e.target.value)}
+              required
+            >
+              <option value="">-- Select Course --</option>
+              {courses.map(course => (
+                <option key={course.course_id} value={course.course_id}>
+                  {course.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button type="submit" className="btn-primary">Create Round</button>
+        </form>
+      </div>
     </div>
   );
 }
