@@ -77,7 +77,7 @@ function RoundDetails() {
     <div className="page-container">
       <div className="round-header-details" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <Link to="/rounds" className="back-link">&larr; Back to Rounds</Link>
+          <Link to="/leaderboard" className="back-link">&larr; Back to Leaderboard</Link>
           <h2>Round Details</h2>
           <div className="round-meta">
             <p><strong>Date:</strong> {new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' })}</p>
