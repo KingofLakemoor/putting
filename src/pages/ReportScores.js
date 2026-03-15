@@ -7,9 +7,13 @@ function ReportScores() {
 
   useEffect(() => {
     const loadData = async () => {
-      const allRounds = await getRounds();
-      const active = allRounds.filter(r => r.status === 'Active');
-      setActiveRounds(active);
+      try {
+        const allRounds = await getRounds();
+        const active = allRounds.filter(r => r.status === 'Active');
+        setActiveRounds(active);
+      } catch (error) {
+        console.error("Failed to load rounds:", error);
+      }
     };
     loadData();
   }, []);
