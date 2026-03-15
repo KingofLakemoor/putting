@@ -34,9 +34,14 @@ function Leaderboard() {
 
         const totalScore = playerScores.reduce((sum, score) => sum + (parseInt(score.score) || 0), 0);
 
+        // Calculate best round score
+        const validScores = playerScores.map(s => parseInt(s.score)).filter(s => !isNaN(s));
+        const bestRoundScore = validScores.length > 0 ? Math.min(...validScores) : null;
+
         return {
           ...player,
           totalScore,
+          bestRoundScore,
           roundsPlayed: playerScores.length
         };
       });
@@ -96,6 +101,7 @@ function Leaderboard() {
               <th>Rank</th>
               <th>Player</th>
               <th>Score</th>
+              {filter !== 'global' && <th>Best Round</th>}
               <th>Rounds Played</th>
             </tr>
           </thead>
@@ -105,6 +111,9 @@ function Leaderboard() {
                 <td>{index + 1}</td>
                 <td>{player.name}</td>
                 <td><strong>{player.totalScore}</strong></td>
+                {filter !== 'global' && (
+                  <td>{player.bestRoundScore !== null ? player.bestRoundScore : '-'}</td>
+                )}
                 <td>{player.roundsPlayed}</td>
               </tr>
             ))}
