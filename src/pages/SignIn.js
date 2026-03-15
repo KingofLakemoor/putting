@@ -44,14 +44,28 @@ function SignIn() {
       const { user } = await signup(email, password);
 
       const formattedName = `${firstName.trim()} ${lastName.trim().charAt(0).toUpperCase()}.`;
-      const players = await getPlayers();
-      const existingPlayer = players.find(p => p.email && p.email.toLowerCase() === email.toLowerCase());
 
-      if (!existingPlayer) {
-        await addPlayer({ name: formattedName, email, uid: user.uid });
-      } else {
-        // Merge the newly created account with the existing player data for that email
-        await updatePlayer(existingPlayer.player_id, { name: formattedName, uid: user.uid });
+      try {
+        const players = await getPlayers();
+        const existingPlayer = players.find(p => p.email && p.email.toLowerCase() === email.toLowerCase());
+
+        if (!existingPlayer) {
+          await addPlayer({ name: formattedName, email, uid: user.uid });
+        } else {
+          // Merge the newly created account with the existing player data for that email
+          await updatePlayer(existingPlayer.player_id, { name: formattedName, uid: user.uid });
+        }
+      } catch (dbError) {
+        console.warn("Could not fetch players for merge, falling back to creating new player record.", dbError);
+        // Fallback: If we can't read players due to permissions, just add the new player.
+        try {
+          await addPlayer({ name: formattedName, email, uid: user.uid });
+        } catch (addError) {
+          console.error("Failed to add player as well:", addError);
+          // If even addPlayer fails, we might still want to let them log in,
+          // but there will be no player profile in Firestore.
+          // Still navigating them since their auth is created.
+        }
       }
 
       navigate(from, { replace: true });
