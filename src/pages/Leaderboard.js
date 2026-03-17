@@ -101,7 +101,7 @@ function Leaderboard() {
               <th>Rank</th>
               <th>Player</th>
               <th>Score</th>
-              {filter !== 'global' && <th>Best Round</th>}
+              <th>Best Round</th>
               <th>Rounds Played</th>
             </tr>
           </thead>
@@ -111,9 +111,7 @@ function Leaderboard() {
                 <td>{index + 1}</td>
                 <td>{player.name}</td>
                 <td><strong>{player.totalScore}</strong></td>
-                {filter !== 'global' && (
-                  <td>{player.bestRoundScore !== null ? player.bestRoundScore : '-'}</td>
-                )}
+                <td>{player.bestRoundScore !== null ? player.bestRoundScore : '-'}</td>
                 <td>{player.roundsPlayed}</td>
               </tr>
             ))}
