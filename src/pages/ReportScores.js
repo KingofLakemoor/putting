@@ -27,19 +27,22 @@ function ReportScores() {
         </p>
       ) : (
         <div className="rounds-list">
-          {activeRounds.map(round => (
-            <div key={round.round_id} className="round-card">
-              <div className="round-header">
-                <h3>{new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' })} - {round.location}</h3>
-                <span className={`status-badge ${round.status.toLowerCase()}`}>{round.status}</span>
+          {activeRounds.map(round => {
+            const dateStr = new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' });
+            return (
+              <div key={round.round_id} className="round-card">
+                <div className="round-header">
+                  <h3>{round.name ? `${round.name} - ${dateStr} - ${round.location}` : `${dateStr} - ${round.location}`}</h3>
+                  <span className={`status-badge ${round.status.toLowerCase()}`}>{round.status}</span>
+                </div>
+                <div className="round-details">
+                  <Link to={`/rounds/${round.round_id}/scorecard`} className="btn-primary">
+                    Fill Scorecard
+                  </Link>
+                </div>
               </div>
-              <div className="round-details">
-                <Link to={`/rounds/${round.round_id}/scorecard`} className="btn-primary">
-                  Fill Scorecard
-                </Link>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

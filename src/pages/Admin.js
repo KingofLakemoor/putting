@@ -218,6 +218,7 @@ function AdminPlayers() {
 
 function AdminRounds() {
   const [rounds, setRounds] = useState([]);
+  const [name, setName] = useState('');
   const [date, setDate] = useState('');
   const [courseId, setCourseId] = useState('');
   const [courses, setCourses] = useState([]);
@@ -238,6 +239,7 @@ function AdminRounds() {
     const selectedCourse = courses.find(c => c.course_id === courseId);
 
     const newRound = {
+      name,
       date,
       location: selectedCourse ? selectedCourse.name : 'Unknown Location',
       course_id: courseId
@@ -246,6 +248,7 @@ function AdminRounds() {
     await addRound(newRound);
 
     // Reset form
+    setName('');
     setDate('');
     setCourseId('');
     loadData();
@@ -278,6 +281,7 @@ function AdminRounds() {
           <table className="data-table">
             <thead>
               <tr>
+                <th>Name</th>
                 <th>Date</th>
                 <th>Location</th>
                 <th>Season</th>
@@ -288,6 +292,7 @@ function AdminRounds() {
             <tbody>
               {rounds.map(round => (
                 <tr key={round.round_id}>
+                  <td>{round.name || '-'}</td>
                   <td>{new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' })}</td>
                   <td>{round.location}</td>
                   <td>
@@ -323,6 +328,17 @@ function AdminRounds() {
       <div className="form-section">
         <h3>Create New Round</h3>
         <form onSubmit={handleSubmit} className="add-form">
+          <div className="form-group">
+            <label htmlFor="name">Round Name</label>
+            <input
+              type="text"
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Finals, Round 1"
+            />
+          </div>
+
           <div className="form-group">
             <label htmlFor="date">Date *</label>
             <input
@@ -408,7 +424,10 @@ function AdminScores() {
 
   const getRoundDetails = (id) => {
     const round = rounds.find(r => r.round_id === id);
-    return round ? `${new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' })} - ${round.location}` : 'Unknown Round';
+    if (!round) return 'Unknown Round';
+
+    const dateStr = new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' });
+    return round.name ? `${round.name} - ${dateStr} - ${round.location}` : `${dateStr} - ${round.location}`;
   };
 
   return (
