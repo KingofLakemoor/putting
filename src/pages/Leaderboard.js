@@ -5,6 +5,7 @@ function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [rounds, setRounds] = useState([]);
   const [seasons, setSeasons] = useState([]);
+  const [dates, setDates] = useState([]);
   const [filter, setFilter] = useState('global');
 
   useEffect(() => {
@@ -18,11 +19,20 @@ function Leaderboard() {
       const uniqueSeasons = [...new Set(allRounds.map(r => r.season).filter(Boolean))];
       setSeasons(uniqueSeasons);
 
+      const uniqueDates = [...new Set(allRounds.map(r => r.date).filter(Boolean))];
+      // Sort dates descending
+      uniqueDates.sort((a, b) => new Date(b) - new Date(a));
+      setDates(uniqueDates);
+
       if (filter !== 'global') {
         if (filter.startsWith('season_')) {
           const seasonName = filter.substring(7);
           const roundIdsInSeason = allRounds.filter(r => r.season === seasonName).map(r => r.round_id);
           scores = scores.filter(s => roundIdsInSeason.includes(s.round_id));
+        } else if (filter.startsWith('date_')) {
+          const filterDate = filter.substring(5);
+          const roundIdsInDate = allRounds.filter(r => r.date === filterDate).map(r => r.round_id);
+          scores = scores.filter(s => roundIdsInDate.includes(s.round_id));
         } else {
           scores = scores.filter(s => String(s.round_id) === String(filter));
         }
@@ -64,7 +74,15 @@ function Leaderboard() {
   return (
     <div className="page-container">
       <div className="leaderboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>{filter.startsWith('season_') ? `${filter.substring(7)} Rankings` : filter === 'global' ? 'Global Rankings' : 'Event Leaderboard'}</h2>
+        <h2>
+          {filter.startsWith('season_')
+            ? `${filter.substring(7)} Rankings`
+            : filter.startsWith('date_')
+            ? `${new Date(filter.substring(5)).toLocaleDateString('en-US', { timeZone: 'UTC' })} Rankings`
+            : filter === 'global'
+            ? 'Global Rankings'
+            : 'Event Leaderboard'}
+        </h2>
         <div className="form-group" style={{ width: 'auto', marginBottom: 0 }}>
           <select
             value={filter}
@@ -81,12 +99,25 @@ function Leaderboard() {
                 ))}
               </optgroup>
             )}
+            {dates.length > 0 && (
+              <optgroup label="Dates">
+                {dates.map(date => (
+                  <option key={`date_${date}`} value={`date_${date}`}>
+                    {new Date(date).toLocaleDateString('en-US', { timeZone: 'UTC' })}
+                  </option>
+                ))}
+              </optgroup>
+            )}
             <optgroup label="Events / Rounds">
-              {rounds.map(round => (
-                <option key={round.round_id} value={round.round_id}>
-                  {new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' })} - {round.location}
-                </option>
-              ))}
+              {rounds.map(round => {
+                const dateStr = new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' });
+                const displayStr = round.name ? `${round.name} - ${dateStr} - ${round.location}` : `${dateStr} - ${round.location}`;
+                return (
+                  <option key={round.round_id} value={round.round_id}>
+                    {displayStr}
+                  </option>
+                );
+              })}
             </optgroup>
           </select>
         </div>
