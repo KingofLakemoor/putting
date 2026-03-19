@@ -21,6 +21,7 @@ function Scorecard() {
   // View state
   const [isReviewing, setIsReviewing] = useState(false);
   const [currentHoleIndex, setCurrentHoleIndex] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Computed totals
   const [playerTotal, setPlayerTotal] = useState(0);
@@ -138,41 +139,72 @@ function Scorecard() {
     // Basic validation
     if (!playerId) return;
 
-    // We can check if they already have scores here
-    const roundScores = await getScoresForRound(id);
+    setIsSubmitting(true);
+    try {
+      // We can check if they already have scores here
+      const roundScores = await getScoresForRound(id);
 
-    let alreadyScored = roundScores.some(s => s.player_id === playerId);
-    if (alreadyScored) {
-       alert("The selected primary player already has a score recorded for this round.");
-       return;
+      const primaryAlreadyScored = roundScores.some(s => s.player_id === playerId);
+      const opponentAlreadyScored = opponentId && roundScores.some(s => s.player_id === opponentId);
+
+      if (primaryAlreadyScored && opponentAlreadyScored) {
+         alert("Scores have already been recorded for both players for this round.");
+         setIsSubmitting(false);
+         return;
+      }
+
+      if (primaryAlreadyScored && !opponentId) {
+         alert("The selected primary player already has a score recorded for this round.");
+         setIsSubmitting(false);
+         return;
+      }
+
+      let messages = [];
+      const submissionPromises = [];
+
+      if (primaryAlreadyScored) {
+         messages.push("The selected primary player already has a score recorded for this round. Their score will not be updated.");
+      } else {
+         // Submit primary player score
+         submissionPromises.push(addScore({
+           player_id: playerId,
+           round_id: id,
+           score: playerTotal
+         }));
+      }
+
+      if (opponentId) {
+         if (opponentAlreadyScored) {
+            messages.push("The selected opponent already has a score recorded for this round. Their score will not be updated.");
+         } else {
+            // Submit opponent score if selected
+            submissionPromises.push(addScore({
+              player_id: opponentId,
+              round_id: id,
+              score: opponentTotal
+            }));
+         }
+      }
+
+      if (submissionPromises.length > 0) {
+         await Promise.all(submissionPromises);
+      }
+
+      if (messages.length > 0) {
+         alert(messages.join("\n"));
+      }
+
+      // Clear draft
+      localStorage.removeItem(`scorecard_draft_${id}`);
+
+      // Navigate back to round details
+      navigate(`/rounds/${id}`);
+    } catch (error) {
+      console.error("Error submitting scores:", error);
+      alert("Failed to submit scores. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    if (opponentId && roundScores.some(s => s.player_id === opponentId)) {
-       alert("The selected opponent already has a score recorded for this round.");
-       return;
-    }
-
-    // Submit primary player score
-    await addScore({
-      player_id: playerId,
-      round_id: id,
-      score: playerTotal
-    });
-
-    // Submit opponent score if selected
-    if (opponentId) {
-      await addScore({
-        player_id: opponentId,
-        round_id: id,
-        score: opponentTotal
-      });
-    }
-
-    // Clear draft
-    localStorage.removeItem(`scorecard_draft_${id}`);
-
-    // Navigate back to round details
-    navigate(`/rounds/${id}`);
   };
 
   // Compute holes array dynamically based on the course
@@ -368,11 +400,11 @@ function Scorecard() {
           </div>
 
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-            <button onClick={() => setIsReviewing(false)} className="btn-secondary">
+            <button onClick={() => setIsReviewing(false)} className="btn-secondary" disabled={isSubmitting}>
               Edit Scores
             </button>
-            <button onClick={handleSubmit} className="btn-primary" style={{ width: 'auto' }}>
-              Submit Final Scores
+            <button onClick={handleSubmit} className="btn-primary" style={{ width: 'auto' }} disabled={isSubmitting}>
+              {isSubmitting ? 'Submitting...' : 'Submit Final Scores'}
             </button>
           </div>
         </div>
