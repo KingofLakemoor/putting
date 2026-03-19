@@ -18,6 +18,11 @@ service cloud.firestore {
       allow delete: if request.auth.token.admin == true;
     }
 
+    // Allow authenticated users to create and update scores
+    match /putting_league_scores/{scoreId} {
+      allow create, update: if request.auth != null;
+    }
+
     // Default write rule (deny all other writes unless explicitly allowed above or by an Admin)
     match /{document=**} {
       allow write: if request.auth.token.admin == true;
