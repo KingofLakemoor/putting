@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getPlayers, getRounds, addScore, getScoresForRound, getCourses } from '../db';
+import { getPlayers, getRounds, addScore, getScoresForRound, getCourses, getCourse } from '../db';
 
 function Scorecard() {
   const { id } = useParams(); // round_id
@@ -35,11 +35,11 @@ function Scorecard() {
       setRound(currentRound);
 
       // Load course data
-      const allCourses = await getCourses();
       if (currentRound && currentRound.course_id) {
-        setCourse(allCourses.find(c => c.course_id === currentRound.course_id));
+        setCourse(await getCourse(currentRound.course_id));
       } else if (currentRound) {
         // Legacy fallback
+        const allCourses = await getCourses();
         setCourse(allCourses.find(c => c.name === currentRound.location));
       }
 
