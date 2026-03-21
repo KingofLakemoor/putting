@@ -42,11 +42,19 @@ function Leaderboard() {
       const playerStats = players.map(player => {
         const playerScores = scores.filter(s => s.player_id === player.player_id);
 
-        const totalScore = playerScores.reduce((sum, score) => sum + (parseInt(score.score) || 0), 0);
+        let totalScore = 0;
+        let bestRoundScore = null;
 
-        // Calculate best round score
-        const validScores = playerScores.map(s => parseInt(s.score)).filter(s => !isNaN(s));
-        const bestRoundScore = validScores.length > 0 ? Math.min(...validScores) : null;
+        for (let i = 0; i < playerScores.length; i++) {
+          const parsedScore = parseInt(playerScores[i].score);
+          totalScore += (parsedScore || 0);
+
+          if (!isNaN(parsedScore)) {
+            if (bestRoundScore === null || parsedScore < bestRoundScore) {
+              bestRoundScore = parsedScore;
+            }
+          }
+        }
 
         return {
           ...player,
