@@ -10,9 +10,10 @@ function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [resetMessage, setResetMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { login, signup } = useAuth();
+  const { login, signup, resetPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -22,11 +23,45 @@ function SignIn() {
     e.preventDefault();
     try {
       setError('');
+      setResetMessage('');
       setLoading(true);
-      await login(email, password);
+      const userCredential = await login(email, password);
+      const user = userCredential.user;
+
+      // Check if player profile exists
+      try {
+        const players = await getPlayers();
+        const existingPlayer = players.find(p => p.email && p.email.toLowerCase() === email.toLowerCase());
+
+        if (!existingPlayer) {
+          // Fallback profile creation for stranded users
+          const fallbackName = email.split('@')[0];
+          await addPlayer({ name: fallbackName, email, uid: user.uid });
+        }
+      } catch (dbError) {
+        console.warn("Could not verify/create fallback player profile", dbError);
+      }
+
       navigate(from, { replace: true });
     } catch (err) {
       setError('Failed to sign in. ' + err.message);
+    }
+    setLoading(false);
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (!email) {
+      return setError('Please enter an email address to reset password.');
+    }
+    try {
+      setError('');
+      setResetMessage('');
+      setLoading(true);
+      await resetPassword(email);
+      setResetMessage('Password reset email sent. Check your inbox.');
+    } catch (err) {
+      setError('Failed to reset password. ' + err.message);
     }
     setLoading(false);
   };
@@ -70,7 +105,11 @@ function SignIn() {
 
       navigate(from, { replace: true });
     } catch (err) {
-      setError('Failed to create an account. ' + err.message);
+      if (err.code === 'auth/email-already-in-use') {
+        setError("An account with this email already exists. Please switch to Sign In and use 'Forgot Password' if you do not remember your password.");
+      } else {
+        setError('Failed to create an account. ' + err.message);
+      }
     }
     setLoading(false);
   };
@@ -80,6 +119,7 @@ function SignIn() {
       <h2>{isSignUp ? 'Sign Up' : 'Sign In'}</h2>
       <div className="form-section" style={{ maxWidth: '400px', margin: '0 auto' }}>
         {error && <div className="error-alert" style={{ color: '#e0777d', marginBottom: '1rem' }}>{error}</div>}
+        {resetMessage && <div className="success-alert" style={{ color: '#4c86a8', marginBottom: '1rem' }}>{resetMessage}</div>}
         <form className="add-form" onSubmit={isSignUp ? handleSignUp : handleLogin}>
           {isSignUp && (
             <>
@@ -135,6 +175,26 @@ function SignIn() {
               {isSignUp ? 'Sign Up' : 'Log In'}
             </button>
 
+            {!isSignUp && (
+              <button
+                type="button"
+                onClick={handleResetPassword}
+                disabled={loading}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--primary-color)',
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                  padding: 0,
+                  font: 'inherit',
+                  marginTop: '0.5rem'
+                }}
+              >
+                Forgot Password?
+              </button>
+            )}
+
             <div style={{ textAlign: 'center', marginTop: '1rem' }}>
               <span style={{ color: 'var(--text-color)' }}>
                 {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
@@ -144,6 +204,7 @@ function SignIn() {
                 onClick={() => {
                   setIsSignUp(!isSignUp);
                   setError('');
+                  setResetMessage('');
                 }}
                 style={{
                   background: 'none',
