@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getPlayers, getRounds, addScore, getScoresForRound, getCourses, getCourse } from '../db';
+import { getPlayers, getRound, addScore, getScoresForRound, getCourses, getCourse } from '../db';
 
 function Scorecard() {
   const { id } = useParams(); // round_id
@@ -30,8 +30,7 @@ function Scorecard() {
   useEffect(() => {
     const loadData = async () => {
       // Load round data
-      const allRounds = await getRounds();
-      const currentRound = allRounds.find(r => r.round_id === id);
+      const currentRound = await getRound(id);
       setRound(currentRound);
 
       // Load course data

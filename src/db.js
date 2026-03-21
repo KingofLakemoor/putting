@@ -115,6 +115,14 @@ export const getRounds = async () => {
   return querySnapshot.docs.map(doc => doc.data());
 };
 
+export const getRound = async (round_id) => {
+  const roundDoc = await getDocs(query(collection(db, ROUNDS_KEY), where("round_id", "==", round_id)));
+  if (!roundDoc.empty) {
+    return roundDoc.docs[0].data();
+  }
+  return null;
+};
+
 export const addRound = async (round) => {
   const round_id = uuidv4();
   const newRound = {
