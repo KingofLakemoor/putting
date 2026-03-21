@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getRounds, getPlayers, getScoresForRound, addScore } from '../db';
+import { getRound, getPlayers, getScoresForRound, addScore } from '../db';
 
 function RoundDetails() {
   const { id } = useParams();
@@ -15,8 +15,7 @@ function RoundDetails() {
   useEffect(() => {
     const loadData = async () => {
       // Load round
-      const allRounds = await getRounds();
-      const currentRound = allRounds.find(r => r.round_id === id);
+      const currentRound = await getRound(id);
       setRound(currentRound);
 
       // Load players and scores
