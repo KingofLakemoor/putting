@@ -17,6 +17,14 @@ const SCORES_KEY = 'putting_league_scores';
 const COURSES_KEY = 'putting_league_courses';
 
 // --- Courses ---
+export const getCourse = async (course_id) => {
+  const courseDoc = await getDocs(query(collection(db, COURSES_KEY), where("course_id", "==", course_id)));
+  if (!courseDoc.empty) {
+    return courseDoc.docs[0].data();
+  }
+  return null;
+};
+
 export const getCourses = async () => {
   const querySnapshot = await getDocs(collection(db, COURSES_KEY));
   const courses = querySnapshot.docs.map(doc => doc.data());
