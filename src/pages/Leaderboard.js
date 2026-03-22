@@ -38,9 +38,21 @@ function Leaderboard() {
         }
       }
 
+      // Pre-calculate a map of player_id to an array of scores
+      // to reduce complexity of calculating aggregated score below
+      // from O(N*M) to O(N+M)
+      const scoresByPlayerId = {};
+      for (let i = 0; i < scores.length; i++) {
+        const score = scores[i];
+        if (!scoresByPlayerId[score.player_id]) {
+          scoresByPlayerId[score.player_id] = [];
+        }
+        scoresByPlayerId[score.player_id].push(score);
+      }
+
       // Calculate aggregated score
       const playerStats = players.map(player => {
-        const playerScores = scores.filter(s => s.player_id === player.player_id);
+        const playerScores = scoresByPlayerId[player.player_id] || [];
 
         let totalScore = 0;
         let bestRoundScore = null;
