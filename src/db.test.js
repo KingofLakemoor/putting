@@ -1,6 +1,6 @@
-import { addCourse, getScoresForRound } from './db';
+import { addCourse, getScoresForRound, deletePlayer } from './db';
 import { v4 as uuidv4 } from 'uuid';
-import { setDoc, doc, collection, query, where, getDocs } from 'firebase/firestore';
+import { setDoc, doc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 jest.mock('uuid');
@@ -45,6 +45,45 @@ describe('db.js tests', () => {
 
       expect(setDoc).toHaveBeenCalledWith(mockDocRef, expectedNewCourse);
       expect(result).toEqual(expectedNewCourse);
+    });
+  });
+
+  describe('deletePlayer', () => {
+    it('should delete the player and handle the case where they have no associated scores', async () => {
+      const mockPlayerId = 'mock-player-123';
+      const mockPlayerDocRef = { id: mockPlayerId };
+
+      // Mock doc to return player ref
+      doc.mockReturnValue(mockPlayerDocRef);
+
+      // Mock for score querying
+      const mockScoresCollectionRef = { type: 'collection' };
+      collection.mockReturnValue(mockScoresCollectionRef);
+
+      const mockWhereClause = { type: 'where', field: 'player_id', op: '==', value: mockPlayerId };
+      where.mockReturnValue(mockWhereClause);
+
+      const mockQueryRef = { type: 'query' };
+      query.mockReturnValue(mockQueryRef);
+
+      // Return empty docs array to simulate no scores
+      const mockQuerySnapshot = { docs: [] };
+      getDocs.mockResolvedValue(mockQuerySnapshot);
+
+      await deletePlayer(mockPlayerId);
+
+      // Assertions for player deletion
+      expect(doc).toHaveBeenCalledWith(db, 'putting_league_players', mockPlayerId);
+      expect(deleteDoc).toHaveBeenCalledWith(mockPlayerDocRef);
+
+      // Assertions for score queries
+      expect(collection).toHaveBeenCalledWith(db, 'putting_league_scores');
+      expect(where).toHaveBeenCalledWith('player_id', '==', mockPlayerId);
+      expect(query).toHaveBeenCalledWith(mockScoresCollectionRef, mockWhereClause);
+      expect(getDocs).toHaveBeenCalledWith(mockQueryRef);
+
+      // Assert deleteDoc was only called once (for the player itself)
+      expect(deleteDoc).toHaveBeenCalledTimes(1);
     });
   });
 
