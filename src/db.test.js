@@ -1,6 +1,6 @@
-import { addCourse } from './db';
+import { addCourse, getScoresForRound } from './db';
 import { v4 as uuidv4 } from 'uuid';
-import { setDoc, doc } from 'firebase/firestore';
+import { setDoc, doc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 
 jest.mock('uuid');
@@ -45,6 +45,43 @@ describe('db.js tests', () => {
 
       expect(setDoc).toHaveBeenCalledWith(mockDocRef, expectedNewCourse);
       expect(result).toEqual(expectedNewCourse);
+    });
+  });
+
+  describe('getScoresForRound', () => {
+    it('should query the scores collection by round_id and return an array of score data', async () => {
+      const mockRoundId = 'round-456';
+
+      const mockCollectionRef = { type: 'collection' };
+      collection.mockReturnValue(mockCollectionRef);
+
+      const mockWhereClause = { type: 'where', field: 'round_id', op: '==', value: mockRoundId };
+      where.mockReturnValue(mockWhereClause);
+
+      const mockQueryRef = { type: 'query' };
+      query.mockReturnValue(mockQueryRef);
+
+      const mockScoresData = [
+        { score_id: 'score1', player_id: 'player1', score: 25 },
+        { score_id: 'score2', player_id: 'player2', score: 27 }
+      ];
+
+      const mockQuerySnapshot = {
+        docs: [
+          { data: () => mockScoresData[0] },
+          { data: () => mockScoresData[1] }
+        ]
+      };
+
+      getDocs.mockResolvedValue(mockQuerySnapshot);
+
+      const result = await getScoresForRound(mockRoundId);
+
+      expect(collection).toHaveBeenCalledWith(db, 'putting_league_scores');
+      expect(where).toHaveBeenCalledWith('round_id', '==', mockRoundId);
+      expect(query).toHaveBeenCalledWith(mockCollectionRef, mockWhereClause);
+      expect(getDocs).toHaveBeenCalledWith(mockQueryRef);
+      expect(result).toEqual(mockScoresData);
     });
   });
 });
