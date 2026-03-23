@@ -15,6 +15,21 @@ const PLAYERS_KEY = 'putting_league_players';
 const ROUNDS_KEY = 'putting_league_rounds';
 const SCORES_KEY = 'putting_league_scores';
 const COURSES_KEY = 'putting_league_courses';
+const COORDINATORS_KEY = 'putting_league_coordinators';
+
+// --- Coordinators ---
+export const getCoordinators = async () => {
+  const querySnapshot = await getDocs(collection(db, COORDINATORS_KEY));
+  return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+};
+
+export const addCoordinator = async (uid, email, name) => {
+  await setDoc(doc(db, COORDINATORS_KEY, uid), { email, name });
+};
+
+export const removeCoordinator = async (uid) => {
+  await deleteDoc(doc(db, COORDINATORS_KEY, uid));
+};
 
 // --- Courses ---
 export const getCourse = async (course_id) => {

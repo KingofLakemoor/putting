@@ -1,23 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, addRound, updateRoundStatus, updateRoundSeason, deleteRound, getScores, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse } from '../db';
+import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, addRound, updateRoundStatus, updateRoundSeason, deleteRound, getScores, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse, getCoordinators, addCoordinator, removeCoordinator } from '../db';
 import { useAuth } from '../contexts/AuthContext';
-
-const ADMIN_EMAILS = [
-  'admin@example.com', // Placeholder for your admin email
-  'coordinator@example.com' // Placeholder for putting coordinator email
-];
-
-const ADMIN_UIDS = [
-  'rLxGIo4WVzVfF43UIPRqXV4tAjs2'
-];
 
 function Admin() {
   const [activeTab, setActiveTab] = useState('players');
-  const { currentUser } = useAuth();
+  const { currentUser, isAdmin, isCoordinator } = useAuth();
 
-  // Protect the route by checking if the user is in the hardcoded list of admins
-  if (!currentUser || (!ADMIN_EMAILS.includes(currentUser.email) && !ADMIN_UIDS.includes(currentUser.uid))) {
+  // Protect the route
+  if (!currentUser || (!isAdmin && !isCoordinator)) {
     return (
       <div className="page-container">
         <h2>Unauthorized Access</h2>
@@ -32,7 +23,7 @@ function Admin() {
         <h2>Admin Dashboard</h2>
       </div>
 
-      <div className="admin-tabs" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid #ecf0f1', paddingBottom: '1rem' }}>
+      <div className="admin-tabs" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid #ecf0f1', paddingBottom: '1rem', flexWrap: 'wrap' }}>
         <button
           className={activeTab === 'players' ? 'btn-primary' : 'btn-secondary'}
           onClick={() => setActiveTab('players')}
@@ -51,19 +42,134 @@ function Admin() {
         >
           Manage Scores
         </button>
-        <button
-          className={activeTab === 'courses' ? 'btn-primary' : 'btn-secondary'}
-          onClick={() => setActiveTab('courses')}
-        >
-          Manage Courses
-        </button>
+        {isAdmin && (
+          <button
+            className={activeTab === 'courses' ? 'btn-primary' : 'btn-secondary'}
+            onClick={() => setActiveTab('courses')}
+          >
+            Manage Courses
+          </button>
+        )}
+        {isAdmin && (
+          <button
+            className={activeTab === 'coordinators' ? 'btn-primary' : 'btn-secondary'}
+            onClick={() => setActiveTab('coordinators')}
+          >
+            Manage Coordinators
+          </button>
+        )}
       </div>
 
       <div className="admin-content">
         {activeTab === 'players' && <AdminPlayers />}
         {activeTab === 'rounds' && <AdminRounds />}
         {activeTab === 'scores' && <AdminScores />}
-        {activeTab === 'courses' && <AdminCourses />}
+        {activeTab === 'courses' && isAdmin && <AdminCourses />}
+        {activeTab === 'coordinators' && isAdmin && <AdminCoordinators />}
+      </div>
+    </div>
+  );
+}
+
+function AdminCoordinators() {
+  const [coordinators, setCoordinators] = useState([]);
+  const [players, setPlayers] = useState([]);
+  const [selectedPlayerId, setSelectedPlayerId] = useState('');
+
+  const loadData = async () => {
+    setCoordinators(await getCoordinators());
+    setPlayers(await getPlayers());
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const handleAddCoordinator = async (e) => {
+    e.preventDefault();
+    if (!selectedPlayerId) return;
+
+    const player = players.find(p => p.player_id === selectedPlayerId);
+    if (!player || !player.uid) {
+      alert("This player does not have an associated user account (UID) and cannot be made a coordinator.");
+      return;
+    }
+
+    try {
+      await addCoordinator(player.uid, player.email || null, player.name);
+      setSelectedPlayerId('');
+      loadData();
+    } catch (error) {
+      console.error("Error adding coordinator:", error);
+      alert("Failed to add coordinator.");
+    }
+  };
+
+  const handleRemoveCoordinator = async (uid) => {
+    if (window.confirm("Are you sure you want to remove this coordinator?")) {
+      try {
+        await removeCoordinator(uid);
+        loadData();
+      } catch (error) {
+        console.error("Error removing coordinator:", error);
+        alert("Failed to remove coordinator.");
+      }
+    }
+  };
+
+  return (
+    <div className="layout-grid">
+      <div className="list-section">
+        <h3>Coordinators List</h3>
+        {coordinators.length === 0 ? (
+          <p>No coordinators assigned yet.</p>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {coordinators.map(coord => (
+                <tr key={coord.uid}>
+                  <td>{coord.name}</td>
+                  <td>{coord.email}</td>
+                  <td>
+                    <button onClick={() => handleRemoveCoordinator(coord.uid)} className="btn-secondary" style={{ backgroundColor: '#e74c3c', color: 'white', padding: '0.5rem 1rem' }}>Remove</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="form-section">
+        <h3>Assign Coordinator</h3>
+        <form onSubmit={handleAddCoordinator} className="add-form">
+          <div className="form-group">
+            <label htmlFor="coordinatorSelect">Select Player</label>
+            <select
+              id="coordinatorSelect"
+              value={selectedPlayerId}
+              onChange={(e) => setSelectedPlayerId(e.target.value)}
+              required
+            >
+              <option value="">-- Select a player --</option>
+              {players.filter(p => p.uid && !coordinators.some(c => c.uid === p.uid)).map(player => (
+                <option key={player.player_id} value={player.player_id}>
+                  {player.name} ({player.email || 'No email'})
+                </option>
+              ))}
+            </select>
+          </div>
+          <button type="submit" className="btn-primary" style={{ marginBottom: '1rem' }}>
+            Add Coordinator
+          </button>
+        </form>
       </div>
     </div>
   );
