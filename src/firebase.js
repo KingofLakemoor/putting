@@ -13,10 +13,29 @@ const firebaseConfig = {
   measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Gracefully handle missing configuration
+let app;
+try {
+  // If API key is missing (e.g. in test or a development environment without .env),
+  // initialize with a dummy config to prevent synchronous crashes that break the whole app.
+  if (!firebaseConfig.apiKey) {
+    console.warn("Firebase API key not found. Initializing with dummy configuration.");
+    app = initializeApp({
+      apiKey: "dummy-api-key",
+      authDomain: "dummy-auth-domain",
+      projectId: "dummy-project-id",
+      storageBucket: "dummy-storage-bucket",
+      messagingSenderId: "dummy-messaging-sender-id",
+      appId: "dummy-app-id"
+    });
+  } else {
+    app = initializeApp(firebaseConfig);
+  }
+} catch (error) {
+  console.error("Firebase initialization error:", error);
+}
 
 // Initialize Firebase Authentication and get a reference to the service
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const auth = app ? getAuth(app) : null;
+export const db = app ? getFirestore(app) : null;
 export default app;
