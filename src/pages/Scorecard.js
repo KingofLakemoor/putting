@@ -78,7 +78,16 @@ function Scorecard() {
 
   const handleScoreChange = (hole, isPlayer, value) => {
     // Keep it as a string while editing to allow deleting cleanly
-    const val = value;
+    let val = value;
+
+    if (val !== '') {
+      let numVal = parseInt(val, 10);
+      if (!isNaN(numVal)) {
+        if (numVal < 1) numVal = 1;
+        if (numVal > 10) numVal = 10;
+        val = numVal.toString();
+      }
+    }
 
     if (isPlayer) {
       setPlayerScores(prev => ({ ...prev, [hole]: val }));
@@ -275,6 +284,7 @@ function Scorecard() {
                   <input
                     type="number"
                     min="1"
+                    max="10"
                     inputMode="numeric"
                     pattern="[0-9]*"
                     className="score-input-large"
@@ -289,6 +299,7 @@ function Scorecard() {
                     <input
                       type="number"
                       min="1"
+                      max="10"
                       inputMode="numeric"
                       pattern="[0-9]*"
                       className="score-input-large"
@@ -339,6 +350,7 @@ function Scorecard() {
                         <input
                           type="number"
                           min="1"
+                          max="10"
                           inputMode="numeric"
                           pattern="[0-9]*"
                           className="score-input"
@@ -351,6 +363,7 @@ function Scorecard() {
                           <input
                             type="number"
                             min="1"
+                            max="10"
                             inputMode="numeric"
                             pattern="[0-9]*"
                             className="score-input"
