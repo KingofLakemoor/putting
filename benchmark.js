@@ -1,95 +1,41 @@
-const fs = require('fs');
-const path = require('path');
+const { performance } = require('perf_hooks');
 
-// Generate mock data
-const numPlayers = 1000;
-const numScores = 10000;
+const course = {
+  holes: Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 3 }))
+};
 
-const players = Array.from({ length: numPlayers }, (_, i) => ({ player_id: `p${i}` }));
-const scores = Array.from({ length: numScores }, (_, i) => ({
-  player_id: `p${Math.floor(Math.random() * numPlayers)}`,
-  score: `${Math.floor(Math.random() * 100)}`
-}));
+const HOLES = Array.from({ length: 18 }, (_, i) => i + 1);
 
-// Function 1: Original
-function originalMethod(players, scores) {
-  return players.map(player => {
-    const playerScores = scores.filter(s => s.player_id === player.player_id);
+// Original
+const getParForHoleOriginal = (holeNum) => {
+  if (!course || !course.holes) return '-';
+  const holeData = course.holes.find(h => h.hole === holeNum);
+  return holeData ? holeData.par : '-';
+};
 
-    let totalScore = 0;
-    let bestRoundScore = null;
-
-    for (let i = 0; i < playerScores.length; i++) {
-      const parsedScore = parseInt(playerScores[i].score);
-      totalScore += (parsedScore || 0);
-
-      if (!isNaN(parsedScore)) {
-        if (bestRoundScore === null || parsedScore < bestRoundScore) {
-          bestRoundScore = parsedScore;
-        }
-      }
-    }
-
-    return {
-      ...player,
-      totalScore,
-      bestRoundScore,
-      roundsPlayed: playerScores.length
-    };
+// Optimized
+const holeParMap = {};
+if (course && course.holes) {
+  course.holes.forEach(h => {
+    holeParMap[h.hole] = h.par;
   });
 }
+const getParForHoleOptimized = (holeNum) => {
+  return holeParMap[holeNum] !== undefined ? holeParMap[holeNum] : '-';
+};
 
-// Function 2: Optimized
-function optimizedMethod(players, scores) {
-  const scoreMap = {};
-  for (let i = 0; i < scores.length; i++) {
-    const score = scores[i];
-    if (!scoreMap[score.player_id]) {
-      scoreMap[score.player_id] = [];
-    }
-    scoreMap[score.player_id].push(score);
-  }
+const ITERATIONS = 100000;
 
-  return players.map(player => {
-    const playerScores = scoreMap[player.player_id] || [];
-
-    let totalScore = 0;
-    let bestRoundScore = null;
-
-    for (let i = 0; i < playerScores.length; i++) {
-      const parsedScore = parseInt(playerScores[i].score);
-      totalScore += (parsedScore || 0);
-
-      if (!isNaN(parsedScore)) {
-        if (bestRoundScore === null || parsedScore < bestRoundScore) {
-          bestRoundScore = parsedScore;
-        }
-      }
-    }
-
-    return {
-      ...player,
-      totalScore,
-      bestRoundScore,
-      roundsPlayed: playerScores.length
-    };
-  });
+let start = performance.now();
+for (let i = 0; i < ITERATIONS; i++) {
+  HOLES.forEach(hole => getParForHoleOriginal(hole));
 }
+let end = performance.now();
+console.log(`Original: ${end - start} ms`);
 
-// Warmup
-originalMethod(players, scores);
-optimizedMethod(players, scores);
-
-// Benchmark original
-console.time('original');
-for (let i = 0; i < 100; i++) {
-  originalMethod(players, scores);
+start = performance.now();
+for (let i = 0; i < ITERATIONS; i++) {
+  HOLES.forEach(hole => getParForHoleOptimized(hole));
 }
-console.timeEnd('original');
-
-// Benchmark optimized
-console.time('optimized');
-for (let i = 0; i < 100; i++) {
-  optimizedMethod(players, scores);
-}
-console.timeEnd('optimized');
+end = performance.now();
+console.log(`Optimized: ${end - start} ms`);

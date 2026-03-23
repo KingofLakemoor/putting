@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getPlayers, getRound, addScore, getScoresForRound, getCourses, getCourse } from '../db';
 
@@ -105,10 +105,18 @@ function Scorecard() {
     }, 0);
   };
 
+  const holePars = useMemo(() => {
+    const pars = {};
+    if (course && course.holes) {
+      course.holes.forEach(h => {
+        pars[h.hole] = h.par;
+      });
+    }
+    return pars;
+  }, [course]);
+
   const getParForHole = (holeNum) => {
-    if (!course || !course.holes) return '-';
-    const holeData = course.holes.find(h => h.hole === holeNum);
-    return holeData ? holeData.par : '-';
+    return holePars[holeNum] !== undefined ? holePars[holeNum] : '-';
   };
 
   const handleNextHole = () => {
