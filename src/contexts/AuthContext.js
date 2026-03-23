@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -16,6 +17,8 @@ export function useAuth() {
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isCoordinator, setIsCoordinator] = useState(false);
   const [loading, setLoading] = useState(true);
 
   function signup(email, password) {
@@ -35,8 +38,29 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, user => {
+    const unsubscribe = onAuthStateChanged(auth, async user => {
       setCurrentUser(user);
+
+      if (user) {
+        try {
+          // Force a token refresh to get latest custom claims
+          const idTokenResult = await user.getIdTokenResult();
+          setIsAdmin(!!idTokenResult.claims.admin);
+
+          // Check for coordinator role
+          const coordinatorRef = doc(db, 'putting_league_coordinators', user.uid);
+          const coordinatorSnap = await getDoc(coordinatorRef);
+          setIsCoordinator(coordinatorSnap.exists());
+        } catch (error) {
+          console.error("Error fetching user roles:", error);
+          setIsAdmin(false);
+          setIsCoordinator(false);
+        }
+      } else {
+        setIsAdmin(false);
+        setIsCoordinator(false);
+      }
+
       setLoading(false);
     });
 
@@ -45,6 +69,8 @@ export function AuthProvider({ children }) {
 
   const value = {
     currentUser,
+    isAdmin,
+    isCoordinator,
     login,
     signup,
     logout,
