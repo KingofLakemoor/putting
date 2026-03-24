@@ -365,6 +365,7 @@ function AdminRounds() {
   const [date, setDate] = useState('');
   const [courseId, setCourseId] = useState('');
   const [courses, setCourses] = useState([]);
+  const [showArchived, setShowArchived] = useState(false);
 
   const loadData = async () => {
     setRounds(await getRounds());
@@ -414,16 +415,28 @@ function AdminRounds() {
     }
   };
 
+  const filteredRounds = rounds.filter(round =>
+    showArchived ? round.status === 'Archived' : round.status !== 'Archived'
+  );
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2">
-        <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
-          <CalendarDays size={20} className="text-kelly-green" /> Rounds Management
-        </h3>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 flex items-center gap-2">
+            <CalendarDays size={20} className="text-kelly-green" /> {showArchived ? 'Archived Rounds' : 'Rounds Management'}
+          </h3>
+          <button
+            onClick={() => setShowArchived(!showArchived)}
+            className="text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-colors"
+          >
+            {showArchived ? 'View Active & Completed' : 'View Archived Rounds'}
+          </button>
+        </div>
 
-        {rounds.length === 0 ? (
+        {filteredRounds.length === 0 ? (
           <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
-            No rounds added yet.
+            {showArchived ? 'No archived rounds.' : 'No active or completed rounds added yet.'}
           </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-slate-800">
@@ -437,7 +450,7 @@ function AdminRounds() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
-                {rounds.map(round => (
+                {filteredRounds.map(round => (
                   <tr key={round.round_id} className="hover:bg-dark-surface/50 transition-colors">
                     <td className="p-4 font-bold">{round.name || '-'}</td>
                     <td className="p-4">
