@@ -8,6 +8,7 @@ import Admin from './pages/Admin';
 import SignIn from './pages/SignIn';
 import PrivateRoute from './components/PrivateRoute';
 import { useAuth } from './contexts/AuthContext';
+import StandingsPreview from './StandingsPreview';
 import './App.css';
 
 function App() {
@@ -73,6 +74,7 @@ function App() {
             <Route path="/rounds/:id" element={<PrivateRoute><RoundDetails /></PrivateRoute>} />
             <Route path="/rounds/:id/scorecard" element={<PrivateRoute><Scorecard /></PrivateRoute>} />
             <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
+            <Route path="/preview-standings" element={<StandingsPreview />} />
           </Routes>
         </main>
       </div>

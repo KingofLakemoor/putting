@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Target, TrendingUp, PlusCircle, Activity, X } from 'lucide-react';
+import { Trophy, TrendingUp, PlusCircle, Activity, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Dialog } from '@headlessui/react';
 
