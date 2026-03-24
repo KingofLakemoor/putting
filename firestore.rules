@@ -34,7 +34,8 @@ service cloud.firestore {
 
     match /putting_league_rounds/{roundId} {
       allow read: if request.auth != null;
-      allow write: if isAdmin() || isCoordinator();
+      allow create: if request.auth != null && (isAdmin() || isCoordinator() || request.resource.data.player_id == request.auth.uid);
+      allow update, delete: if request.auth != null && (isAdmin() || isCoordinator() || resource.data.player_id == request.auth.uid);
     }
 
     match /putting_league_coordinators/{coordinatorId} {
