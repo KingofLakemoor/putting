@@ -101,7 +101,7 @@ const History = () => {
 
       // Find player's rank
       // Index + 1 because array is 0-indexed
-      const playerRank = sortedScores.findIndex(s => s.player_id === currentActualId) + 1;
+      const playerRank = sortedScores.findIndex(s => s.player_id === currentUser.uid) + 1;
       const totalPlayers = sortedScores.length;
 
       historyList.push({
