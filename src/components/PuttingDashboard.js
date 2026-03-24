@@ -1,12 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, TrendingUp, PlusCircle, Activity, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Dialog } from '@headlessui/react';
+import { useAuth } from '../contexts/AuthContext';
+import { getActiveRoundForUser, createActiveRound } from '../db';
 
 const PuttingDashboard = ({ activeRounds = [], standings = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeRoundId, setActiveRoundId] = useState(null);
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
+
+  useEffect(() => {
+    const checkActiveRound = async () => {
+      if (currentUser) {
+        try {
+          const round = await getActiveRoundForUser(currentUser.uid);
+          if (round) {
+            setActiveRoundId(round.round_id);
+          }
+        } catch (error) {
+          console.error("Error fetching active round:", error);
+        }
+      }
+    };
+    checkActiveRound();
+  }, [currentUser]);
+
+  const handleStartRound = async () => {
+    try {
+      if (activeRoundId) {
+        navigate(`/scorecard/${activeRoundId}`);
+      } else {
+        const userName = currentUser.displayName || currentUser.email;
+        const newRound = await createActiveRound(currentUser.uid, userName);
+        navigate(`/scorecard/${newRound.round_id}`);
+      }
+    } catch (error) {
+      console.error("Error starting round:", error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-dark-bg text-white p-4 md:p-8 font-sans">
@@ -75,11 +109,11 @@ const PuttingDashboard = ({ activeRounds = [], standings = [] }) => {
         <motion.button
           whileHover={{ scale: 0.98 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => setIsOpen(true)}
-          className="order-1 md:order-none bg-kelly-green text-dark-bg rounded-2xl flex flex-col items-center justify-center gap-3 font-sports text-3xl group"
+          onClick={handleStartRound}
+          className="order-1 md:order-none bg-kelly-green text-dark-bg rounded-2xl flex flex-col items-center justify-center gap-3 font-sports text-3xl group p-4 text-center"
         >
           <PlusCircle size={48} className="group-hover:rotate-90 transition-transform duration-300" />
-          START ROUND
+          {activeRoundId ? "RESUME ROUND" : "START ROUND"}
         </motion.button>
 
         {/* Start Round Modal */}

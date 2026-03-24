@@ -3,12 +3,12 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Leaderboard from './pages/Leaderboard';
 import RoundDetails from './pages/RoundDetails';
 import Scorecard from './pages/Scorecard';
-import ReportScores from './pages/ReportScores';
 import Admin from './pages/Admin';
 import SignIn from './pages/SignIn';
 import PrivateRoute from './components/PrivateRoute';
 import { useAuth } from './contexts/AuthContext';
 import LeagueStandings from './components/LeagueStandings';
+import PuttingDashboard from './components/PuttingDashboard';
 import './App.css';
 
 function App() {
@@ -69,10 +69,10 @@ function App() {
         <main className="App-main">
           <Routes>
             <Route path="/signin" element={<SignIn />} />
-            <Route path="/" element={<PrivateRoute><ReportScores /></PrivateRoute>} />
+            <Route path="/" element={<PrivateRoute><PuttingDashboard /></PrivateRoute>} />
             <Route path="/leaderboard" element={<PrivateRoute><Leaderboard /></PrivateRoute>} />
             <Route path="/rounds/:id" element={<PrivateRoute><RoundDetails /></PrivateRoute>} />
-            <Route path="/rounds/:id/scorecard" element={<PrivateRoute><Scorecard /></PrivateRoute>} />
+            <Route path="/scorecard/:roundId" element={<PrivateRoute><Scorecard /></PrivateRoute>} />
             <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
             <Route path="/preview-standings" element={<LeagueStandings />} />
           </Routes>
