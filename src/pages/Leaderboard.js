@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Medal, MapPin, Calendar } from 'lucide-react';
-import { getPlayers, getScores, getRounds } from '../db';
+import { getPlayers, getScores, getRounds, getSettings } from '../db';
 
 function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -15,13 +15,19 @@ function Leaderboard() {
       const players = await getPlayers();
       let scores = await getScores();
       const allRounds = await getRounds();
+      const settings = await getSettings();
 
-      setRounds(allRounds);
+      const archivedSeasons = settings.archived_seasons || [];
+
+      // Filter out rounds that belong to archived seasons
+      const visibleRounds = allRounds.filter(r => !archivedSeasons.includes(r.season));
+
+      setRounds(visibleRounds);
 
       const uniqueSeasons = [...new Set(allRounds.map(r => r.season).filter(Boolean))];
-      setSeasons(uniqueSeasons);
+      setSeasons(uniqueSeasons); // We keep all seasons for the "Seasons" dropdown
 
-      const uniqueDates = [...new Set(allRounds.map(r => r.date).filter(Boolean))];
+      const uniqueDates = [...new Set(visibleRounds.map(r => r.date).filter(Boolean))];
       // Sort dates descending
       uniqueDates.sort((a, b) => new Date(b) - new Date(a));
       setDates(uniqueDates);
@@ -33,11 +39,15 @@ function Leaderboard() {
           scores = scores.filter(s => roundIdsInSeason.includes(s.round_id));
         } else if (filter.startsWith('date_')) {
           const filterDate = filter.substring(5);
-          const roundIdsInDate = allRounds.filter(r => r.date === filterDate).map(r => r.round_id);
+          const roundIdsInDate = visibleRounds.filter(r => r.date === filterDate).map(r => r.round_id);
           scores = scores.filter(s => roundIdsInDate.includes(s.round_id));
         } else {
           scores = scores.filter(s => String(s.round_id) === String(filter));
         }
+      } else {
+         // Global filter - still exclude archived seasons rounds
+         const visibleRoundIds = visibleRounds.map(r => r.round_id);
+         scores = scores.filter(s => visibleRoundIds.includes(s.round_id));
       }
 
       // Pre-calculate a map of player_id to an array of scores

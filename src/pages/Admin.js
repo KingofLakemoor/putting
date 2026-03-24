@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldAlert, Users, CalendarDays, ClipboardList, Map, UserCog, Edit, Trash2, Check, X } from 'lucide-react';
-import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, addRound, updateRoundStatus, updateRoundSeason, deleteRound, getScores, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse, getCoordinators, addCoordinator, removeCoordinator } from '../db';
+import { ShieldAlert, Users, CalendarDays, ClipboardList, Map, UserCog, Edit, Trash2, Check, X, Settings } from 'lucide-react';
+import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, addRound, updateRoundStatus, updateRoundSeason, deleteRound, getScores, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse, getCoordinators, addCoordinator, removeCoordinator, getSettings, updateLiveSeason, addArchivedSeason, removeArchivedSeason } from '../db';
 import { useAuth } from '../contexts/AuthContext';
 
 function Admin() {
@@ -366,10 +366,21 @@ function AdminRounds() {
   const [courseId, setCourseId] = useState('');
   const [courses, setCourses] = useState([]);
   const [showArchived, setShowArchived] = useState(false);
+  const [seasons, setSeasons] = useState([]);
+  const [liveSeason, setLiveSeason] = useState('');
+  const [archivedSeasons, setArchivedSeasons] = useState([]);
 
   const loadData = async () => {
-    setRounds(await getRounds());
+    const allRounds = await getRounds();
+    setRounds(allRounds);
     setCourses(await getCourses());
+
+    const settings = await getSettings();
+    setLiveSeason(settings.live_season || '');
+    setArchivedSeasons(settings.archived_seasons || []);
+
+    const uniqueSeasons = [...new Set(allRounds.map(r => r.season).filter(Boolean))];
+    setSeasons(uniqueSeasons);
   };
 
   useEffect(() => {
@@ -415,14 +426,79 @@ function AdminRounds() {
     }
   };
 
+  const handleLiveSeasonChange = async (e) => {
+    const season = e.target.value;
+    setLiveSeason(season);
+    await updateLiveSeason(season);
+  };
+
+  const handleToggleArchiveSeason = async (season) => {
+    if (archivedSeasons.includes(season)) {
+      await removeArchivedSeason(season);
+    } else {
+      await addArchivedSeason(season);
+    }
+    loadData();
+  };
+
   const filteredRounds = rounds.filter(round =>
     showArchived ? round.status === 'Archived' : round.status !== 'Archived'
   );
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-2">
-        <div className="flex justify-between items-center mb-6">
+      <div className="lg:col-span-2 space-y-8">
+        <div>
+          <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
+            <Settings size={20} className="text-kelly-green" /> Season Settings
+          </h3>
+          <div className="bg-dark-surface border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row gap-8">
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="liveSeason">Live Season</label>
+              <select
+                id="liveSeason"
+                value={liveSeason}
+                onChange={handleLiveSeasonChange}
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
+              >
+                <option value="">-- Select Live Season --</option>
+                {seasons.map(season => (
+                  <option key={`live_${season}`} value={season}>{season}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-slate-500 mt-2">Sets the default season shown on the dashboard when no active rounds exist.</p>
+            </div>
+
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Archive Seasons</label>
+              {seasons.length === 0 ? (
+                <p className="text-slate-500 text-sm">No seasons available.</p>
+              ) : (
+                <div className="flex flex-col gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                  {seasons.map(season => {
+                    const isArchived = archivedSeasons.includes(season);
+                    return (
+                      <div key={`archive_${season}`} className="flex items-center justify-between bg-dark-bg border border-slate-800 rounded p-2">
+                        <span className={`text-sm ${isArchived ? 'text-slate-500 line-through' : 'text-white'}`}>{season}</span>
+                        <button
+                          onClick={() => handleToggleArchiveSeason(season)}
+                          className={`text-[10px] uppercase font-bold px-2 py-1 rounded transition-colors ${
+                            isArchived ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white'
+                          }`}
+                        >
+                          {isArchived ? 'Unarchive' : 'Archive'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div className="flex justify-between items-center mb-6">
           <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 flex items-center gap-2">
             <CalendarDays size={20} className="text-kelly-green" /> {showArchived ? 'Archived Rounds' : 'Rounds Management'}
           </h3>
@@ -495,6 +571,7 @@ function AdminRounds() {
             </table>
           </div>
         )}
+        </div>
       </div>
 
       <div>

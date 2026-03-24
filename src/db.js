@@ -17,6 +17,39 @@ const ROUNDS_KEY = 'putting_league_rounds';
 const SCORES_KEY = 'putting_league_scores';
 const COURSES_KEY = 'putting_league_courses';
 const COORDINATORS_KEY = 'putting_league_coordinators';
+const SETTINGS_KEY = 'putting_league_settings';
+
+// --- Settings ---
+export const getSettings = async () => {
+  const settingsDoc = await getDocs(query(collection(db, SETTINGS_KEY), where("__name__", "==", "global")));
+  if (!settingsDoc.empty) {
+    return settingsDoc.docs[0].data();
+  }
+  return { live_season: null, archived_seasons: [] };
+};
+
+export const updateLiveSeason = async (season) => {
+  const settingsRef = doc(db, SETTINGS_KEY, 'global');
+  await setDoc(settingsRef, { live_season: season }, { merge: true });
+};
+
+export const addArchivedSeason = async (season) => {
+  const settingsRef = doc(db, SETTINGS_KEY, 'global');
+  const currentSettings = await getSettings();
+  const archived = currentSettings.archived_seasons || [];
+  if (!archived.includes(season)) {
+    archived.push(season);
+    await setDoc(settingsRef, { archived_seasons: archived }, { merge: true });
+  }
+};
+
+export const removeArchivedSeason = async (season) => {
+  const settingsRef = doc(db, SETTINGS_KEY, 'global');
+  const currentSettings = await getSettings();
+  const archived = currentSettings.archived_seasons || [];
+  const updatedArchived = archived.filter(s => s !== season);
+  await setDoc(settingsRef, { archived_seasons: updatedArchived }, { merge: true });
+};
 
 // --- Coordinators ---
 export const getCoordinators = async () => {
