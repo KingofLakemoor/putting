@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Minus, Plus, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const ScoreEntry = ({ holeNumber = 1, par = 3, onSave, onCancel, onPrev, onNext, totalHoles = 9, scoreValue, opponentScoreValue, players = [], opponentId, onSelectOpponent, roundName }) => {
+const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCancel, onPrev, onNext, totalHoles = 9, scoreValue, opponentScoreValue, players = [], opponentId, onSelectOpponent, roundName }) => {
   const [score, setScore] = useState(scoreValue !== undefined ? scoreValue : null);
   const [opponentScore, setOpponentScore] = useState(opponentScoreValue !== undefined ? opponentScoreValue : null);
   const [prevHole, setPrevHole] = useState(holeNumber);
@@ -12,6 +12,16 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onSave, onCancel, onPrev, onNext,
     setScore(scoreValue !== undefined ? scoreValue : null);
     setOpponentScore(opponentScoreValue !== undefined ? opponentScoreValue : null);
   }
+
+  const handleScoreUpdate = (newVal) => {
+    setScore(newVal);
+    if (onScoreChange) onScoreChange(newVal, opponentScore);
+  };
+
+  const handleOpponentScoreUpdate = (newVal) => {
+    setOpponentScore(newVal);
+    if (onScoreChange) onScoreChange(score, newVal);
+  };
 
   // Quick Win: Visual feedback based on score vs par
   const getScoreColor = (s) => {
@@ -76,27 +86,38 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onSave, onCancel, onPrev, onNext,
           <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">You</div>
           <AnimatePresence mode="wait">
             <motion.div
-              key={`${holeNumber}-user-${score}`}
+              key={`${holeNumber}-user`}
               initial={{ x: 100, opacity: 0, scale: 0.8 }}
               animate={{ x: 0, opacity: 1, scale: 1 }}
               exit={{ x: -100, opacity: 0, scale: 0.8 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
               className={`w-32 h-32 md:w-40 md:h-40 rounded-3xl border-2 flex items-center justify-center transition-colors duration-300 ${getScoreColor(score)}`}
             >
-              <span className="text-6xl md:text-7xl font-data font-black">{score === null ? '-' : score}</span>
+              <AnimatePresence mode="popLayout">
+                <motion.span
+                  key={score}
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 1.5, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  className="text-6xl md:text-7xl font-data font-black"
+                >
+                  {score === null ? '-' : score}
+                </motion.span>
+              </AnimatePresence>
             </motion.div>
           </AnimatePresence>
 
           <div className="flex items-center gap-4 md:gap-6">
             <button
-              onClick={() => setScore(score === null ? Math.max(1, par - 1) : Math.max(1, score - 1))}
+              onClick={() => handleScoreUpdate(score === null ? 1 : Math.max(1, score - 1))}
               className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-dark-surface border border-slate-700 flex items-center justify-center active:bg-slate-800 active:scale-95 transition-all"
             >
               <Minus size={24} />
             </button>
 
             <button
-              onClick={() => setScore(score === null ? par + 1 : score + 1)}
+              onClick={() => handleScoreUpdate(score === null ? 1 : score + 1)}
               className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-kelly-green text-dark-bg flex items-center justify-center active:scale-95 transition-all"
             >
               <Plus size={24} />
@@ -112,27 +133,38 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onSave, onCancel, onPrev, onNext,
             </div>
             <AnimatePresence mode="wait">
               <motion.div
-                key={`${holeNumber}-opp-${opponentScore}`}
+                key={`${holeNumber}-opp`}
                 initial={{ x: 100, opacity: 0, scale: 0.8 }}
                 animate={{ x: 0, opacity: 1, scale: 1 }}
                 exit={{ x: -100, opacity: 0, scale: 0.8 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 className={`w-32 h-32 md:w-40 md:h-40 rounded-3xl border-2 flex items-center justify-center transition-colors duration-300 ${getScoreColor(opponentScore)}`}
               >
-                <span className="text-6xl md:text-7xl font-data font-black">{opponentScore === null ? '-' : opponentScore}</span>
+                <AnimatePresence mode="popLayout">
+                  <motion.span
+                    key={opponentScore}
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 1.5, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    className="text-6xl md:text-7xl font-data font-black"
+                  >
+                    {opponentScore === null ? '-' : opponentScore}
+                  </motion.span>
+                </AnimatePresence>
               </motion.div>
             </AnimatePresence>
 
             <div className="flex items-center gap-4 md:gap-6">
               <button
-                onClick={() => setOpponentScore(opponentScore === null ? Math.max(1, par - 1) : Math.max(1, opponentScore - 1))}
+                onClick={() => handleOpponentScoreUpdate(opponentScore === null ? 1 : Math.max(1, opponentScore - 1))}
                 className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-dark-surface border border-slate-700 flex items-center justify-center active:bg-slate-800 active:scale-95 transition-all"
               >
                 <Minus size={24} />
               </button>
 
               <button
-                onClick={() => setOpponentScore(opponentScore === null ? par + 1 : opponentScore + 1)}
+                onClick={() => handleOpponentScoreUpdate(opponentScore === null ? 1 : opponentScore + 1)}
                 className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-kelly-green text-dark-bg flex items-center justify-center active:scale-95 transition-all"
               >
                 <Plus size={24} />
@@ -160,13 +192,12 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onSave, onCancel, onPrev, onNext,
           <button onClick={onCancel} className="flex items-center justify-center gap-2 py-4 rounded-xl font-bold bg-slate-800 text-slate-400">
             <X size={18} /> CANCEL
           </button>
-          {/* Disable SAVE HOLE if scores are not yet filled */}
           <button
-            onClick={() => onSave(score, opponentId ? opponentScore : undefined)}
+            onClick={() => onAdvance()}
             disabled={score === null || (opponentId && opponentScore === null)}
             className="flex items-center justify-center gap-2 py-4 rounded-xl font-bold bg-kelly-green text-dark-bg shadow-[0_0_20px_rgba(76,187,23,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Check size={18} /> SAVE HOLE
+            <Check size={18} /> {holeNumber >= totalHoles ? "FINISH ROUND" : "NEXT HOLE"}
           </button>
         </div>
       </div>
