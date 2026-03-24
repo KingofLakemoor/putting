@@ -40,6 +40,29 @@ export const getCourse = async (course_id) => {
   return null;
 };
 
+export const updateRoundScore = async (round_id, user_id, hole_index, score) => {
+  // Update the rounds document for the current user_id and hole_index
+  // Using user_id as a key in a map
+  const roundRef = doc(db, ROUNDS_KEY, round_id);
+  const dataToUpdate = {};
+  dataToUpdate[`scores.${user_id}.${hole_index}`] = score;
+
+  try {
+    await updateDoc(roundRef, dataToUpdate);
+  } catch (e) {
+    // Document might not have the fields set yet, or we need to ensure the structure exists
+    // Actually, dot notation allows updating nested fields if the parent exists
+    console.error("Failed to update per-hole score directly on round, setting with merge", e);
+    await setDoc(roundRef, {
+      scores: {
+        [user_id]: {
+          [hole_index]: score
+        }
+      }
+    }, { merge: true });
+  }
+};
+
 export const getCourses = async () => {
   const querySnapshot = await getDocs(collection(db, COURSES_KEY));
   const courses = querySnapshot.docs.map(doc => doc.data());
