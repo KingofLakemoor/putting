@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getPlayers, getRound, addScore, getScoresForRound, getCourses, getCourse } from '../db';
+import { getPlayers, getRound, addScore, getScoresForRound, getCourses, getCourse, updateRoundScore } from '../db';
+import ScoreEntry from '../components/ScoreEntry';
 
 function Scorecard() {
   const { id } = useParams(); // round_id
@@ -22,6 +23,8 @@ function Scorecard() {
   const [isReviewing, setIsReviewing] = useState(false);
   const [currentHoleIndex, setCurrentHoleIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isScoreEntryOpen, setIsScoreEntryOpen] = useState(false);
+  const [scoreEntryPlayerId, setScoreEntryPlayerId] = useState(null); // 'player' or 'opponent'
 
   // Computed totals
   const [playerTotal, setPlayerTotal] = useState(0);
@@ -230,6 +233,44 @@ function Scorecard() {
 
   if (!round) return <div className="page-container">Loading...</div>;
 
+  if (isScoreEntryOpen && HOLES.length > 0) {
+    const isPlayer = scoreEntryPlayerId === 'player';
+    const currentScores = isPlayer ? playerScores : opponentScores;
+    const holeNumber = HOLES[currentHoleIndex];
+    const par = getParForHole(holeNumber);
+    const scoreValue = currentScores[holeNumber] ? parseInt(currentScores[holeNumber], 10) : par;
+
+    return (
+      <div className="fixed inset-0 z-50">
+        <ScoreEntry
+          holeNumber={holeNumber}
+          par={par !== '-' ? par : 3}
+          totalHoles={HOLES.length}
+          scoreValue={scoreValue}
+          onPrev={() => handlePrevHole()}
+          onNext={() => handleNextHole()}
+          onCancel={() => setIsScoreEntryOpen(false)}
+          onSave={async (score) => {
+             // Local state update
+             handleScoreChange(holeNumber, isPlayer, score.toString());
+
+             // Update the rounds document in Firestore per user request
+             const user_id = isPlayer ? playerId : opponentId;
+             if (user_id) {
+               await updateRoundScore(id, user_id, holeNumber, score);
+             }
+
+             if (currentHoleIndex < HOLES.length - 1) {
+               handleNextHole();
+             } else {
+               setIsScoreEntryOpen(false);
+             }
+          }}
+        />
+      </div>
+    );
+  }
+
   // Find player names for review screen
   const playerObj = players.find(p => p.player_id === playerId);
   const opponentObj = players.find(p => p.player_id === opponentId);
@@ -317,7 +358,32 @@ function Scorecard() {
                   </div>
                 )}
 
-                <div className="mobile-hole-nav">
+                <div className="mobile-hole-nav" style={{flexDirection: 'column', gap: '0.5rem', marginTop: '1rem'}}>
+                  <button
+                    onClick={() => {
+                      setScoreEntryPlayerId('player');
+                      setIsScoreEntryOpen(true);
+                    }}
+                    className="btn-primary"
+                    style={{width: '100%'}}
+                  >
+                    Enter Score ({playerObj ? playerObj.name : 'Player'})
+                  </button>
+                  {opponentId && (
+                    <button
+                      onClick={() => {
+                        setScoreEntryPlayerId('opponent');
+                        setIsScoreEntryOpen(true);
+                      }}
+                      className="btn-primary"
+                      style={{width: '100%'}}
+                    >
+                      Enter Score ({opponentObj ? opponentObj.name : 'Opponent'})
+                    </button>
+                  )}
+                </div>
+
+                <div className="mobile-hole-nav" style={{marginTop: '1rem'}}>
                   <button
                     onClick={handlePrevHole}
                     className="btn-secondary"
