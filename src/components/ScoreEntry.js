@@ -96,7 +96,7 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onSave, onCancel, onPrev, onNext,
             </button>
 
             <button
-              onClick={() => setScore(score === null ? par + 1 : score + 1)}
+              onClick={() => setScore(score === null ? 1 : score + 1)}
               className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-kelly-green text-dark-bg flex items-center justify-center active:scale-95 transition-all"
             >
               <Plus size={24} />
@@ -132,7 +132,7 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onSave, onCancel, onPrev, onNext,
               </button>
 
               <button
-                onClick={() => setOpponentScore(opponentScore === null ? par + 1 : opponentScore + 1)}
+                onClick={() => setOpponentScore(opponentScore === null ? 1 : opponentScore + 1)}
                 className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-kelly-green text-dark-bg flex items-center justify-center active:scale-95 transition-all"
               >
                 <Plus size={24} />
