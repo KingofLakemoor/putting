@@ -4,7 +4,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import ScoreEntry from '../components/ScoreEntry';
 import RoundSummary from '../components/RoundSummary';
-import { getScoresForPlayer, updateRoundStatus, addScore, deleteRound, getPlayers, getScoresForRound } from '../db';
+import { getScoresForPlayer, updateRoundStatus, addScore, deleteRound, getPlayers, getScoresForRound, getCourse, getRound } from '../db';
 import { useAuth } from '../contexts/AuthContext';
 
 const ScorecardPage = () => {
@@ -14,6 +14,7 @@ const ScorecardPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRoundComplete, setIsRoundComplete] = useState(false);
   const [roundData, setRoundData] = useState(null);
+  const [courseData, setCourseData] = useState(null);
   const [isPB, setIsPB] = useState(false);
   const [players, setPlayers] = useState([]);
   const { currentUser } = useAuth();
@@ -29,6 +30,21 @@ const ScorecardPage = () => {
           setRoundData(data);
           if (data.current_hole) {
             setCurrentHole(data.current_hole);
+          }
+
+          let courseIdToFetch = data.course_id;
+          if (!courseIdToFetch && data.event_round_id) {
+            const eventRound = await getRound(data.event_round_id);
+            if (eventRound) {
+              courseIdToFetch = eventRound.course_id;
+            }
+          }
+
+          if (courseIdToFetch) {
+            const course = await getCourse(courseIdToFetch);
+            if (course) {
+              setCourseData(course);
+            }
           }
         }
 
@@ -126,7 +142,9 @@ const ScorecardPage = () => {
         opponent_scores: roundData.opponent_id && opponentHoleScore !== undefined ? { ...(prev.opponent_scores || {}), [currentHole]: opponentHoleScore } : prev.opponent_scores
       }));
 
-      if (currentHole < 9) { // Assuming a 9-hole course based on the snippet
+      const totalHoles = courseData?.holes?.length || 9;
+
+      if (currentHole < totalHoles) {
         setCurrentHole(prev => prev + 1);
       } else {
         // Handle round completion
@@ -171,15 +189,21 @@ const ScorecardPage = () => {
   }
 
   const roundName = roundData?.event_round_name || roundData?.name || "Casual Round";
+  const totalHoles = courseData?.holes?.length || 9;
+
+  // Find par for the current hole
+  const currentHoleData = courseData?.holes?.find(h => h.hole === currentHole);
+  const currentPar = currentHoleData ? currentHoleData.par : 3;
 
   return (
     <ScoreEntry
       holeNumber={currentHole}
-      totalHoles={9}
+      totalHoles={totalHoles}
+      par={currentPar}
       onSave={handleSaveHole}
       onCancel={() => navigate('/')}
       onNext={() => {
-        if (currentHole < 9) setCurrentHole(prev => prev + 1);
+        if (currentHole < totalHoles) setCurrentHole(prev => prev + 1);
       }}
       onPrev={() => {
         if (currentHole > 1) setCurrentHole(prev => prev - 1);
