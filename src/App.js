@@ -5,6 +5,7 @@ import RoundDetails from './pages/RoundDetails';
 import Scorecard from './pages/Scorecard';
 import Admin from './pages/Admin';
 import SignIn from './pages/SignIn';
+import History from './pages/History';
 import PrivateRoute from './components/PrivateRoute';
 import { useAuth } from './contexts/AuthContext';
 import LeagueStandings from './components/LeagueStandings';
@@ -42,6 +43,9 @@ function App() {
                 <Link to="/leaderboard" className="hover:text-kelly-green transition-colors">Leaderboard</Link>
               </li>
               <li>
+                <Link to="/history" className="hover:text-kelly-green transition-colors">History</Link>
+              </li>
+              <li>
                 <Link to="/admin" className="hover:text-kelly-green transition-colors">Admin</Link>
               </li>
               <li>
@@ -58,6 +62,7 @@ function App() {
             <Route path="/signin" element={<SignIn />} />
             <Route path="/" element={<PrivateRoute><PuttingDashboard /></PrivateRoute>} />
             <Route path="/leaderboard" element={<PrivateRoute><Leaderboard /></PrivateRoute>} />
+            <Route path="/history" element={<PrivateRoute><History /></PrivateRoute>} />
             <Route path="/rounds/:id" element={<PrivateRoute><RoundDetails /></PrivateRoute>} />
             <Route path="/scorecard/:roundId" element={<PrivateRoute><Scorecard /></PrivateRoute>} />
             <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />

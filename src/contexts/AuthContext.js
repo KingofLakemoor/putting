@@ -9,7 +9,7 @@ import {
   sendPasswordResetEmail
 } from "firebase/auth";
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 export function useAuth() {
   return useContext(AuthContext);
