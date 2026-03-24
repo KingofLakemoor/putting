@@ -4,10 +4,13 @@ import { Trophy, TrendingUp, TrendingDown, Minus, PlusCircle, Activity, X } from
 import { Link, useNavigate } from 'react-router-dom';
 import { Dialog } from '@headlessui/react';
 import { useAuth } from '../contexts/AuthContext';
-import { getActiveRoundForUser, createActiveRound, getRounds, getScoresForPlayer, getCourses } from '../db';
+import { getActiveRoundForUser, createActiveRound, getRounds, getScoresForPlayer, getCourses, getScores, getPlayers, getSettings } from '../db';
 
-const PuttingDashboard = ({ standings = [] }) => {
+const PuttingDashboard = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [dashboardStandings, setDashboardStandings] = useState([]);
+  const [standingsTitle, setStandingsTitle] = useState('Current Standings');
+  const [leaderboardLink, setLeaderboardLink] = useState('/leaderboard');
   const [activeRoundId, setActiveRoundId] = useState(null);
   const [activeEventRounds, setActiveEventRounds] = useState([]);
   const [myAvg, setMyAvg] = useState('--');
@@ -111,6 +114,66 @@ const PuttingDashboard = ({ standings = [] }) => {
         const rounds = await getRounds();
         const activeEvents = rounds.filter(r => r.status === 'Active');
         setActiveEventRounds(activeEvents);
+
+        // Fetch standings data
+        const scores = await getScores();
+        const players = await getPlayers();
+        const settings = await getSettings();
+
+        // Check for today's date
+        // Note: round dates are typically stored as 'YYYY-MM-DD' local time
+        // Constructing today's date in 'YYYY-MM-DD' format (accounting for local timezone)
+        const today = new Date();
+        const tzOffset = today.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(Date.now() - tzOffset)).toISOString().slice(0, 10);
+
+        let roundsForStandings = rounds.filter(r => r.date === localISOTime);
+
+        if (roundsForStandings.length > 0) {
+           setStandingsTitle(`Today's Standings`);
+           setLeaderboardLink('/leaderboard');
+        } else if (settings.live_season) {
+           roundsForStandings = rounds.filter(r => r.season === settings.live_season);
+           setStandingsTitle(`${settings.live_season} Standings`);
+           setLeaderboardLink('/leaderboard');
+        } else {
+           roundsForStandings = rounds; // Fallback to all rounds
+           setStandingsTitle(`Global Standings`);
+           setLeaderboardLink('/leaderboard');
+        }
+
+        const validRoundIds = roundsForStandings.map(r => r.round_id);
+        const filteredScores = scores.filter(s => validRoundIds.includes(s.round_id));
+
+        const scoresByPlayerId = {};
+        for (const score of filteredScores) {
+          if (!scoresByPlayerId[score.player_id]) {
+            scoresByPlayerId[score.player_id] = [];
+          }
+          scoresByPlayerId[score.player_id].push(score);
+        }
+
+        const playerStats = players.map(player => {
+          const playerScores = scoresByPlayerId[player.player_id] || [];
+          let totalScore = 0;
+          for (const s of playerScores) {
+            const parsed = parseInt(s.score, 10);
+            if (!isNaN(parsed)) {
+              totalScore += parsed;
+            }
+          }
+          return {
+            ...player,
+            totalScore,
+            roundsPlayed: playerScores.length
+          };
+        });
+
+        const activePlayers = playerStats.filter(p => p.roundsPlayed > 0);
+        activePlayers.sort((a, b) => a.totalScore - b.totalScore);
+
+        setDashboardStandings(activePlayers);
+
       } catch (error) {
         console.error("Error fetching event rounds:", error);
       }
@@ -162,19 +225,18 @@ const PuttingDashboard = ({ standings = [] }) => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="order-2 md:order-none md:col-span-2 md:row-span-2 bg-dark-surface border border-slate-700/50 rounded-2xl p-6 relative overflow-hidden group"
+          className="order-2 md:order-none md:col-span-2 md:row-span-2 bg-dark-surface border border-slate-700/50 rounded-2xl p-6 relative overflow-hidden group flex flex-col"
         >
           <div className="flex justify-between items-center mb-6">
             <h2 className="flex items-center gap-2 font-sports text-2xl">
               <Trophy className="text-kelly-green" size={24} />
-              Current Standings
+              {standingsTitle}
             </h2>
-            <button className="text-xs text-slate-400 hover:text-white transition-colors">VIEW ALL</button>
+            <Link to={leaderboardLink} className="text-xs font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-wider">VIEW ALL</Link>
           </div>
 
-          {/* Leaderboard Row Example */}
-          <div className="space-y-3">
-            {standings.slice(0, 3).map((player, index) => {
+          <div className="space-y-3 flex-1">
+            {dashboardStandings.slice(0, 3).map((player, index) => {
               const rank = index + 1;
               return (
                 <div key={player.player_id} className="flex items-center justify-between p-4 bg-dark-bg/50 rounded-xl border-l-4 border-kelly-green group-hover:translate-x-1 transition-transform">
@@ -198,7 +260,7 @@ const PuttingDashboard = ({ standings = [] }) => {
                 </div>
               );
             })}
-            {standings.length === 0 && (
+            {dashboardStandings.length === 0 && (
               <p className="text-slate-400 text-sm italic">No standings available yet.</p>
             )}
           </div>
