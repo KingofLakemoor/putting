@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -18,6 +18,7 @@ const ScorecardPage = () => {
   const [isPB, setIsPB] = useState(false);
   const [players, setPlayers] = useState([]);
   const { currentUser } = useAuth();
+  const saveTimeoutRef = useRef(null);
 
   useEffect(() => {
     const fetchRoundAndPlayers = async () => {
@@ -122,36 +123,54 @@ const ScorecardPage = () => {
     }
   };
 
-  const handleSaveHole = async (holeScore, opponentHoleScore) => {
-    try {
-      const roundRef = doc(db, 'putting_league_rounds', roundId);
-      const updateData = {
-        [`scores.${currentHole}`]: holeScore,
-        current_hole: currentHole + 1
-      };
-
-      if (roundData.opponent_id && opponentHoleScore !== undefined) {
-        updateData[`opponent_scores.${currentHole}`] = opponentHoleScore;
-      }
-
-      await updateDoc(roundRef, updateData);
-
-      setRoundData(prev => ({
+  const handleScoreChange = (holeScore, opponentHoleScore) => {
+    setRoundData(prev => {
+      const hasOpponent = prev.opponent_id;
+      return {
         ...prev,
         scores: { ...prev.scores, [currentHole]: holeScore },
-        opponent_scores: roundData.opponent_id && opponentHoleScore !== undefined ? { ...(prev.opponent_scores || {}), [currentHole]: opponentHoleScore } : prev.opponent_scores
-      }));
+        opponent_scores: hasOpponent && opponentHoleScore !== undefined ? { ...(prev.opponent_scores || {}), [currentHole]: opponentHoleScore } : prev.opponent_scores
+      };
+    });
 
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const roundRef = doc(db, 'putting_league_rounds', roundId);
+        const updateData = {
+          [`scores.${currentHole}`]: holeScore,
+        };
+
+        if (roundData?.opponent_id && opponentHoleScore !== undefined) {
+          updateData[`opponent_scores.${currentHole}`] = opponentHoleScore;
+        }
+
+        await updateDoc(roundRef, updateData);
+      } catch (error) {
+        console.error("Error saving score in background:", error);
+      }
+    }, 500);
+  };
+
+  const handleAdvanceHole = async () => {
+    try {
       const totalHoles = courseData?.holes?.length || 9;
+      const roundRef = doc(db, 'putting_league_rounds', roundId);
 
+      // Update the current hole marker in DB if we're advancing
       if (currentHole < totalHoles) {
+        await updateDoc(roundRef, { current_hole: currentHole + 1 });
         setCurrentHole(prev => prev + 1);
       } else {
-        // Handle round completion
+        // Final hole completed
+        await updateDoc(roundRef, { current_hole: currentHole });
         setIsRoundComplete(true);
-        if (currentUser) {
+        if (currentUser && roundData) {
           const historicalScores = await getScoresForPlayer(currentUser.uid);
-          const currentTotal = Object.values({ ...roundData.scores, [currentHole]: holeScore }).reduce((a, b) => a + b, 0);
+          const currentTotal = Object.values(roundData.scores || {}).reduce((a, b) => a + b, 0);
 
           if (historicalScores && historicalScores.length > 0) {
             const minScore = Math.min(...historicalScores.map(s => s.score));
@@ -159,13 +178,12 @@ const ScorecardPage = () => {
               setIsPB(true);
             }
           } else {
-            // First time playing, so technically it is their best score
             setIsPB(true);
           }
         }
       }
     } catch (error) {
-      console.error("Error saving score:", error);
+       console.error("Error advancing hole:", error);
     }
   };
 
@@ -200,13 +218,23 @@ const ScorecardPage = () => {
       holeNumber={currentHole}
       totalHoles={totalHoles}
       par={currentPar}
-      onSave={handleSaveHole}
+      onScoreChange={handleScoreChange}
+      onAdvance={handleAdvanceHole}
       onCancel={() => navigate('/')}
       onNext={() => {
-        if (currentHole < totalHoles) setCurrentHole(prev => prev + 1);
+        if (currentHole < totalHoles) {
+          // ensure doc updates before moving
+          const roundRef = doc(db, 'putting_league_rounds', roundId);
+          updateDoc(roundRef, { current_hole: currentHole + 1 }).catch(e => console.error(e));
+          setCurrentHole(prev => prev + 1);
+        }
       }}
       onPrev={() => {
-        if (currentHole > 1) setCurrentHole(prev => prev - 1);
+        if (currentHole > 1) {
+          const roundRef = doc(db, 'putting_league_rounds', roundId);
+          updateDoc(roundRef, { current_hole: currentHole - 1 }).catch(e => console.error(e));
+          setCurrentHole(prev => prev - 1);
+        }
       }}
       scoreValue={roundData?.scores?.[currentHole]}
       opponentScoreValue={roundData?.opponent_scores?.[currentHole]}
