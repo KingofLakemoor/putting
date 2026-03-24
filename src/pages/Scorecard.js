@@ -4,7 +4,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import ScoreEntry from '../components/ScoreEntry';
 import RoundSummary from '../components/RoundSummary';
-import { getScoresForPlayer, updateRoundStatus, addScore, deleteRound } from '../db';
+import { getScoresForPlayer, updateRoundStatus, addScore, deleteRound, getPlayers, getScoresForRound } from '../db';
 import { useAuth } from '../contexts/AuthContext';
 
 const ScorecardPage = () => {
@@ -15,10 +15,11 @@ const ScorecardPage = () => {
   const [isRoundComplete, setIsRoundComplete] = useState(false);
   const [roundData, setRoundData] = useState(null);
   const [isPB, setIsPB] = useState(false);
+  const [players, setPlayers] = useState([]);
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    const fetchRound = async () => {
+    const fetchRoundAndPlayers = async () => {
       try {
         const roundRef = doc(db, 'putting_league_rounds', roundId);
         const roundSnap = await getDoc(roundRef);
@@ -30,15 +31,23 @@ const ScorecardPage = () => {
             setCurrentHole(data.current_hole);
           }
         }
+
+        const allPlayers = await getPlayers();
+        if (currentUser) {
+          setPlayers(allPlayers.filter(p => p.player_id !== currentUser.uid));
+        } else {
+          setPlayers(allPlayers);
+        }
+
       } catch (error) {
-        console.error("Error fetching round data:", error);
+        console.error("Error fetching round data or players:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchRound();
-  }, [roundId]);
+    fetchRoundAndPlayers();
+  }, [roundId, currentUser]);
 
   const handleDiscard = async () => {
     try {
@@ -55,12 +64,27 @@ const ScorecardPage = () => {
         await updateRoundStatus(roundId, 'completed');
 
         const currentTotal = Object.values(roundData.scores || {}).reduce((a, b) => a + b, 0);
+        const eventRoundId = roundData.event_round_id || roundId;
 
         await addScore({
           player_id: currentUser.uid,
-          round_id: roundData.event_round_id || roundId,
+          round_id: eventRoundId,
           score: currentTotal
         });
+
+        if (roundData.opponent_id) {
+          const opponentTotal = Object.values(roundData.opponent_scores || {}).reduce((a, b) => a + b, 0);
+          const existingScores = await getScoresForRound(eventRoundId);
+          if (existingScores.some(s => s.player_id === roundData.opponent_id)) {
+            alert("Opponent was already scored and their previous score will not be overwritten.");
+          } else {
+            await addScore({
+              player_id: roundData.opponent_id,
+              round_id: eventRoundId,
+              score: opponentTotal
+            });
+          }
+        }
 
         navigate('/');
       }
@@ -69,18 +93,37 @@ const ScorecardPage = () => {
     }
   };
 
-  const handleSaveHole = async (holeScore) => {
+  const handleSelectOpponent = async (opponentId) => {
     try {
       const roundRef = doc(db, 'putting_league_rounds', roundId);
-
       await updateDoc(roundRef, {
+        opponent_id: opponentId,
+        opponent_scores: {}
+      });
+      setRoundData(prev => ({ ...prev, opponent_id: opponentId, opponent_scores: {} }));
+    } catch (error) {
+      console.error("Error selecting opponent:", error);
+    }
+  };
+
+  const handleSaveHole = async (holeScore, opponentHoleScore) => {
+    try {
+      const roundRef = doc(db, 'putting_league_rounds', roundId);
+      const updateData = {
         [`scores.${currentHole}`]: holeScore,
         current_hole: currentHole + 1
-      });
+      };
+
+      if (roundData.opponent_id && opponentHoleScore !== undefined) {
+        updateData[`opponent_scores.${currentHole}`] = opponentHoleScore;
+      }
+
+      await updateDoc(roundRef, updateData);
 
       setRoundData(prev => ({
         ...prev,
-        scores: { ...prev.scores, [currentHole]: holeScore }
+        scores: { ...prev.scores, [currentHole]: holeScore },
+        opponent_scores: roundData.opponent_id && opponentHoleScore !== undefined ? { ...(prev.opponent_scores || {}), [currentHole]: opponentHoleScore } : prev.opponent_scores
       }));
 
       if (currentHole < 9) { // Assuming a 9-hole course based on the snippet
@@ -127,6 +170,8 @@ const ScorecardPage = () => {
     );
   }
 
+  const roundName = roundData?.event_round_name || roundData?.name || "Casual Round";
+
   return (
     <ScoreEntry
       holeNumber={currentHole}
@@ -139,6 +184,12 @@ const ScorecardPage = () => {
       onPrev={() => {
         if (currentHole > 1) setCurrentHole(prev => prev - 1);
       }}
+      scoreValue={roundData?.scores?.[currentHole]}
+      opponentScoreValue={roundData?.opponent_scores?.[currentHole]}
+      players={players}
+      opponentId={roundData?.opponent_id}
+      onSelectOpponent={handleSelectOpponent}
+      roundName={roundName}
     />
   );
 };

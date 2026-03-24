@@ -1,21 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Minus, Plus, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const ScoreEntry = ({ holeNumber = 1, par = 3, onSave, onCancel, onPrev, onNext, totalHoles = 9, scoreValue }) => {
+const ScoreEntry = ({ holeNumber = 1, par = 3, onSave, onCancel, onPrev, onNext, totalHoles = 9, scoreValue, opponentScoreValue, players = [], opponentId, onSelectOpponent, roundName }) => {
   const [score, setScore] = useState(scoreValue || par);
+  const [opponentScore, setOpponentScore] = useState(opponentScoreValue || par);
+
+  useEffect(() => {
+    setScore(scoreValue || par);
+    setOpponentScore(opponentScoreValue || par);
+  }, [holeNumber, scoreValue, opponentScoreValue, par]);
 
   // Quick Win: Visual feedback based on score vs par
-  const getScoreColor = () => {
-    if (score < par) return 'text-kelly-green border-kelly-green bg-kelly-green/10';
-    if (score > par) return 'text-red-500 border-red-500 bg-red-500/10';
+  const getScoreColor = (s) => {
+    if (s < par) return 'text-kelly-green border-kelly-green bg-kelly-green/10';
+    if (s > par) return 'text-red-500 border-red-500 bg-red-500/10';
     return 'text-white border-slate-700 bg-slate-800/50';
   };
 
   return (
     <div className="bg-dark-bg min-h-screen flex flex-col p-6 text-white font-sans">
+      {/* Round Name at Top */}
+      {roundName && (
+        <div className="text-center text-xs text-slate-400 mb-2 font-bold uppercase tracking-widest">
+          {roundName}
+        </div>
+      )}
+
+      {/* Opponent Selection Dropdown */}
+      {!opponentId && players.length > 0 && (
+        <div className="mb-4">
+          <select
+            onChange={(e) => onSelectOpponent(e.target.value)}
+            className="w-full bg-dark-surface border border-slate-700 rounded-xl px-4 py-2 text-white focus:border-kelly-green focus:outline-none transition-colors text-sm"
+            value={opponentId || ""}
+          >
+            <option value="" disabled>Select an opponent (optional)</option>
+            {players.map(p => (
+              <option key={p.player_id} value={p.player_id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Header: Navigation between holes */}
-      <div className="flex justify-between items-center mb-12">
+      <div className="flex justify-between items-center mb-6">
         <button
           onClick={onPrev}
           disabled={holeNumber <= 1}
@@ -37,35 +66,78 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onSave, onCancel, onPrev, onNext,
       </div>
 
       {/* Main Stepper: Massive touch targets */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-8 overflow-hidden">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`${holeNumber}-${score}`}
-            initial={{ x: 100, opacity: 0, scale: 0.8 }}
-            animate={{ x: 0, opacity: 1, scale: 1 }}
-            exit={{ x: -100, opacity: 0, scale: 0.8 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            className={`w-40 h-40 rounded-3xl border-2 flex items-center justify-center transition-colors duration-300 ${getScoreColor()}`}
-          >
-            <span className="text-7xl font-data font-black">{score}</span>
-          </motion.div>
-        </AnimatePresence>
+      <div className="flex-1 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 overflow-hidden">
 
-        <div className="flex items-center gap-6">
-          <button
-            onClick={() => setScore(Math.max(1, score - 1))}
-            className="w-20 h-20 rounded-2xl bg-dark-surface border border-slate-700 flex items-center justify-center active:bg-slate-800 active:scale-95 transition-all"
-          >
-            <Minus size={32} />
-          </button>
+        {/* User Stepper */}
+        <div className="flex flex-col items-center gap-4">
+          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">You</div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`${holeNumber}-user-${score}`}
+              initial={{ x: 100, opacity: 0, scale: 0.8 }}
+              animate={{ x: 0, opacity: 1, scale: 1 }}
+              exit={{ x: -100, opacity: 0, scale: 0.8 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className={`w-32 h-32 md:w-40 md:h-40 rounded-3xl border-2 flex items-center justify-center transition-colors duration-300 ${getScoreColor(score)}`}
+            >
+              <span className="text-6xl md:text-7xl font-data font-black">{score}</span>
+            </motion.div>
+          </AnimatePresence>
 
-          <button
-            onClick={() => setScore(score + 1)}
-            className="w-20 h-20 rounded-2xl bg-kelly-green text-dark-bg flex items-center justify-center active:scale-95 transition-all"
-          >
-            <Plus size={32} />
-          </button>
+          <div className="flex items-center gap-4 md:gap-6">
+            <button
+              onClick={() => setScore(Math.max(1, score - 1))}
+              className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-dark-surface border border-slate-700 flex items-center justify-center active:bg-slate-800 active:scale-95 transition-all"
+            >
+              <Minus size={24} />
+            </button>
+
+            <button
+              onClick={() => setScore(score + 1)}
+              className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-kelly-green text-dark-bg flex items-center justify-center active:scale-95 transition-all"
+            >
+              <Plus size={24} />
+            </button>
+          </div>
         </div>
+
+        {/* Opponent Stepper */}
+        {opponentId && (
+          <div className="flex flex-col items-center gap-4">
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest truncate max-w-[120px]">
+              {players.find(p => p.player_id === opponentId)?.name || 'Opponent'}
+            </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`${holeNumber}-opp-${opponentScore}`}
+                initial={{ x: 100, opacity: 0, scale: 0.8 }}
+                animate={{ x: 0, opacity: 1, scale: 1 }}
+                exit={{ x: -100, opacity: 0, scale: 0.8 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                className={`w-32 h-32 md:w-40 md:h-40 rounded-3xl border-2 flex items-center justify-center transition-colors duration-300 ${getScoreColor(opponentScore)}`}
+              >
+                <span className="text-6xl md:text-7xl font-data font-black">{opponentScore}</span>
+              </motion.div>
+            </AnimatePresence>
+
+            <div className="flex items-center gap-4 md:gap-6">
+              <button
+                onClick={() => setOpponentScore(Math.max(1, opponentScore - 1))}
+                className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-dark-surface border border-slate-700 flex items-center justify-center active:bg-slate-800 active:scale-95 transition-all"
+              >
+                <Minus size={24} />
+              </button>
+
+              <button
+                onClick={() => setOpponentScore(opponentScore + 1)}
+                className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-kelly-green text-dark-bg flex items-center justify-center active:scale-95 transition-all"
+              >
+                <Plus size={24} />
+              </button>
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* 9-Hole Quick Nav Grid */}
@@ -86,7 +158,7 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onSave, onCancel, onPrev, onNext,
             <X size={18} /> CANCEL
           </button>
           <button
-            onClick={() => onSave(score)}
+            onClick={() => onSave(score, opponentId ? opponentScore : undefined)}
             className="flex items-center justify-center gap-2 py-4 rounded-xl font-bold bg-kelly-green text-dark-bg shadow-[0_0_20px_rgba(76,187,23,0.3)]"
           >
             <Check size={18} /> SAVE HOLE
