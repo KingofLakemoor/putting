@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Trophy, Medal, MapPin, Calendar } from 'lucide-react';
 import { getPlayers, getScores, getRounds } from '../db';
 
 function Leaderboard() {
@@ -91,23 +93,29 @@ function Leaderboard() {
     fetchData();
   }, [filter]);
 
+  const getHeaderTitle = () => {
+    if (filter.startsWith('season_')) return `${filter.substring(7)} Rankings`;
+    if (filter.startsWith('date_')) return `${new Date(filter.substring(5)).toLocaleDateString('en-US', { timeZone: 'UTC' })} Rankings`;
+    if (filter === 'global') return 'Global Rankings';
+    return 'Event Leaderboard';
+  };
+
   return (
-    <div className="page-container">
-      <div className="leaderboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>
-          {filter.startsWith('season_')
-            ? `${filter.substring(7)} Rankings`
-            : filter.startsWith('date_')
-            ? `${new Date(filter.substring(5)).toLocaleDateString('en-US', { timeZone: 'UTC' })} Rankings`
-            : filter === 'global'
-            ? 'Global Rankings'
-            : 'Event Leaderboard'}
-        </h2>
-        <div className="form-group" style={{ width: 'auto', marginBottom: 0 }}>
+    <div className="min-h-screen bg-dark-bg text-white p-4 md:p-8 font-sans">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 border-b border-slate-800 pb-4 gap-4">
+        <div>
+          <h2 className="font-sports text-4xl uppercase tracking-tighter flex items-center gap-3">
+            <Trophy className="text-kelly-green" size={32} />
+            {getHeaderTitle()}
+          </h2>
+          <p className="font-data text-[10px] text-slate-500 uppercase tracking-[0.2em]">Live Standings</p>
+        </div>
+
+        <div className="w-full md:w-auto">
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}
+            className="w-full md:w-64 bg-dark-surface border border-slate-700 text-white rounded-xl p-3 focus:border-kelly-green focus:outline-none transition-colors appearance-none font-bold text-sm"
           >
             <option value="global">Global Rankings</option>
             {seasons.length > 0 && (
@@ -144,30 +152,71 @@ function Leaderboard() {
       </div>
 
       {leaderboard.length === 0 ? (
-        <p>No data yet. Add players and scores to see the leaderboard!</p>
+        <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
+          No data yet. Add players and scores to see the leaderboard!
+        </div>
       ) : (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Player</th>
-              <th>Score</th>
-              <th>Best Round</th>
-              <th>Rounds Played</th>
-            </tr>
-          </thead>
-          <tbody>
-            {leaderboard.map((player, index) => (
-              <tr key={player.player_id}>
-                <td>{index + 1}</td>
-                <td>{player.name}</td>
-                <td><strong>{player.totalScore}</strong></td>
-                <td>{player.bestRoundScore !== null ? player.bestRoundScore : '-'}</td>
-                <td>{player.roundsPlayed}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="space-y-3">
+          {leaderboard.map((player, index) => {
+            const rank = index + 1;
+            return (
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+                key={player.player_id}
+                className={`relative group flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border transition-all duration-300 gap-4 sm:gap-0
+                  ${index < 3
+                    ? 'bg-dark-surface border-slate-700 shadow-[0_0_15px_rgba(76,187,23,0.1)] border-l-4 border-l-kelly-green'
+                    : 'bg-transparent border-slate-800 opacity-90 hover:opacity-100 hover:bg-dark-surface/50'
+                  }`}
+              >
+                {/* Rank and Name */}
+                <div className="flex items-center gap-5">
+                  <div className="relative">
+                    <span className={`font-sports text-3xl sm:text-4xl italic tracking-tighter ${index < 3 ? 'text-white' : 'text-slate-600'}`}>
+                      {rank < 10 ? `0${rank}` : rank}
+                    </span>
+                    {index === 0 && (
+                      <Medal size={16} className="absolute -top-2 -right-3 text-kelly-green animate-pulse" />
+                    )}
+                  </div>
+
+                  <div>
+                    <p className={`font-bold text-lg uppercase tracking-tight ${index === 0 ? 'text-kelly-green' : 'text-white'}`}>
+                      {player.name}
+                    </p>
+                    <p className="text-[10px] text-slate-500 font-data uppercase flex items-center gap-1">
+                      <Calendar size={10} /> Rounds Played: {player.roundsPlayed}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Stats Block */}
+                <div className="flex items-center gap-8 justify-between sm:justify-end">
+                  <div className="text-center">
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Best RND</p>
+                    <p className="text-xl font-data font-bold text-slate-300">
+                      {player.bestRoundScore !== null ? player.bestRoundScore : '-'}
+                    </p>
+                  </div>
+
+                  <div className="text-center sm:border-l border-slate-800 sm:pl-8">
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Total Score</p>
+                    <p className={`text-3xl font-data font-black ${index === 0 ? 'text-kelly-green' : 'text-white'}`}>
+                      {player.totalScore}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Subtle Glow Effect for Top Rank */}
+                {index === 0 && (
+                  <div className="absolute inset-0 bg-kelly-green/5 rounded-xl pointer-events-none blur-xl -z-10" />
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

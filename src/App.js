@@ -12,22 +12,13 @@ import PuttingDashboard from './components/PuttingDashboard';
 import './App.css';
 
 function App() {
-  // Use "dark" as the default theme
-  const [theme, setTheme] = useState(() => {
-    const savedTheme = localStorage.getItem('theme');
-    return savedTheme ? savedTheme : 'dark';
-  });
-
   const { currentUser, logout } = useAuth();
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
-  };
+    // Force dark theme globally for the new design
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('theme', 'dark');
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -39,26 +30,22 @@ function App() {
 
   return (
     <Router>
-      <div className="App">
+      <div className="min-h-screen bg-dark-bg text-white font-sans flex flex-col">
         {currentUser && (
-          <nav className="App-nav">
-            <ul>
+          <nav className="bg-dark-surface border-b border-slate-800 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="font-sports text-2xl tracking-wide uppercase text-white">Club 602</div>
+            <ul className="flex flex-wrap justify-center gap-4 sm:gap-8 text-sm font-bold uppercase tracking-wider text-slate-400">
               <li>
-                <Link to="/">Report Scores</Link>
+                <Link to="/" className="hover:text-kelly-green transition-colors">Dashboard</Link>
               </li>
               <li>
-                <Link to="/leaderboard">Leaderboard</Link>
+                <Link to="/leaderboard" className="hover:text-kelly-green transition-colors">Leaderboard</Link>
               </li>
               <li>
-                <Link to="/admin">Admin</Link>
+                <Link to="/admin" className="hover:text-kelly-green transition-colors">Admin</Link>
               </li>
               <li>
-                <button className="theme-toggle-btn" onClick={toggleTheme}>
-                  {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
-                </button>
-              </li>
-              <li>
-                <button className="theme-toggle-btn" onClick={handleLogout} style={{ marginLeft: '10px' }}>
+                <button onClick={handleLogout} className="hover:text-white transition-colors">
                   Sign Out
                 </button>
               </li>
@@ -66,7 +53,7 @@ function App() {
           </nav>
         )}
 
-        <main className="App-main">
+        <main className="flex-1 w-full">
           <Routes>
             <Route path="/signin" element={<SignIn />} />
             <Route path="/" element={<PrivateRoute><PuttingDashboard /></PrivateRoute>} />

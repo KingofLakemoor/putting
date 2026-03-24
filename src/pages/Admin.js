@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { ShieldAlert, Users, CalendarDays, ClipboardList, Map, UserCog, Edit, Trash2, Check, X } from 'lucide-react';
 import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, addRound, updateRoundStatus, updateRoundSeason, deleteRound, getScores, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse, getCoordinators, addCoordinator, removeCoordinator } from '../db';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -10,54 +11,51 @@ function Admin() {
   // Protect the route
   if (!currentUser || (!isAdmin && !isCoordinator)) {
     return (
-      <div className="page-container">
-        <h2>Unauthorized Access</h2>
-        <p>You do not have permission to access the admin dashboard. Contact the administrator if you believe this is a mistake.</p>
+      <div className="min-h-screen bg-dark-bg text-white p-6 flex flex-col items-center justify-center font-sans">
+        <ShieldAlert size={64} className="text-red-500 mb-6" />
+        <h2 className="font-sports text-4xl uppercase tracking-widest text-white mb-4">Unauthorized Access</h2>
+        <p className="text-slate-400 text-center max-w-md">You do not have permission to access the admin dashboard. Contact the administrator if you believe this is a mistake.</p>
       </div>
     );
   }
 
+  const tabs = [
+    { id: 'players', label: 'Manage Players', icon: Users },
+    { id: 'rounds', label: 'Manage Rounds', icon: CalendarDays },
+    { id: 'scores', label: 'Manage Scores', icon: ClipboardList },
+  ];
+  if (isAdmin) {
+    tabs.push({ id: 'courses', label: 'Manage Courses', icon: Map });
+    tabs.push({ id: 'coordinators', label: 'Manage Coordinators', icon: UserCog });
+  }
+
   return (
-    <div className="page-container admin-page">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>Admin Dashboard</h2>
+    <div className="min-h-screen bg-dark-bg text-white p-4 md:p-8 font-sans">
+      <div className="mb-8 border-b border-slate-800 pb-4">
+        <h2 className="font-sports text-4xl uppercase tracking-tighter text-white flex items-center gap-3">
+          <ShieldAlert className="text-kelly-green" size={32} /> Admin Dashboard
+        </h2>
+        <p className="font-data text-[10px] text-slate-500 uppercase tracking-[0.2em]">System Management</p>
       </div>
 
-      <div className="admin-tabs" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid #ecf0f1', paddingBottom: '1rem', flexWrap: 'wrap' }}>
-        <button
-          className={activeTab === 'players' ? 'btn-primary' : 'btn-secondary'}
-          onClick={() => setActiveTab('players')}
-        >
-          Manage Players
-        </button>
-        <button
-          className={activeTab === 'rounds' ? 'btn-primary' : 'btn-secondary'}
-          onClick={() => setActiveTab('rounds')}
-        >
-          Manage Rounds
-        </button>
-        <button
-          className={activeTab === 'scores' ? 'btn-primary' : 'btn-secondary'}
-          onClick={() => setActiveTab('scores')}
-        >
-          Manage Scores
-        </button>
-        {isAdmin && (
-          <button
-            className={activeTab === 'courses' ? 'btn-primary' : 'btn-secondary'}
-            onClick={() => setActiveTab('courses')}
-          >
-            Manage Courses
-          </button>
-        )}
-        {isAdmin && (
-          <button
-            className={activeTab === 'coordinators' ? 'btn-primary' : 'btn-secondary'}
-            onClick={() => setActiveTab('coordinators')}
-          >
-            Manage Coordinators
-          </button>
-        )}
+      <div className="flex overflow-x-auto mb-8 bg-slate-800/50 p-1 rounded-xl w-full sm:w-auto sm:inline-flex no-scrollbar">
+        {tabs.map(tab => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+                isActive
+                  ? 'bg-kelly-green text-dark-bg'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              <Icon size={16} /> {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className="admin-content">
@@ -118,58 +116,72 @@ function AdminCoordinators() {
   };
 
   return (
-    <div className="layout-grid">
-      <div className="list-section">
-        <h3>Coordinators List</h3>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-2">
+        <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
+          <UserCog size={20} className="text-kelly-green" /> Coordinators List
+        </h3>
+
         {coordinators.length === 0 ? (
-          <p>No coordinators assigned yet.</p>
+          <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
+            No coordinators assigned yet.
+          </div>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {coordinators.map(coord => (
-                <tr key={coord.uid}>
-                  <td>{coord.name}</td>
-                  <td>{coord.email}</td>
-                  <td>
-                    <button onClick={() => handleRemoveCoordinator(coord.uid)} className="btn-secondary" style={{ backgroundColor: '#e74c3c', color: 'white', padding: '0.5rem 1rem' }}>Remove</button>
-                  </td>
+          <div className="overflow-x-auto rounded-xl border border-slate-800">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="bg-slate-800 text-slate-400 uppercase tracking-wider text-xs">
+                <tr>
+                  <th className="p-4 font-bold">Name</th>
+                  <th className="p-4 font-bold">Email</th>
+                  <th className="p-4 font-bold text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {coordinators.map(coord => (
+                  <tr key={coord.uid} className="hover:bg-dark-surface/50 transition-colors">
+                    <td className="p-4 font-bold">{coord.name}</td>
+                    <td className="p-4 text-slate-300">{coord.email}</td>
+                    <td className="p-4 text-right">
+                      <button onClick={() => handleRemoveCoordinator(coord.uid)} className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-xs uppercase">
+                        <Trash2 size={14} /> Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      <div className="form-section">
-        <h3>Assign Coordinator</h3>
-        <form onSubmit={handleAddCoordinator} className="add-form">
-          <div className="form-group">
-            <label htmlFor="coordinatorSelect">Select Player</label>
-            <select
-              id="coordinatorSelect"
-              value={selectedPlayerId}
-              onChange={(e) => setSelectedPlayerId(e.target.value)}
-              required
-            >
-              <option value="">-- Select a player --</option>
-              {players.filter(p => p.uid && !coordinators.some(c => c.uid === p.uid)).map(player => (
-                <option key={player.player_id} value={player.player_id}>
-                  {player.name} ({player.email || 'No email'})
-                </option>
-              ))}
-            </select>
-          </div>
-          <button type="submit" className="btn-primary" style={{ marginBottom: '1rem' }}>
-            Add Coordinator
-          </button>
-        </form>
+      <div>
+        <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
+          <Check size={20} className="text-kelly-green" /> Assign Coordinator
+        </h3>
+        <div className="bg-dark-surface border border-slate-800 rounded-2xl p-6 shadow-xl">
+          <form onSubmit={handleAddCoordinator} className="flex flex-col gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="coordinatorSelect">Select Player</label>
+              <select
+                id="coordinatorSelect"
+                value={selectedPlayerId}
+                onChange={(e) => setSelectedPlayerId(e.target.value)}
+                required
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
+              >
+                <option value="">-- Select a player --</option>
+                {players.filter(p => p.uid && !coordinators.some(c => c.uid === p.uid)).map(player => (
+                  <option key={player.player_id} value={player.player_id}>
+                    {player.name} ({player.email || 'No email'})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button type="submit" className="w-full bg-kelly-green text-dark-bg py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors mt-2">
+              Add Coordinator
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
@@ -245,78 +257,103 @@ function AdminPlayers() {
   };
 
   return (
-    <div className="layout-grid">
-      <div className="list-section">
-        <h3>Players List</h3>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-2">
+        <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
+          <Users size={20} className="text-kelly-green" /> Players List
+        </h3>
+
         {players.length === 0 ? (
-          <p>No players added yet.</p>
+          <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
+            No players added yet.
+          </div>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {players.map(player => (
-                <tr key={player.player_id}>
-                  <td>{player.name}</td>
-                  <td>{player.email}</td>
-                  <td>
-                    <button onClick={() => handleEdit(player)} className="btn-secondary" style={{ marginRight: '0.5rem', padding: '0.5rem 1rem' }}>Edit</button>
-                    <button onClick={() => handleDelete(player.player_id)} className="btn-secondary" style={{ backgroundColor: '#e74c3c', color: 'white', padding: '0.5rem 1rem' }}>Delete</button>
-                  </td>
+          <div className="overflow-x-auto rounded-xl border border-slate-800">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="bg-slate-800 text-slate-400 uppercase tracking-wider text-xs">
+                <tr>
+                  <th className="p-4 font-bold">Name</th>
+                  <th className="p-4 font-bold">Email</th>
+                  <th className="p-4 font-bold text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {players.map(player => (
+                  <tr key={player.player_id} className="hover:bg-dark-surface/50 transition-colors">
+                    <td className="p-4 font-bold">{player.name}</td>
+                    <td className="p-4 text-slate-300">{player.email}</td>
+                    <td className="p-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => handleEdit(player)} className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase">
+                          <Edit size={14} /> Edit
+                        </button>
+                        <button onClick={() => handleDelete(player.player_id)} className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-xs uppercase">
+                          <Trash2 size={14} /> Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      <div className="form-section">
-        <h3>{editingId ? 'Edit Player' : 'Add New Player'}</h3>
-        <form onSubmit={handleSubmit} className="add-form">
-          <div className="form-group">
-            <label htmlFor="playerFirstName">First Name *</label>
-            <input
-              type="text"
-              id="playerFirstName"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              required
-            />
-          </div>
+      <div>
+        <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
+          <Edit size={20} className="text-kelly-green" /> {editingId ? 'Edit Player' : 'Add New Player'}
+        </h3>
 
-          <div className="form-group">
-            <label htmlFor="playerLastName">Last Name *</label>
-            <input
-              type="text"
-              id="playerLastName"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              required
-            />
-          </div>
+        <div className="bg-dark-surface border border-slate-800 rounded-2xl p-6 shadow-xl">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="playerFirstName">First Name *</label>
+              <input
+                type="text"
+                id="playerFirstName"
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+              />
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="playerEmail">Email</label>
-            <input
-              type="email"
-              id="playerEmail"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="playerLastName">Last Name *</label>
+              <input
+                type="text"
+                id="playerLastName"
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+              />
+            </div>
 
-          <button type="submit" className="btn-primary" style={{ marginBottom: '1rem' }}>
-            {editingId ? 'Update Player' : 'Add Player'}
-          </button>
-          {editingId && (
-            <button type="button" onClick={cancelEdit} className="btn-secondary" style={{ width: '100%' }}>Cancel Edit</button>
-          )}
-        </form>
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="playerEmail">Email</label>
+              <input
+                type="email"
+                id="playerEmail"
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="mt-2 flex flex-col gap-3">
+              <button type="submit" className="w-full bg-kelly-green text-dark-bg py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors flex items-center justify-center gap-2">
+                <Check size={16} /> {editingId ? 'Update Player' : 'Add Player'}
+              </button>
+              {editingId && (
+                <button type="button" onClick={cancelEdit} className="w-full bg-slate-700 text-white py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-slate-600 transition-colors flex items-center justify-center gap-2">
+                  <X size={16} /> Cancel Edit
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
@@ -378,103 +415,128 @@ function AdminRounds() {
   };
 
   return (
-    <div className="layout-grid">
-      <div className="list-section">
-        <h3>Rounds / Events Management</h3>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-2">
+        <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
+          <CalendarDays size={20} className="text-kelly-green" /> Rounds Management
+        </h3>
+
         {rounds.length === 0 ? (
-          <p>No rounds added yet.</p>
+          <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
+            No rounds added yet.
+          </div>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Date</th>
-                <th>Location</th>
-                <th>Season</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rounds.map(round => (
-                <tr key={round.round_id}>
-                  <td>{round.name || '-'}</td>
-                  <td>{new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' })}</td>
-                  <td>{round.location}</td>
-                  <td>
-                    <input
-                      type="text"
-                      defaultValue={round.season || ''}
-                      onBlur={(e) => handleSeasonChange(round.round_id, e.target.value)}
-                      placeholder="e.g. Summer 2024"
-                      style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #ced4da', width: '120px' }}
-                    />
-                  </td>
-                  <td>
-                    <select
-                      value={round.status}
-                      onChange={(e) => handleStatusChange(round.round_id, e.target.value)}
-                      style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #ced4da' }}
-                    >
-                      <option value="Active">Active</option>
-                      <option value="Completed">Completed</option>
-                      <option value="Archived">Archived</option>
-                    </select>
-                  </td>
-                  <td>
-                    <Link to={`/rounds/${round.round_id}`} className="btn-secondary" style={{ marginRight: '0.5rem', padding: '0.5rem 1rem', display: 'inline-block', textDecoration: 'none' }}>Manage Scores</Link>
-                    <button onClick={() => handleDelete(round.round_id)} className="btn-secondary" style={{ backgroundColor: '#e74c3c', color: 'white', padding: '0.5rem 1rem' }}>Delete</button>
-                  </td>
+          <div className="overflow-x-auto rounded-xl border border-slate-800">
+            <table className="w-full border-collapse text-left text-sm whitespace-nowrap">
+              <thead className="bg-slate-800 text-slate-400 uppercase tracking-wider text-xs">
+                <tr>
+                  <th className="p-4 font-bold">Name</th>
+                  <th className="p-4 font-bold">Date & Location</th>
+                  <th className="p-4 font-bold">Season & Status</th>
+                  <th className="p-4 font-bold text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {rounds.map(round => (
+                  <tr key={round.round_id} className="hover:bg-dark-surface/50 transition-colors">
+                    <td className="p-4 font-bold">{round.name || '-'}</td>
+                    <td className="p-4">
+                      <div className="flex flex-col">
+                        <span className="text-white">{new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' })}</span>
+                        <span className="text-xs text-slate-400">{round.location}</span>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex flex-col gap-2">
+                        <input
+                          type="text"
+                          defaultValue={round.season || ''}
+                          onBlur={(e) => handleSeasonChange(round.round_id, e.target.value)}
+                          placeholder="Season..."
+                          className="w-full max-w-[120px] bg-dark-bg border border-slate-700 rounded px-2 py-1 text-xs text-white focus:border-kelly-green focus:outline-none"
+                        />
+                        <select
+                          value={round.status}
+                          onChange={(e) => handleStatusChange(round.round_id, e.target.value)}
+                          className="w-full max-w-[120px] bg-dark-bg border border-slate-700 rounded px-2 py-1 text-xs text-white focus:border-kelly-green focus:outline-none appearance-none"
+                        >
+                          <option value="Active">Active</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Archived">Archived</option>
+                        </select>
+                      </div>
+                    </td>
+                    <td className="p-4 text-right align-top">
+                      <div className="flex justify-end gap-2 flex-col items-end">
+                        <Link to={`/rounds/${round.round_id}`} className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-[10px] uppercase w-full justify-center">
+                          <Edit size={12} /> Manage
+                        </Link>
+                        <button onClick={() => handleDelete(round.round_id)} className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-[10px] uppercase w-full justify-center">
+                          <Trash2 size={12} /> Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
-      <div className="form-section">
-        <h3>Create New Round</h3>
-        <form onSubmit={handleSubmit} className="add-form">
-          <div className="form-group">
-            <label htmlFor="name">Round Name</label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Finals, Round 1"
-            />
-          </div>
 
-          <div className="form-group">
-            <label htmlFor="date">Date *</label>
-            <input
-              type="date"
-              id="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-            />
-          </div>
+      <div>
+        <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
+          <Edit size={20} className="text-kelly-green" /> Create New Round
+        </h3>
+        <div className="bg-dark-surface border border-slate-800 rounded-2xl p-6 shadow-xl">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="name">Round Name</label>
+              <input
+                type="text"
+                id="name"
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Finals, Round 1"
+              />
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="course">Location / Venue *</label>
-            <select
-              id="course"
-              value={courseId}
-              onChange={(e) => setCourseId(e.target.value)}
-              required
-            >
-              <option value="">-- Select Course --</option>
-              {courses.map(course => (
-                <option key={course.course_id} value={course.course_id}>
-                  {course.name}
-                </option>
-              ))}
-            </select>
-          </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="date">Date *</label>
+              <input
+                type="date"
+                id="date"
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+              />
+            </div>
 
-          <button type="submit" className="btn-primary">Create Round</button>
-        </form>
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="course">Location / Venue *</label>
+              <select
+                id="course"
+                value={courseId}
+                onChange={(e) => setCourseId(e.target.value)}
+                required
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
+              >
+                <option value="">-- Select Course --</option>
+                {courses.map(course => (
+                  <option key={course.course_id} value={course.course_id}>
+                    {course.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button type="submit" className="w-full bg-kelly-green text-dark-bg py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors mt-2 flex items-center justify-center gap-2">
+              <Check size={16} /> Create Round
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
@@ -537,54 +599,68 @@ function AdminScores() {
   };
 
   return (
-    <div className="list-section">
-      <h3>Scores Management</h3>
+    <div>
+      <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
+        <ClipboardList size={20} className="text-kelly-green" /> Scores Management
+      </h3>
       {scores.length === 0 ? (
-        <p>No scores reported yet.</p>
+        <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
+          No scores reported yet.
+        </div>
       ) : (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Round</th>
-              <th>Player</th>
-              <th>Score</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {scores.map(score => (
-              <tr key={score.score_id}>
-                <td>{getRoundDetails(score.round_id)}</td>
-                <td>{getPlayerName(score.player_id)}</td>
-                <td>
-                  {editingId === score.score_id ? (
-                    <input
-                      type="number"
-                      value={scoreValue}
-                      onChange={(e) => setScoreValue(e.target.value)}
-                      style={{ padding: '0.25rem', width: '60px' }}
-                    />
-                  ) : (
-                    score.score
-                  )}
-                </td>
-                <td>
-                  {editingId === score.score_id ? (
-                    <>
-                      <button onClick={() => handleSave(score.score_id)} className="btn-primary" style={{ marginRight: '0.5rem', padding: '0.5rem 1rem', width: 'auto' }}>Save</button>
-                      <button onClick={handleCancel} className="btn-secondary" style={{ padding: '0.5rem 1rem' }}>Cancel</button>
-                    </>
-                  ) : (
-                    <>
-                      <button onClick={() => handleEdit(score)} className="btn-secondary" style={{ marginRight: '0.5rem', padding: '0.5rem 1rem' }}>Edit</button>
-                      <button onClick={() => handleDelete(score.score_id)} className="btn-secondary" style={{ backgroundColor: '#e74c3c', color: 'white', padding: '0.5rem 1rem' }}>Delete</button>
-                    </>
-                  )}
-                </td>
+        <div className="overflow-x-auto rounded-xl border border-slate-800">
+          <table className="w-full border-collapse text-left text-sm whitespace-nowrap">
+            <thead className="bg-slate-800 text-slate-400 uppercase tracking-wider text-xs">
+              <tr>
+                <th className="p-4 font-bold">Round</th>
+                <th className="p-4 font-bold">Player</th>
+                <th className="p-4 font-bold">Score</th>
+                <th className="p-4 font-bold text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {scores.map(score => (
+                <tr key={score.score_id} className="hover:bg-dark-surface/50 transition-colors">
+                  <td className="p-4 text-slate-300">{getRoundDetails(score.round_id)}</td>
+                  <td className="p-4 font-bold">{getPlayerName(score.player_id)}</td>
+                  <td className="p-4">
+                    {editingId === score.score_id ? (
+                      <input
+                        type="number"
+                        className="w-16 bg-dark-bg border border-slate-700 rounded px-2 py-1 text-white focus:border-kelly-green focus:outline-none text-center font-data"
+                        value={scoreValue}
+                        onChange={(e) => setScoreValue(e.target.value)}
+                      />
+                    ) : (
+                      <span className="font-data font-bold text-kelly-green">{score.score}</span>
+                    )}
+                  </td>
+                  <td className="p-4 text-right">
+                    {editingId === score.score_id ? (
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => handleSave(score.score_id)} className="inline-flex items-center gap-1 bg-kelly-green text-dark-bg px-3 py-1.5 rounded-lg font-bold hover:bg-green-500 transition-colors text-xs uppercase">
+                          <Check size={14} /> Save
+                        </button>
+                        <button onClick={handleCancel} className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase">
+                          <X size={14} /> Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => handleEdit(score)} className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase">
+                          <Edit size={14} /> Edit
+                        </button>
+                        <button onClick={() => handleDelete(score.score_id)} className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-xs uppercase">
+                          <Trash2 size={14} /> Delete
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
@@ -667,89 +743,115 @@ function AdminCourses() {
   };
 
   return (
-    <div className="layout-grid">
-      <div className="list-section">
-        <h3>Courses List</h3>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-2">
+        <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
+          <Map size={20} className="text-kelly-green" /> Courses List
+        </h3>
+
         {courses.length === 0 ? (
-          <p>No courses available.</p>
+          <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
+            No courses available.
+          </div>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Course Name</th>
-                <th>Total Par</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {courses.map(course => (
-                <tr key={course.course_id}>
-                  <td>{course.name}</td>
-                  <td>{course.holes ? course.holes.reduce((sum, h) => sum + h.par, 0) : 'N/A'}</td>
-                  <td>
-                    <button onClick={() => handleEdit(course)} className="btn-secondary" style={{ marginRight: '0.5rem', padding: '0.5rem 1rem' }}>Edit</button>
-                    <button onClick={() => handleDelete(course.course_id)} className="btn-secondary" style={{ backgroundColor: '#e74c3c', color: 'white', padding: '0.5rem 1rem' }}>Delete</button>
-                  </td>
+          <div className="overflow-x-auto rounded-xl border border-slate-800">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="bg-slate-800 text-slate-400 uppercase tracking-wider text-xs">
+                <tr>
+                  <th className="p-4 font-bold">Course Name</th>
+                  <th className="p-4 font-bold text-center">Total Par</th>
+                  <th className="p-4 font-bold text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {courses.map(course => (
+                  <tr key={course.course_id} className="hover:bg-dark-surface/50 transition-colors">
+                    <td className="p-4 font-bold">{course.name}</td>
+                    <td className="p-4 text-center font-data font-bold text-kelly-green">
+                      {course.holes ? course.holes.reduce((sum, h) => sum + h.par, 0) : 'N/A'}
+                    </td>
+                    <td className="p-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => handleEdit(course)} className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase">
+                          <Edit size={14} /> Edit
+                        </button>
+                        <button onClick={() => handleDelete(course.course_id)} className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-xs uppercase">
+                          <Trash2 size={14} /> Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      <div className="form-section">
-        <h3>{editingId ? 'Edit Course' : 'Add New Course'}</h3>
-        <form onSubmit={handleSubmit} className="add-form">
-          <div className="form-group">
-            <label htmlFor="courseName">Course Name *</label>
-            <input
-              type="text"
-              id="courseName"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </div>
+      <div>
+        <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
+          <Edit size={20} className="text-kelly-green" /> {editingId ? 'Edit Course' : 'Add New Course'}
+        </h3>
 
-          <div className="form-group">
-            <label htmlFor="courseSize">Number of Holes</label>
-            <select
-              id="courseSize"
-              value={courseSize}
-              onChange={handleCourseSizeChange}
-            >
-              <option value={9}>9 Holes</option>
-              <option value={18}>18 Holes</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Hole Pars</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-              {holes.map((holeObj, index) => (
-                <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <label htmlFor={`hole-${holeObj.hole}`} style={{ fontSize: '0.8rem', marginBottom: '2px' }}>Hole {holeObj.hole}</label>
-                  <input
-                    type="number"
-                    id={`hole-${holeObj.hole}`}
-                    min="1"
-                    value={holeObj.par}
-                    onChange={(e) => handleHoleParChange(index, e.target.value)}
-                    style={{ width: '100%', padding: '0.25rem' }}
-                    required
-                  />
-                </div>
-              ))}
+        <div className="bg-dark-surface border border-slate-800 rounded-2xl p-6 shadow-xl">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="courseName">Course Name *</label>
+              <input
+                type="text"
+                id="courseName"
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
             </div>
-          </div>
 
-          <button type="submit" className="btn-primary" style={{ marginBottom: '1rem', marginTop: '1rem' }}>
-            {editingId ? 'Update Course' : 'Add Course'}
-          </button>
-          {editingId && (
-            <button type="button" onClick={cancelEdit} className="btn-secondary" style={{ width: '100%' }}>Cancel Edit</button>
-          )}
-        </form>
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="courseSize">Number of Holes</label>
+              <select
+                id="courseSize"
+                value={courseSize}
+                onChange={handleCourseSizeChange}
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
+              >
+                <option value={9}>9 Holes</option>
+                <option value={18}>18 Holes</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Hole Pars</label>
+              <div className="grid grid-cols-3 gap-3 bg-dark-bg p-3 rounded-xl border border-slate-800 max-h-60 overflow-y-auto no-scrollbar">
+                {holes.map((holeObj, index) => (
+                  <div key={index} className="flex flex-col items-center">
+                    <label htmlFor={`hole-${holeObj.hole}`} className="text-[10px] text-slate-500 font-bold mb-1">H{holeObj.hole}</label>
+                    <input
+                      type="number"
+                      id={`hole-${holeObj.hole}`}
+                      min="1"
+                      className="w-full bg-dark-surface border border-slate-700 rounded-lg px-2 py-2 text-white focus:border-kelly-green focus:outline-none transition-colors text-center font-data"
+                      value={holeObj.par}
+                      onChange={(e) => handleHoleParChange(index, e.target.value)}
+                      required
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-2 flex flex-col gap-3">
+              <button type="submit" className="w-full bg-kelly-green text-dark-bg py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors flex items-center justify-center gap-2">
+                <Check size={16} /> {editingId ? 'Update Course' : 'Add Course'}
+              </button>
+              {editingId && (
+                <button type="button" onClick={cancelEdit} className="w-full bg-slate-700 text-white py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-slate-600 transition-colors flex items-center justify-center gap-2">
+                  <X size={16} /> Cancel Edit
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

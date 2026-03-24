@@ -86,61 +86,6 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.App {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.App-nav {
-  background-color: var(--nav-bg);
-  padding: 1rem 2rem;
-  box-shadow: 0 2px 4px var(--shadow-color);
-}
-
-.App-nav ul {
-  display: flex;
-  list-style-type: none;
-  gap: 2rem;
-  align-items: center;
-}
-
-.App-nav a {
-  color: var(--nav-text);
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 1.1rem;
-  transition: color 0.3s ease;
-}
-
-.App-nav a:hover {
-  color: var(--nav-hover);
-}
-
-.theme-toggle-btn {
-  background: transparent;
-  border: 1px solid var(--nav-text);
-  color: var(--nav-text);
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  margin-left: auto;
-}
-
-.theme-toggle-btn:hover {
-  background-color: var(--nav-text);
-  color: var(--nav-bg);
-}
-
-.App-main {
-  flex: 1;
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  width: 100%;
-}
 
 .page-container {
   background-color: var(--container-bg);
