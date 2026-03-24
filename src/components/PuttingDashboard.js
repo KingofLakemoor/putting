@@ -4,16 +4,17 @@ import { Trophy, TrendingUp, PlusCircle, Activity, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Dialog } from '@headlessui/react';
 import { useAuth } from '../contexts/AuthContext';
-import { getActiveRoundForUser, createActiveRound } from '../db';
+import { getActiveRoundForUser, createActiveRound, getRounds } from '../db';
 
-const PuttingDashboard = ({ activeRounds = [], standings = [] }) => {
+const PuttingDashboard = ({ standings = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeRoundId, setActiveRoundId] = useState(null);
+  const [activeEventRounds, setActiveEventRounds] = useState([]);
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    const checkActiveRound = async () => {
+    const fetchData = async () => {
       if (currentUser) {
         try {
           const round = await getActiveRoundForUser(currentUser.uid);
@@ -24,8 +25,16 @@ const PuttingDashboard = ({ activeRounds = [], standings = [] }) => {
           console.error("Error fetching active round:", error);
         }
       }
+
+      try {
+        const rounds = await getRounds();
+        const activeEvents = rounds.filter(r => r.status === 'Active');
+        setActiveEventRounds(activeEvents);
+      } catch (error) {
+        console.error("Error fetching event rounds:", error);
+      }
     };
-    checkActiveRound();
+    fetchData();
   }, [currentUser]);
 
   const handleStartRound = async () => {
@@ -33,12 +42,21 @@ const PuttingDashboard = ({ activeRounds = [], standings = [] }) => {
       if (activeRoundId) {
         navigate(`/scorecard/${activeRoundId}`);
       } else {
-        const userName = currentUser.displayName || currentUser.email;
-        const newRound = await createActiveRound(currentUser.uid, userName);
-        navigate(`/scorecard/${newRound.round_id}`);
+        setIsOpen(true);
       }
     } catch (error) {
       console.error("Error starting round:", error);
+    }
+  };
+
+  const handleSelectEventRound = async (eventRound) => {
+    try {
+      setIsOpen(false);
+      const userName = currentUser.displayName || currentUser.email;
+      const newRound = await createActiveRound(currentUser.uid, userName, eventRound.round_id, eventRound.name);
+      navigate(`/scorecard/${newRound.round_id}`);
+    } catch (error) {
+      console.error("Error creating round from event:", error);
     }
   };
 
@@ -156,18 +174,15 @@ const PuttingDashboard = ({ activeRounds = [], standings = [] }) => {
                     </div>
 
                     <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                      {activeRounds.length === 0 ? (
+                      {activeEventRounds.length === 0 ? (
                         <p className="text-slate-400 text-sm">No active rounds available right now.</p>
                       ) : (
-                        activeRounds.map((round) => {
+                        activeEventRounds.map((round) => {
                           const dateStr = new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' });
                           return (
                             <button
                               key={round.round_id}
-                              onClick={() => {
-                                setIsOpen(false);
-                                navigate(`/rounds/${round.round_id}/scorecard`);
-                              }}
+                              onClick={() => handleSelectEventRound(round)}
                               className="w-full text-left p-4 bg-dark-bg/50 border border-slate-700 hover:border-kelly-green/50 hover:bg-slate-800/50 rounded-xl transition-all group flex justify-between items-center"
                             >
                               <div>
@@ -206,13 +221,13 @@ const PuttingDashboard = ({ activeRounds = [], standings = [] }) => {
               <Activity size={18} className="text-kelly-green" />
               <h2 className="font-sports text-xl uppercase">Report Scores</h2>
            </div>
-           {activeRounds.length === 0 ? (
+           {activeEventRounds.length === 0 ? (
              <p className="text-slate-400">
                Have an idea for a putting league? Let Club 602 know on <a href="https://www.instagram.com/club_602/" className="text-kelly-green hover:underline">Instagram</a>.
              </p>
            ) : (
              <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
-                {activeRounds.map(round => {
+                {activeEventRounds.map(round => {
                   const dateStr = new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' });
                   return (
                     <div key={round.round_id} className="min-w-[280px] bg-dark-bg p-4 rounded-xl border border-slate-800 flex justify-between items-center shrink-0">
@@ -220,9 +235,9 @@ const PuttingDashboard = ({ activeRounds = [], standings = [] }) => {
                         <p className="font-bold">{round.name ? round.name : 'Round'}</p>
                         <p className="text-xs text-slate-500">{dateStr} - {round.location}</p>
                       </div>
-                      <Link to={`/rounds/${round.round_id}/scorecard`} className="bg-slate-800 px-4 py-2 rounded-lg text-xs font-bold hover:bg-kelly-green hover:text-dark-bg transition-colors">
+                      <button onClick={() => handleSelectEventRound(round)} className="bg-slate-800 px-4 py-2 rounded-lg text-xs font-bold hover:bg-kelly-green hover:text-dark-bg transition-colors">
                         SCORE
-                      </Link>
+                      </button>
                     </div>
                   );
                 })}
