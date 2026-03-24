@@ -288,7 +288,7 @@ const PuttingDashboard = ({ standings = [] }) => {
         </AnimatePresence>
 
         {/* MIDDLE RIGHT: RECENT PERFORMANCE (Small Square) */}
-        <div className="order-3 md:order-none bg-dark-surface border border-slate-700/50 rounded-2xl p-6 flex flex-col justify-between">
+        <div className="order-3 md:order-none bg-dark-surface border border-slate-700/50 rounded-2xl p-6 flex flex-col justify-between relative">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">My Avg</h3>
           <div className="text-5xl font-data font-black text-white">{myAvg}</div>
           {avgTrend && (
@@ -296,6 +296,9 @@ const PuttingDashboard = ({ standings = [] }) => {
               {trendIcon} {avgTrend}
             </div>
           )}
+          <Link to="/history" className="absolute bottom-6 right-6 text-[10px] text-slate-500 hover:text-white transition-colors uppercase font-bold tracking-widest">
+            More Stats
+          </Link>
         </div>
 
         {/* BOTTOM FULL: ACTIVE ROUNDS / REPORTING (Horizontal) */}
