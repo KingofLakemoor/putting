@@ -8,7 +8,8 @@ import {
   updateDoc,
   deleteDoc,
   query,
-  where
+  where,
+  serverTimestamp
 } from 'firebase/firestore';
 
 const PLAYERS_KEY = 'putting_league_players';
@@ -36,6 +37,35 @@ export const getCourse = async (course_id) => {
   const courseDoc = await getDocs(query(collection(db, COURSES_KEY), where("course_id", "==", course_id)));
   if (!courseDoc.empty) {
     return courseDoc.docs[0].data();
+  }
+  return null;
+};
+
+export const createActiveRound = async (userId, userName) => {
+  const round_id = uuidv4();
+  const newRound = {
+    round_id,
+    player_id: userId,
+    player_name: userName,
+    status: "active",
+    current_hole: 1,
+    scores: {},
+    created_at: serverTimestamp(),
+    venue: "Dobson Ranch"
+  };
+  await setDoc(doc(db, ROUNDS_KEY, round_id), newRound);
+  return newRound;
+};
+
+export const getActiveRoundForUser = async (userId) => {
+  const roundQuery = query(
+    collection(db, ROUNDS_KEY),
+    where("status", "==", "active"),
+    where("player_id", "==", userId)
+  );
+  const querySnapshot = await getDocs(roundQuery);
+  if (!querySnapshot.empty) {
+    return querySnapshot.docs[0].data();
   }
   return null;
 };
