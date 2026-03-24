@@ -3,6 +3,7 @@ import { db } from './firebase';
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   setDoc,
   updateDoc,
@@ -51,6 +52,24 @@ export const removeArchivedSeason = async (season) => {
   await setDoc(settingsRef, { archived_seasons: updatedArchived }, { merge: true });
 };
 
+export const getActualPlayerId = async (uid_or_player_id) => {
+  if (!uid_or_player_id) return null;
+  const q = query(collection(db, PLAYERS_KEY), where("uid", "==", uid_or_player_id));
+  const snapshot = await getDocs(q);
+  if (!snapshot.empty) return snapshot.docs[0].data().player_id;
+
+  // Fallback: check if uid is already a player_id
+  try {
+    const pRef = doc(db, PLAYERS_KEY, uid_or_player_id);
+    const pSnap = await getDoc(pRef);
+    if (pSnap.exists()) return pSnap.data().player_id;
+  } catch (e) {
+    // Ignore invalid doc id errors
+  }
+
+  return uid_or_player_id;
+};
+
 // --- Coordinators ---
 export const getCoordinators = async () => {
   const querySnapshot = await getDocs(collection(db, COORDINATORS_KEY));
@@ -75,10 +94,11 @@ export const getCourse = async (course_id) => {
 };
 
 export const createActiveRound = async (userId, userName, eventRoundId = null, eventRoundName = null, eventCourseId = null) => {
+  const actualId = await getActualPlayerId(userId);
   const round_id = uuidv4();
   const newRound = {
     round_id,
-    player_id: userId,
+    player_id: actualId,
     player_name: userName,
     status: "active",
     current_hole: 1,
@@ -94,12 +114,15 @@ export const createActiveRound = async (userId, userName, eventRoundId = null, e
 };
 
 export const getActiveRoundForUser = async (userId) => {
+  const actualId = await getActualPlayerId(userId);
+
   const roundQuery = query(
     collection(db, ROUNDS_KEY),
     where("status", "==", "active"),
-    where("player_id", "==", userId)
+    where("player_id", "==", actualId)
   );
   const querySnapshot = await getDocs(roundQuery);
+
   if (!querySnapshot.empty) {
     return querySnapshot.docs[0].data();
   }
@@ -282,7 +305,9 @@ export const getScoresForRound = async (round_id) => {
 };
 
 export const getScoresForPlayer = async (player_id) => {
-  const scoresQuery = query(collection(db, SCORES_KEY), where("player_id", "==", player_id));
+  const actualId = await getActualPlayerId(player_id);
+
+  const scoresQuery = query(collection(db, SCORES_KEY), where("player_id", "==", actualId));
   const querySnapshot = await getDocs(scoresQuery);
   return querySnapshot.docs.map(doc => doc.data());
 };
