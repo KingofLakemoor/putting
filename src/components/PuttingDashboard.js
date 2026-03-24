@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, TrendingUp, PlusCircle, Activity, X } from 'lucide-react';
+import { Trophy, TrendingUp, TrendingDown, Minus, PlusCircle, Activity, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Dialog } from '@headlessui/react';
 import { useAuth } from '../contexts/AuthContext';
-import { getActiveRoundForUser, createActiveRound, getRounds } from '../db';
+import { getActiveRoundForUser, createActiveRound, getRounds, getScoresForPlayer, getCourses } from '../db';
 
 const PuttingDashboard = ({ standings = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeRoundId, setActiveRoundId] = useState(null);
   const [activeEventRounds, setActiveEventRounds] = useState([]);
+  const [myAvg, setMyAvg] = useState('--');
+  const [avgTrend, setAvgTrend] = useState(null);
+  const [trendIcon, setTrendIcon] = useState(null);
+  const [trendColor, setTrendColor] = useState('text-slate-500');
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
@@ -23,6 +27,83 @@ const PuttingDashboard = ({ standings = [] }) => {
           }
         } catch (error) {
           console.error("Error fetching active round:", error);
+        }
+
+        try {
+          // Calculate My Avg
+          const [scores, rounds, courses] = await Promise.all([
+            getScoresForPlayer(currentUser.uid),
+            getRounds(),
+            getCourses()
+          ]);
+
+          if (scores.length > 0) {
+            const courseHolesMap = {};
+            for (const course of courses) {
+              courseHolesMap[course.course_id] = course.holes ? course.holes.length : 18; // default to 18 if no holes
+            }
+
+            const roundCourseMap = {};
+            for (const r of rounds) {
+               roundCourseMap[r.round_id] = r.course_id;
+            }
+
+            const now = Date.now();
+            const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+
+            let totalScore = 0;
+            let totalHoles = 0;
+            let previousTotalScore = 0;
+            let previousTotalHoles = 0;
+
+            for (const score of scores) {
+              const parsedScore = parseInt(score.score, 10);
+              if (isNaN(parsedScore)) continue;
+
+              const courseId = roundCourseMap[score.round_id];
+              // Default to 18 holes if course not found (e.g., deleted course or casual round without course_id linked properly)
+              const holes = courseId && courseHolesMap[courseId] ? courseHolesMap[courseId] : 18;
+
+              totalScore += parsedScore;
+              totalHoles += holes;
+
+              // Check if score is older than 7 days
+              // We'll use the score's timestamp or the round's date
+              const roundObj = rounds.find(r => r.round_id === score.round_id);
+              const scoreDate = score.timestamp ? new Date(score.timestamp).getTime() : (roundObj && roundObj.date ? new Date(roundObj.date).getTime() : 0);
+
+              if (scoreDate && scoreDate <= sevenDaysAgo) {
+                 previousTotalScore += parsedScore;
+                 previousTotalHoles += holes;
+              }
+            }
+
+            if (totalHoles > 0) {
+               const currentAvg = (totalScore / totalHoles) * 18;
+               setMyAvg(currentAvg.toFixed(1));
+
+               if (previousTotalHoles > 0) {
+                  const previousAvg = (previousTotalScore / previousTotalHoles) * 18;
+                  const diff = currentAvg - previousAvg;
+
+                  if (Math.abs(diff) < 0.1) {
+                      setAvgTrend('stable');
+                      setTrendIcon(<Minus size={14} />);
+                      setTrendColor('text-slate-500');
+                  } else if (diff > 0) {
+                      setAvgTrend(`+${Math.abs(diff).toFixed(1)} from last week`);
+                      setTrendIcon(<TrendingDown size={14} />);
+                      setTrendColor('text-red-500'); // Higher is worse in golf
+                  } else {
+                      setAvgTrend(`${diff.toFixed(1)} from last week`);
+                      setTrendIcon(<TrendingUp size={14} />);
+                      setTrendColor('text-kelly-green'); // Lower is better
+                  }
+               }
+            }
+          }
+        } catch (error) {
+           console.error("Error calculating average:", error);
         }
       }
 
@@ -209,10 +290,12 @@ const PuttingDashboard = ({ standings = [] }) => {
         {/* MIDDLE RIGHT: RECENT PERFORMANCE (Small Square) */}
         <div className="order-3 md:order-none bg-dark-surface border border-slate-700/50 rounded-2xl p-6 flex flex-col justify-between">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">My Avg</h3>
-          <div className="text-5xl font-data font-black text-white">2.4</div>
-          <div className="text-kelly-green text-xs flex items-center gap-1">
-            <TrendingUp size={14} /> +0.2 from last week
-          </div>
+          <div className="text-5xl font-data font-black text-white">{myAvg}</div>
+          {avgTrend && (
+            <div className={`${trendColor} text-xs flex items-center gap-1 mt-2`}>
+              {trendIcon} {avgTrend}
+            </div>
+          )}
         </div>
 
         {/* BOTTOM FULL: ACTIVE ROUNDS / REPORTING (Horizontal) */}
