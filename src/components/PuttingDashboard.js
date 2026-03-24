@@ -134,7 +134,7 @@ const PuttingDashboard = ({ standings = [] }) => {
     try {
       setIsOpen(false);
       const userName = currentUser.displayName || currentUser.email;
-      const newRound = await createActiveRound(currentUser.uid, userName, eventRound.round_id, eventRound.name);
+      const newRound = await createActiveRound(currentUser.uid, userName, eventRound.round_id, eventRound.name, eventRound.course_id);
       navigate(`/scorecard/${newRound.round_id}`);
     } catch (error) {
       console.error("Error creating round from event:", error);

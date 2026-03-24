@@ -41,7 +41,7 @@ export const getCourse = async (course_id) => {
   return null;
 };
 
-export const createActiveRound = async (userId, userName, eventRoundId = null, eventRoundName = null) => {
+export const createActiveRound = async (userId, userName, eventRoundId = null, eventRoundName = null, eventCourseId = null) => {
   const round_id = uuidv4();
   const newRound = {
     round_id,
@@ -54,6 +54,7 @@ export const createActiveRound = async (userId, userName, eventRoundId = null, e
     venue: "Dobson Ranch",
     ...(eventRoundId && { event_round_id: eventRoundId }),
     ...(eventRoundName && { event_round_name: eventRoundName }),
+    ...(eventCourseId && { course_id: eventCourseId }),
   };
   await setDoc(doc(db, ROUNDS_KEY, round_id), newRound);
   return newRound;
