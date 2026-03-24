@@ -235,8 +235,8 @@ const PuttingDashboard = () => {
             <Link to={leaderboardLink} className="text-xs font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-wider">VIEW ALL</Link>
           </div>
 
-          <div className="space-y-3 flex-1">
-            {dashboardStandings.slice(0, 3).map((player, index) => {
+          <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+            {dashboardStandings.map((player, index) => {
               const rank = index + 1;
               return (
                 <div key={player.player_id} className="flex items-center justify-between p-4 bg-dark-bg/50 rounded-xl border-l-4 border-kelly-green group-hover:translate-x-1 transition-transform">
