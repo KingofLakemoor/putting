@@ -58,7 +58,7 @@ const ScorecardPage = () => {
 
         await addScore({
           player_id: currentUser.uid,
-          round_id: roundId,
+          round_id: roundData.event_round_id || roundId,
           score: currentTotal
         });
 
