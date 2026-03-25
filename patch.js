@@ -1,82 +1,96 @@
 const fs = require('fs');
-const filepath = 'src/components/ScoreEntry.js';
-let content = fs.readFileSync(filepath, 'utf8');
+let file = fs.readFileSync('src/pages/VenueDashboard.js', 'utf8');
 
-// 1. We replace the useState and useEffect with derived state
-content = content.replace(
-  'const [score, setScore] = useState(scoreValue || par);\n  const [opponentScore, setOpponentScore] = useState(opponentScoreValue || par);\n\n  useEffect(() => {\n    setScore(scoreValue || par);\n    setOpponentScore(opponentScoreValue || par);\n  }, [holeNumber, scoreValue, opponentScoreValue, par]);',
-  `const [score, setScore] = useState(scoreValue !== undefined ? scoreValue : null);
-  const [opponentScore, setOpponentScore] = useState(opponentScoreValue !== undefined ? opponentScoreValue : null);
-  const [prevHole, setPrevHole] = useState(holeNumber);
+// add PLAYERS_KEY
+file = file.replace("const ROUNDS_KEY = 'putting_league_rounds';", "const ROUNDS_KEY = 'putting_league_rounds';\nconst PLAYERS_KEY = 'putting_league_players';");
 
-  if (holeNumber !== prevHole) {
-    setPrevHole(holeNumber);
-    setScore(scoreValue !== undefined ? scoreValue : null);
-    setOpponentScore(opponentScoreValue !== undefined ? opponentScoreValue : null);
-  }`
-);
+// add players state
+file = file.replace("  const [activeRounds, setActiveRounds] = useState([]);", "  const [activeRounds, setActiveRounds] = useState([]);\n  const [players, setPlayers] = useState([]);");
 
-// 2. We replace the color logic
-content = content.replace(
-  `  const getScoreColor = (s) => {
-    if (s < par) return 'text-kelly-green border-kelly-green bg-kelly-green/10';
-    if (s > par) return 'text-red-500 border-red-500 bg-red-500/10';
-    return 'text-white border-slate-700 bg-slate-800/50';
-  };`,
-  `  const getScoreColor = (s) => {
-    if (s === null) return 'text-white border-slate-700 bg-slate-800/50';
-    if (s < par) return 'text-kelly-green border-kelly-green bg-kelly-green/10';
-    if (s > par) return 'text-red-500 border-red-500 bg-red-500/10';
-    return 'text-white border-slate-700 bg-slate-800/50';
-  };`
-);
+// add players listener
+file = file.replace("    // Listen for live rounds on the course", "    const unsubscribePlayers = onSnapshot(collection(db, PLAYERS_KEY), (snapshot) => {\n      setPlayers(snapshot.docs.map(doc => doc.data()));\n    });\n\n    // Listen for live rounds on the course");
+file = file.replace("      unsubscribeRounds();", "      unsubscribeRounds();\n      unsubscribePlayers();");
 
-// 3. Update the display value from score to (score === null ? '-' : score)
-content = content.replace(
-  '<span className="text-6xl md:text-7xl font-data font-black">{score}</span>',
-  '<span className="text-6xl md:text-7xl font-data font-black">{score === null ? \'-\' : score}</span>'
-);
+// fix active round filter
+file = file.replace("      const currentActive = allRounds.filter(r => (r.status || '').toLowerCase() === 'active' && r.player_id && r.course_id && r.scores);", "      const currentActive = allRounds.filter(r => (r.status || '').toLowerCase() === 'active' && r.player_id && r.scores);");
 
-content = content.replace(
-  '<span className="text-6xl md:text-7xl font-data font-black">{opponentScore}</span>',
-  '<span className="text-6xl md:text-7xl font-data font-black">{opponentScore === null ? \'-\' : opponentScore}</span>'
-);
+// calculate opponent scores in livePlayers
+const searchStr = `  const livePlayers = useMemo(() => {
+    return activeRounds.map(r => {
+      let currentScore = 0;
+      let holesPlayed = 0;
 
-// 4. Update the +/- logic for User
-content = content.replace(
-  'onClick={() => setScore(Math.max(1, score - 1))}',
-  'onClick={() => setScore(score === null ? Math.max(1, par - 1) : Math.max(1, score - 1))}'
-);
+      if (r.scores) {
+        Object.values(r.scores).forEach(s => {
+          if (s > 0) {
+            currentScore += s;
+            holesPlayed++;
+          }
+        });
+      }
+      return {
+        id: r.round_id,
+        playerName: r.player_name || 'Unknown Player',
+        eventName: r.event_round_name || 'Practice Round',
+        currentScore,
+        holesPlayed
+      };
+    }).sort((a, b) => b.holesPlayed - a.holesPlayed); // Most progress first
+  }, [activeRounds]);`;
 
-content = content.replace(
-  'onClick={() => setScore(score + 1)}',
-  'onClick={() => setScore(score === null ? par + 1 : score + 1)}'
-);
+const replacementStr = `  const livePlayers = useMemo(() => {
+    const playersList = [];
 
-// 5. Update the +/- logic for Opponent
-content = content.replace(
-  'onClick={() => setOpponentScore(Math.max(1, opponentScore - 1))}',
-  'onClick={() => setOpponentScore(opponentScore === null ? Math.max(1, par - 1) : Math.max(1, opponentScore - 1))}'
-);
+    activeRounds.forEach(r => {
+      let currentScore = 0;
+      let holesPlayed = 0;
 
-content = content.replace(
-  'onClick={() => setOpponentScore(opponentScore + 1)}',
-  'onClick={() => setOpponentScore(opponentScore === null ? par + 1 : opponentScore + 1)}'
-);
+      if (r.scores) {
+        Object.values(r.scores).forEach(s => {
+          if (s > 0) {
+            currentScore += s;
+            holesPlayed++;
+          }
+        });
+      }
 
-// 6. Disable Save Hole button if any score is missing
-content = content.replace(
-  `<button
-            onClick={() => onSave(score, opponentId ? opponentScore : undefined)}
-            className="flex items-center justify-center gap-2 py-4 rounded-xl font-bold bg-kelly-green text-dark-bg shadow-[0_0_20px_rgba(76,187,23,0.3)]"
-          >`,
-  `{/* Disable SAVE HOLE if scores are not yet filled */}
-          <button
-            onClick={() => onSave(score, opponentId ? opponentScore : undefined)}
-            disabled={score === null || (opponentId && opponentScore === null)}
-            className="flex items-center justify-center gap-2 py-4 rounded-xl font-bold bg-kelly-green text-dark-bg shadow-[0_0_20px_rgba(76,187,23,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
-          >`
-);
+      playersList.push({
+        id: r.round_id + '_p1',
+        playerName: r.player_name || 'Unknown Player',
+        eventName: r.event_round_name || 'Practice Round',
+        currentScore,
+        holesPlayed
+      });
 
+      if (r.opponent_id && r.opponent_scores) {
+        let oppScore = 0;
+        let oppHolesPlayed = 0;
+        Object.values(r.opponent_scores).forEach(s => {
+          if (s > 0) {
+            oppScore += s;
+            oppHolesPlayed++;
+          }
+        });
 
-fs.writeFileSync(filepath, content);
+        const opponent = players.find(p => p.player_id === r.opponent_id || p.uid === r.opponent_id);
+        const oppName = opponent ? opponent.name : 'Unknown Opponent';
+
+        playersList.push({
+          id: r.round_id + '_p2',
+          playerName: oppName,
+          eventName: r.event_round_name || 'Practice Round',
+          currentScore: oppScore,
+          holesPlayed: oppHolesPlayed
+        });
+      }
+    });
+
+    return playersList.sort((a, b) => b.holesPlayed - a.holesPlayed); // Most progress first
+  }, [activeRounds, players]);`;
+
+file = file.replace(searchStr, replacementStr);
+
+// remove pointer-events-none
+file = file.replace('className="scale-110 transform origin-top w-[90%] mx-auto pointer-events-none"', 'className="scale-110 transform origin-top w-[90%] mx-auto"');
+
+fs.writeFileSync('src/pages/VenueDashboard.js', file);

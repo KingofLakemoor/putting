@@ -98,13 +98,13 @@ function RoundDetails() {
           <div className="flex flex-wrap items-center gap-4 text-slate-400 font-data text-xs uppercase tracking-widest">
             <span className="flex items-center gap-1"><Calendar size={14} className="text-kelly-green" /> {dateStr}</span>
             <span className="flex items-center gap-1"><MapPin size={14} className="text-kelly-green" /> {round.location}</span>
-            <span className={`px-2 py-1 rounded font-bold text-[10px] ${round.status === 'Active' ? 'bg-kelly-green/20 text-kelly-green' : 'bg-slate-800 text-slate-300'}`}>
+            <span className={`px-2 py-1 rounded font-bold text-[10px] ${(round.status || '').toLowerCase() === 'active' ? 'bg-kelly-green/20 text-kelly-green' : 'bg-slate-800 text-slate-300'}`}>
               {round.status}
             </span>
           </div>
         </div>
 
-        {round.status === 'Active' && (
+        {(round.status || '').toLowerCase() === 'active' && (
           <Link to={`/rounds/${id}/scorecard`} className="w-full md:w-auto bg-kelly-green text-dark-bg py-3 px-6 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors flex items-center justify-center gap-2">
             <PlusCircle size={18} /> Fill Scorecard
           </Link>
@@ -164,7 +164,7 @@ function RoundDetails() {
           )}
         </div>
 
-        {round.status === 'Active' && (
+        {(round.status || '').toLowerCase() === 'active' && (
           <div>
             <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
               <PlusCircle size={20} className="text-kelly-green" /> Enter Score
