@@ -39,6 +39,10 @@ function SignIn() {
           // Fallback profile creation for stranded users
           const fallbackName = email.split('@')[0];
           await addPlayer({ name: fallbackName, email, uid: user.uid });
+        } else if (!existingPlayer.uid) {
+          // If an existing player profile was found but has no UID (e.g., added manually via admin),
+          // automatically link this user's Auth UID to it.
+          await updatePlayer(existingPlayer.player_id, { uid: user.uid });
         }
       } catch (dbError) {
         console.warn("Could not verify/create fallback player profile", dbError);

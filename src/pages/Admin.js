@@ -192,6 +192,7 @@ function AdminPlayers() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [uid, setUid] = useState('');
   const [editingId, setEditingId] = useState(null);
 
   const loadPlayers = async () => {
@@ -208,16 +209,22 @@ function AdminPlayers() {
 
     const formattedName = `${firstName.trim()} ${lastName.trim().charAt(0).toUpperCase()}.`;
 
+    const playerData = { name: formattedName, email };
+    if (uid.trim()) {
+      playerData.uid = uid.trim();
+    }
+
     if (editingId) {
-      await updatePlayer(editingId, { name: formattedName, email });
+      await updatePlayer(editingId, playerData);
       setEditingId(null);
     } else {
-      await addPlayer({ name: formattedName, email });
+      await addPlayer(playerData);
     }
 
     setFirstName('');
     setLastName('');
     setEmail('');
+    setUid('');
     loadPlayers();
   };
 
@@ -240,6 +247,7 @@ function AdminPlayers() {
     }
 
     setEmail(player.email || '');
+    setUid(player.uid || '');
   };
 
   const handleDelete = async (id) => {
@@ -254,6 +262,7 @@ function AdminPlayers() {
     setFirstName('');
     setLastName('');
     setEmail('');
+    setUid('');
   };
 
   return (
@@ -274,6 +283,7 @@ function AdminPlayers() {
                 <tr>
                   <th className="p-4 font-bold">Name</th>
                   <th className="p-4 font-bold">Email</th>
+                  <th className="p-4 font-bold">UID</th>
                   <th className="p-4 font-bold text-right">Actions</th>
                 </tr>
               </thead>
@@ -282,6 +292,7 @@ function AdminPlayers() {
                   <tr key={player.player_id} className="hover:bg-dark-surface/50 transition-colors">
                     <td className="p-4 font-bold">{player.name}</td>
                     <td className="p-4 text-slate-300">{player.email}</td>
+                    <td className="p-4 text-slate-400 text-xs font-mono">{player.uid || 'N/A'}</td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2">
                         <button onClick={() => handleEdit(player)} className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase">
@@ -339,6 +350,18 @@ function AdminPlayers() {
                 className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="playerUid">Firebase UID</label>
+              <input
+                type="text"
+                id="playerUid"
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors font-mono text-sm"
+                value={uid}
+                onChange={(e) => setUid(e.target.value)}
+                placeholder="Optional Auth UID"
               />
             </div>
 
