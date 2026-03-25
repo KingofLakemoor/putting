@@ -59,10 +59,18 @@ function RoundDetails() {
 
   // Map player info to scores for display
   const scoredPlayers = scores.map(score => {
-    const player = players.find(p => p.player_id === score.player_id || p.uid === score.player_id);
+    let player = players.find(p => p.player_id === score.player_id || p.uid === score.player_id);
+
+    // Fallback: Link by player_name if the score belongs to the round's creator
+    if (!player && round.player_id === score.player_id && round.player_name) {
+       player = players.find(p => p.name.toLowerCase() === round.player_name.toLowerCase());
+    }
+
+    const fallbackName = (round.player_id === score.player_id && round.player_name) ? round.player_name : 'Unknown Player';
+
     return {
       ...score,
-      playerName: player ? player.name : 'Unknown Player',
+      playerName: player ? player.name : fallbackName,
     };
   }).sort((a, b) => {
     // Sort by score ascending (lower is better)

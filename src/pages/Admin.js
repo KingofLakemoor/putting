@@ -732,8 +732,23 @@ function AdminScores() {
     }
   };
 
-  const getPlayerName = (id) => {
-    const player = players.find(p => p.player_id === id || p.uid === id);
+  const getPlayerName = (id, round_id) => {
+    let player = players.find(p => p.player_id === id || p.uid === id);
+    if (!player && round_id) {
+       const round = rounds.find(r => r.round_id === round_id);
+       if (round && round.player_id === id && round.player_name) {
+           player = players.find(p => p.name.toLowerCase() === round.player_name.toLowerCase());
+       }
+    }
+
+    // Fallback if player document STILL not found, just show the name from the round so it's not "Unknown"
+    if (!player && round_id) {
+        const round = rounds.find(r => r.round_id === round_id);
+        if (round && round.player_id === id && round.player_name) {
+             return round.player_name;
+        }
+    }
+
     return player ? player.name : 'Unknown Player';
   };
 
@@ -769,7 +784,7 @@ function AdminScores() {
               {scores.map(score => (
                 <tr key={score.score_id} className="hover:bg-dark-surface/50 transition-colors">
                   <td className="p-4 text-slate-300">{getRoundDetails(score.round_id)}</td>
-                  <td className="p-4 font-bold">{getPlayerName(score.player_id)}</td>
+                  <td className="p-4 font-bold">{getPlayerName(score.player_id, score.round_id)}</td>
                   <td className="p-4">
                     {editingId === score.score_id ? (
                       <input
