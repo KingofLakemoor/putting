@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldAlert, Users, CalendarDays, ClipboardList, Map, UserCog, Edit, Trash2, Check, X, Settings } from 'lucide-react';
+import { ShieldAlert, Users, CalendarDays, ClipboardList, Map, UserCog, Edit, Trash2, Check, X, Settings, RefreshCw } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, addRound, updateRoundStatus, updateRoundSeason, deleteRound, getScores, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse, getCoordinators, addCoordinator, removeCoordinator, getSettings, updateLiveSeason, addArchivedSeason, removeArchivedSeason } from '../db';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -265,12 +266,35 @@ function AdminPlayers() {
     setUid('');
   };
 
+  const handleGenerateMissingUids = async () => {
+    const playersMissingUid = players.filter(p => !p.uid);
+    if (playersMissingUid.length === 0) {
+      alert("All players already have a UID.");
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to generate UIDs for ${playersMissingUid.length} players?`)) {
+      for (const player of playersMissingUid) {
+        await updatePlayer(player.player_id, { uid: uuidv4() });
+      }
+      loadPlayers();
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2">
-        <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
-          <Users size={20} className="text-kelly-green" /> Players List
-        </h3>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 flex items-center gap-2">
+            <Users size={20} className="text-kelly-green" /> Players List
+          </h3>
+          <button
+            onClick={handleGenerateMissingUids}
+            className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase"
+          >
+            <RefreshCw size={14} /> Generate Missing UIDs
+          </button>
+        </div>
 
         {players.length === 0 ? (
           <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
@@ -355,14 +379,24 @@ function AdminPlayers() {
 
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="playerUid">Firebase UID</label>
-              <input
-                type="text"
-                id="playerUid"
-                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors font-mono text-sm"
-                value={uid}
-                onChange={(e) => setUid(e.target.value)}
-                placeholder="Optional Auth UID"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  id="playerUid"
+                  className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors font-mono text-sm"
+                  value={uid}
+                  onChange={(e) => setUid(e.target.value)}
+                  placeholder="Optional Auth UID"
+                />
+                <button
+                  type="button"
+                  onClick={() => setUid(uuidv4())}
+                  className="bg-slate-700 text-white px-4 py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-slate-600 transition-colors text-xs flex items-center justify-center whitespace-nowrap"
+                  title="Generate random UUID"
+                >
+                  <RefreshCw size={14} />
+                </button>
+              </div>
             </div>
 
             <div className="mt-2 flex flex-col gap-3">
