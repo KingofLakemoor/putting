@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Trophy, Medal, ChevronUp, ChevronDown, Minus } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
+import { getSettings } from '../db';
 
 const PLAYERS_KEY = 'putting_league_players';
 const ROUNDS_KEY = 'putting_league_rounds';
@@ -13,8 +14,17 @@ const LeagueStandings = () => {
   const [players, setPlayers] = useState([]);
   const [rounds, setRounds] = useState([]);
   const [scores, setScores] = useState([]);
+  const [liveSeason, setLiveSeason] = useState(null);
 
   useEffect(() => {
+    const fetchSettings = async () => {
+      const settings = await getSettings();
+      if (settings && settings.live_season) {
+        setLiveSeason(settings.live_season);
+      }
+    };
+    fetchSettings();
+
     const unsubscribePlayers = onSnapshot(collection(db, PLAYERS_KEY), (snapshot) => {
       setPlayers(snapshot.docs.map((doc) => doc.data()));
     });
@@ -57,19 +67,25 @@ const LeagueStandings = () => {
        const validRoundIds = new Set(currentRounds.map(r => r.round_id));
        currentScores = currentScores.filter(s => validRoundIds.has(s.round_id));
     } else if (filterParam === 'current_tournament') {
-       // Using the latest active round's season or round_id
-       const activeRounds = currentRounds.filter(r => r.status === 'Active');
-       if (activeRounds.length > 0) {
-           const latestActiveRound = activeRounds.sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0))[0];
-
-           if (latestActiveRound.season) {
-               currentRounds = currentRounds.filter(r => r.season === latestActiveRound.season);
-           } else {
-               currentRounds = currentRounds.filter(r => r.round_id === latestActiveRound.round_id);
-           }
-
+       if (liveSeason) {
+           currentRounds = currentRounds.filter(r => r.season === liveSeason);
            const validRoundIds = new Set(currentRounds.map(r => r.round_id));
            currentScores = currentScores.filter(s => validRoundIds.has(s.round_id));
+       } else {
+           // Using the latest active round's season or round_id
+           const activeRounds = currentRounds.filter(r => r.status === 'Active');
+           if (activeRounds.length > 0) {
+               const latestActiveRound = activeRounds.sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0))[0];
+
+               if (latestActiveRound.season) {
+                   currentRounds = currentRounds.filter(r => r.season === latestActiveRound.season);
+               } else {
+                   currentRounds = currentRounds.filter(r => r.round_id === latestActiveRound.round_id);
+               }
+
+               const validRoundIds = new Set(currentRounds.map(r => r.round_id));
+               currentScores = currentScores.filter(s => validRoundIds.has(s.round_id));
+           }
        }
     }
 
@@ -108,7 +124,7 @@ const LeagueStandings = () => {
       id: p.player_id || p.uid,
       rank: index + 1
     }));
-  }, [players, rounds, scores]);
+  }, [players, rounds, scores, liveSeason]);
 
   const currentRankings = useMemo(() => {
      return calculateRankings(null, filter);

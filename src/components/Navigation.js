@@ -31,6 +31,9 @@ export default function Navigation() {
           <Link to="/history" className="hover:text-kelly-green transition-colors">History</Link>
         </li>
         <li>
+          <Link to="/venue" className="hover:text-kelly-green transition-colors">Venue Dashboard</Link>
+        </li>
+        <li>
           <Link to="/admin" className="hover:text-kelly-green transition-colors">Admin</Link>
         </li>
         <li>
