@@ -39,9 +39,9 @@ function SignIn() {
           // Fallback profile creation for stranded users
           const fallbackName = email.split('@')[0];
           await addPlayer({ name: fallbackName, email, uid: user.uid });
-        } else if (!existingPlayer.uid) {
+        } else if (!existingPlayer.uid || existingPlayer.uid.length === 36) {
           // If an existing player profile was found but has no UID (e.g., added manually via admin),
-          // automatically link this user's Auth UID to it.
+          // or has a generated UUID (36 chars), automatically link this user's Auth UID to it.
           await updatePlayer(existingPlayer.player_id, { uid: user.uid });
         }
       } catch (dbError) {
