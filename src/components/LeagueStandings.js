@@ -73,7 +73,7 @@ const LeagueStandings = () => {
            currentScores = currentScores.filter(s => validRoundIds.has(s.round_id));
        } else {
            // Using the latest active round's season or round_id
-           const activeRounds = currentRounds.filter(r => r.status === 'Active');
+           const activeRounds = currentRounds.filter(r => (r.status || '').toLowerCase() === 'active');
            if (activeRounds.length > 0) {
                const latestActiveRound = activeRounds.sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0))[0];
 

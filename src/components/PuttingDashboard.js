@@ -112,7 +112,7 @@ const PuttingDashboard = () => {
 
       try {
         const rounds = await getRounds();
-        const activeEvents = rounds.filter(r => r.status === 'Active');
+        const activeEvents = rounds.filter(r => (r.status || '').toLowerCase() === 'active');
         setActiveEventRounds(activeEvents);
 
         // Fetch standings data

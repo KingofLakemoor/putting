@@ -6,16 +6,22 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import LeagueStandings from '../components/LeagueStandings';
 
 const ROUNDS_KEY = 'putting_league_rounds';
+const PLAYERS_KEY = 'putting_league_players';
 
 const VenueDashboard = () => {
   const [activeRounds, setActiveRounds] = useState([]);
+  const [players, setPlayers] = useState([]);
 
   useEffect(() => {
+    const unsubscribePlayers = onSnapshot(collection(db, PLAYERS_KEY), (snapshot) => {
+      setPlayers(snapshot.docs.map(doc => doc.data()));
+    });
+
     // Listen for live rounds on the course
     const unsubscribeRounds = onSnapshot(collection(db, ROUNDS_KEY), (snapshot) => {
       const allRounds = snapshot.docs.map(doc => doc.data());
       // Only keep 'Active' rounds that have a current user playing
-      const currentActive = allRounds.filter(r => r.status === 'Active' && r.player_id && r.course_id && r.scores);
+      const currentActive = allRounds.filter(r => (r.status || '').toLowerCase() === 'active' && r.player_id && r.scores);
 
       // Sort by last updated (if available) or by date
       currentActive.sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0));
@@ -24,12 +30,15 @@ const VenueDashboard = () => {
 
     return () => {
       unsubscribeRounds();
+      unsubscribePlayers();
     };
   }, []);
 
   // Compute a snapshot of how far each player is in their current round
   const livePlayers = useMemo(() => {
-    return activeRounds.map(r => {
+    const playersList = [];
+
+    activeRounds.forEach(r => {
       let currentScore = 0;
       let holesPlayed = 0;
 
@@ -41,15 +50,40 @@ const VenueDashboard = () => {
           }
         });
       }
-      return {
-        id: r.round_id,
+
+      playersList.push({
+        id: r.round_id + '_p1',
         playerName: r.player_name || 'Unknown Player',
         eventName: r.event_round_name || 'Practice Round',
         currentScore,
         holesPlayed
-      };
-    }).sort((a, b) => b.holesPlayed - a.holesPlayed); // Most progress first
-  }, [activeRounds]);
+      });
+
+      if (r.opponent_id && r.opponent_scores) {
+        let oppScore = 0;
+        let oppHolesPlayed = 0;
+        Object.values(r.opponent_scores).forEach(s => {
+          if (s > 0) {
+            oppScore += s;
+            oppHolesPlayed++;
+          }
+        });
+
+        const opponent = players.find(p => p.player_id === r.opponent_id || p.uid === r.opponent_id);
+        const oppName = opponent ? opponent.name : 'Unknown Opponent';
+
+        playersList.push({
+          id: r.round_id + '_p2',
+          playerName: oppName,
+          eventName: r.event_round_name || 'Practice Round',
+          currentScore: oppScore,
+          holesPlayed: oppHolesPlayed
+        });
+      }
+    });
+
+    return playersList.sort((a, b) => b.holesPlayed - a.holesPlayed); // Most progress first
+  }, [activeRounds, players]);
 
   return (
     <div className="min-h-screen bg-dark-bg text-white font-sans p-8 flex flex-col">
@@ -113,7 +147,7 @@ const VenueDashboard = () => {
 
         {/* Right Column: Embedded Leaderboard Standings */}
         <div className="bg-dark-surface border border-slate-700/50 rounded-3xl p-8 flex flex-col">
-          <div className="scale-110 transform origin-top w-[90%] mx-auto pointer-events-none">
+          <div className="scale-110 transform origin-top w-[90%] mx-auto">
             {/* Using the existing preview standings component which handles its own real-time data */}
             <LeagueStandings />
           </div>

@@ -499,7 +499,7 @@ function AdminRounds() {
   };
 
   const filteredRounds = rounds.filter(round =>
-    showArchived ? round.status === 'Archived' : round.status !== 'Archived'
+    showArchived ? (round.status || '').toLowerCase() === 'archived' : (round.status || '').toLowerCase() !== 'archived'
   );
 
   return (
