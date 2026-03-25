@@ -676,7 +676,7 @@ function AdminScores() {
   };
 
   const getPlayerName = (id) => {
-    const player = players.find(p => p.player_id === id);
+    const player = players.find(p => p.player_id === id || p.uid === id);
     return player ? player.name : 'Unknown Player';
   };
 

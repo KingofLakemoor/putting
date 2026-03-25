@@ -59,7 +59,7 @@ function RoundDetails() {
 
   // Map player info to scores for display
   const scoredPlayers = scores.map(score => {
-    const player = players.find(p => p.player_id === score.player_id);
+    const player = players.find(p => p.player_id === score.player_id || p.uid === score.player_id);
     return {
       ...score,
       playerName: player ? player.name : 'Unknown Player',
@@ -71,7 +71,7 @@ function RoundDetails() {
 
   // Get un-scored players for the dropdown
   const availablePlayers = players.filter(
-    p => !scores.some(s => s.player_id === p.player_id)
+    p => !scores.some(s => s.player_id === p.player_id || s.player_id === p.uid)
   );
 
   const dateStr = new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' });

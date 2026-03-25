@@ -56,10 +56,13 @@ function Leaderboard() {
       const scoresByPlayerId = {};
       for (let i = 0; i < scores.length; i++) {
         const score = scores[i];
-        if (!scoresByPlayerId[score.player_id]) {
-          scoresByPlayerId[score.player_id] = [];
+        const player = players.find(p => p.uid === score.player_id || p.player_id === score.player_id);
+        const targetId = player ? player.player_id : score.player_id;
+
+        if (!scoresByPlayerId[targetId]) {
+          scoresByPlayerId[targetId] = [];
         }
-        scoresByPlayerId[score.player_id].push(score);
+        scoresByPlayerId[targetId].push(score);
       }
 
       // Calculate aggregated score
