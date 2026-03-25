@@ -4,7 +4,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import ScoreEntry from '../components/ScoreEntry';
 import RoundSummary from '../components/RoundSummary';
-import { getScoresForPlayer, updateRoundStatus, addScore, deleteRound, getPlayers, getScoresForRound, getCourse, getRound } from '../db';
+import { getScoresForPlayer, updateRoundStatus, addScore, deleteRound, getPlayers, getScoresForRound, getCourse, getRound, getActualPlayerId } from '../db';
 import { useAuth } from '../contexts/AuthContext';
 
 const ScorecardPage = () => {
@@ -83,8 +83,10 @@ const ScorecardPage = () => {
         const currentTotal = Object.values(roundData.scores || {}).reduce((a, b) => a + b, 0);
         const eventRoundId = roundData.event_round_id || roundId;
 
+        const actualId = await getActualPlayerId(currentUser.uid);
+
         await addScore({
-          player_id: currentUser.uid,
+          player_id: actualId,
           round_id: eventRoundId,
           score: currentTotal
         });

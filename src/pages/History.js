@@ -24,23 +24,25 @@ const History = () => {
         setLoading(true);
         // Fetch necessary data
         // Check for test mock data
-        let playerScores, allRounds, courses, allScores;
+        let playerScores, allRounds, courses, allScores, allPlayers;
         if (window.fakeDbData) {
             playerScores = window.fakeDbData.scores;
             allRounds = window.fakeDbData.rounds;
             courses = window.fakeDbData.courses;
             allScores = window.fakeDbData.allScores;
+            allPlayers = window.fakeDbData.players || [];
         } else {
-            [playerScores, allRounds, courses, allScores] = await Promise.all([
+            [playerScores, allRounds, courses, allScores, allPlayers] = await Promise.all([
               getScoresForPlayer(currentUser.uid),
               getRounds(),
               getCourses(),
-              getScores()
+              getScores(),
+              getPlayers()
             ]);
         }
 
         // Process data
-        processData(playerScores, allRounds, courses, allScores);
+        processData(playerScores, allRounds, courses, allScores, allPlayers);
 
       } catch (error) {
         console.error("Error fetching history data:", error);
@@ -52,7 +54,7 @@ const History = () => {
     fetchHistoryData();
   }, [currentUser]);
 
-  const processData = (playerScores, allRounds, courses, allScores) => {
+  const processData = (playerScores, allRounds, courses, allScores, allPlayers) => {
     // 1. Map Course data
     const courseMap = {};
     for (const course of courses) {
@@ -101,7 +103,12 @@ const History = () => {
 
       // Find player's rank
       // Index + 1 because array is 0-indexed
-      const playerRank = sortedScores.findIndex(s => s.player_id === currentUser.uid) + 1;
+      const playerRank = sortedScores.findIndex(s => {
+        const p = allPlayers.find(pl => pl.uid === s.player_id || pl.player_id === s.player_id);
+        const actualId = p ? p.player_id : s.player_id;
+        const currentId = allPlayers.find(pl => pl.uid === currentUser.uid)?.player_id || currentUser.uid;
+        return actualId === currentId || actualId === currentUser.uid;
+      }) + 1;
       const totalPlayers = sortedScores.length;
 
       historyList.push({

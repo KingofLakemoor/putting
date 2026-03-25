@@ -91,10 +91,14 @@ const LeagueStandings = () => {
 
     const scoresByPlayerId = {};
     for (const score of currentScores) {
-      if (!scoresByPlayerId[score.player_id]) {
-        scoresByPlayerId[score.player_id] = [];
+      // Find the actual player id if the score used the UID
+      const player = players.find(p => p.uid === score.player_id || p.player_id === score.player_id);
+      const targetId = player ? player.player_id : score.player_id;
+
+      if (!scoresByPlayerId[targetId]) {
+        scoresByPlayerId[targetId] = [];
       }
-      scoresByPlayerId[score.player_id].push(score);
+      scoresByPlayerId[targetId].push(score);
     }
 
     const playerStats = players.map((player) => {
