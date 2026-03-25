@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { auth, db } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -51,6 +51,35 @@ export function AuthProvider({ children }) {
           const coordinatorRef = doc(db, 'putting_league_coordinators', user.uid);
           const coordinatorSnap = await getDoc(coordinatorRef);
           setIsCoordinator(coordinatorSnap.exists());
+
+          // Auto-link player profile if needed
+          if (user.email) {
+            try {
+              const q = query(collection(db, 'putting_league_players'), where('email', '==', user.email));
+              const pSnap = await getDocs(q);
+
+              if (!pSnap.empty) {
+                const pDoc = pSnap.docs[0];
+                const pData = pDoc.data();
+                if (pData.uid !== user.uid && (!pData.uid || pData.uid.length === 36)) {
+                  await updateDoc(doc(db, 'putting_league_players', pDoc.id), { uid: user.uid });
+                }
+              } else {
+                // Try case-insensitive fallback by fetching all
+                const allPlayersSnap = await getDocs(collection(db, 'putting_league_players'));
+                const pDoc = allPlayersSnap.docs.find(doc => doc.data().email && doc.data().email.toLowerCase() === user.email.toLowerCase());
+                if (pDoc) {
+                  const pData = pDoc.data();
+                  if (pData.uid !== user.uid && (!pData.uid || pData.uid.length === 36)) {
+                    await updateDoc(doc(db, 'putting_league_players', pDoc.id), { uid: user.uid });
+                  }
+                }
+              }
+            } catch (err) {
+              console.warn("Could not auto-link player profile", err);
+            }
+          }
+
         } catch (error) {
           console.error("Error fetching user roles:", error);
           setIsAdmin(false);

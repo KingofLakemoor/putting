@@ -92,7 +92,16 @@ const LeagueStandings = () => {
     const scoresByPlayerId = {};
     for (const score of currentScores) {
       // Find the actual player id if the score used the UID
-      const player = players.find(p => p.uid === score.player_id || p.player_id === score.player_id);
+      let player = players.find(p => p.uid === score.player_id || p.player_id === score.player_id);
+
+      // Fallback: If UID connection is broken, link by player_name from the score's round
+      if (!player) {
+         const round = currentRounds.find(r => r.round_id === score.round_id);
+         if (round && round.player_name && round.player_id === score.player_id) {
+             player = players.find(p => p.name.toLowerCase() === round.player_name.toLowerCase());
+         }
+      }
+
       const targetId = player ? player.player_id : score.player_id;
 
       if (!scoresByPlayerId[targetId]) {
@@ -120,7 +129,35 @@ const LeagueStandings = () => {
       };
     });
 
-    const activePlayers = playerStats.filter((p) => p.played > 0);
+    // Handle truly orphaned scores that couldn't be linked to any player profile
+    const knownPlayerIds = new Set(players.map(p => p.player_id));
+    const orphanIds = Object.keys(scoresByPlayerId).filter(id => !knownPlayerIds.has(id));
+
+    const orphanStats = orphanIds.map(id => {
+       const playerScores = scoresByPlayerId[id];
+       const roundWithPlayer = currentRounds.find(r => r.player_id === id);
+       const name = roundWithPlayer && roundWithPlayer.player_name ? roundWithPlayer.player_name : "Unknown Player";
+
+       let totalScore = 0;
+       let playedCount = 0;
+       for (const s of playerScores) {
+         const parsed = parseInt(s.score);
+         if (!isNaN(parsed)) {
+             totalScore += parsed;
+             playedCount++;
+         }
+       }
+       const avgScore = playedCount > 0 ? (totalScore / playedCount).toFixed(1) : 0;
+       return {
+         player_id: id,
+         uid: id,
+         name: name,
+         score: avgScore,
+         played: playedCount,
+       };
+    });
+
+    const activePlayers = [...playerStats, ...orphanStats].filter((p) => p.played > 0);
     activePlayers.sort((a, b) => parseFloat(a.score) - parseFloat(b.score));
 
     return activePlayers.map((p, index) => ({
