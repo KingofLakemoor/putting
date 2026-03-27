@@ -1,6 +1,6 @@
-import { addCourse, getScoresForRound, deletePlayer } from './db';
+import { addCourse, getScoresForRound, deletePlayer, updateRoundStatus } from './db';
 import { v4 as uuidv4 } from 'uuid';
-import { setDoc, doc, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { setDoc, doc, collection, query, where, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 jest.mock('uuid');
@@ -121,6 +121,25 @@ describe('db.js tests', () => {
       expect(query).toHaveBeenCalledWith(mockCollectionRef, mockWhereClause);
       expect(getDocs).toHaveBeenCalledWith(mockQueryRef);
       expect(result).toEqual(mockScoresData);
+    });
+  });
+
+  describe('updateRoundStatus', () => {
+    it('should call updateDoc with the correct document reference and status object', async () => {
+      const mockRoundId = 'round-789';
+      const mockStatus = 'completed';
+      const mockDocRef = { id: mockRoundId };
+
+      // Mock doc to return our mock ref
+      doc.mockReturnValue(mockDocRef);
+
+      await updateRoundStatus(mockRoundId, mockStatus);
+
+      // Verify doc was called correctly to get the reference
+      expect(doc).toHaveBeenCalledWith(db, 'putting_league_rounds', mockRoundId);
+
+      // Verify updateDoc was called with the ref and the new status
+      expect(updateDoc).toHaveBeenCalledWith(mockDocRef, { status: mockStatus });
     });
   });
 });
