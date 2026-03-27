@@ -7,14 +7,20 @@ import LeagueStandings from '../components/LeagueStandings';
 
 const ROUNDS_KEY = 'putting_league_rounds';
 const PLAYERS_KEY = 'putting_league_players';
+const COURSES_KEY = 'putting_league_courses';
 
 const VenueDashboard = () => {
   const [activeRounds, setActiveRounds] = useState([]);
   const [players, setPlayers] = useState([]);
+  const [courses, setCourses] = useState([]);
 
   useEffect(() => {
     const unsubscribePlayers = onSnapshot(collection(db, PLAYERS_KEY), (snapshot) => {
       setPlayers(snapshot.docs.map(doc => doc.data()));
+    });
+
+    const unsubscribeCourses = onSnapshot(collection(db, COURSES_KEY), (snapshot) => {
+      setCourses(snapshot.docs.map(doc => doc.data()));
     });
 
     // Listen for live rounds on the course
@@ -31,6 +37,7 @@ const VenueDashboard = () => {
     return () => {
       unsubscribeRounds();
       unsubscribePlayers();
+      unsubscribeCourses();
     };
   }, []);
 
@@ -42,56 +49,77 @@ const VenueDashboard = () => {
       if (p.uid) playersMap.set(p.uid, p);
     });
 
+    const coursesMap = new Map();
+    courses.forEach(c => {
+      if (c.course_id) coursesMap.set(c.course_id, c);
+    });
+
     const playersList = [];
 
     activeRounds.forEach(r => {
+      const course = coursesMap.get(r.course_id);
+
       let currentScore = 0;
       let holesPlayed = 0;
+      let parSum = 0;
 
       if (r.scores) {
-        Object.values(r.scores).forEach(s => {
+        Object.entries(r.scores).forEach(([holeNum, s]) => {
           if (s > 0) {
             currentScore += s;
             holesPlayed++;
+            const hNum = parseInt(holeNum, 10);
+            const holeData = course?.holes?.find(h => h.hole === hNum);
+            parSum += holeData ? holeData.par : 2; // Default par 2 if not found
           }
         });
       }
+
+      const relativeScore = currentScore - parSum;
 
       playersList.push({
         id: r.round_id + '_p1',
         playerName: r.player_name || 'Unknown Player',
         eventName: r.event_round_name || 'Practice Round',
         currentScore,
+        relativeScore,
         holesPlayed
       });
 
       if (r.opponent_id) {
         let oppScore = 0;
         let oppHolesPlayed = 0;
+        let oppParSum = 0;
+
         if (r.opponent_scores) {
-          Object.values(r.opponent_scores).forEach(s => {
+          Object.entries(r.opponent_scores).forEach(([holeNum, s]) => {
             if (s > 0) {
               oppScore += s;
               oppHolesPlayed++;
+              const hNum = parseInt(holeNum, 10);
+              const holeData = course?.holes?.find(h => h.hole === hNum);
+              oppParSum += holeData ? holeData.par : 2;
             }
           });
         }
 
         const opponent = playersMap.get(r.opponent_id);
         const oppName = opponent ? opponent.name : 'Unknown Opponent';
+        const oppRelativeScore = oppScore - oppParSum;
 
         playersList.push({
           id: r.round_id + '_p2',
           playerName: oppName,
           eventName: r.event_round_name || 'Practice Round',
           currentScore: oppScore,
+          relativeScore: oppRelativeScore,
           holesPlayed: oppHolesPlayed
         });
       }
     });
 
     return playersList.sort((a, b) => b.holesPlayed - a.holesPlayed); // Most progress first
-  }, [activeRounds, players]);
+  }, [activeRounds, players, courses]);
 
   return (
     <div className="min-h-screen bg-dark-bg text-white font-sans p-8 flex flex-col">
@@ -144,7 +172,14 @@ const VenueDashboard = () => {
                     </div>
                     <div>
                       <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">Score</p>
-                      <p className="text-3xl font-data font-black text-kelly-green">{player.currentScore > 0 ? player.currentScore : 'E'}</p>
+                      <div className="flex items-baseline justify-center gap-2">
+                        <p className={`text-3xl font-data font-black ${player.relativeScore > 0 ? 'text-red-500' : player.relativeScore < 0 ? 'text-kelly-green' : 'text-slate-300'}`}>
+                          {player.holesPlayed === 0 ? 'E' : player.relativeScore > 0 ? `+${player.relativeScore}` : player.relativeScore === 0 ? 'E' : player.relativeScore}
+                        </p>
+                        {player.holesPlayed > 0 && (
+                          <p className="text-sm font-data text-slate-500">({player.currentScore})</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </motion.div>
