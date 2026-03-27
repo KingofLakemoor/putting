@@ -4,6 +4,8 @@ import { Trophy, Medal, ChevronUp, ChevronDown, Minus } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { getSettings } from '../db';
+import { formatDisplayName } from '../utils/format';
+
 
 const PLAYERS_KEY = 'putting_league_players';
 const ROUNDS_KEY = 'putting_league_rounds';
@@ -124,6 +126,7 @@ const LeagueStandings = () => {
       const avgScore = playedCount > 0 ? (totalScore / playedCount).toFixed(1) : 0;
       return {
         ...player,
+        name: formatDisplayName(player.name),
         score: avgScore,
         played: playedCount,
       };
@@ -136,7 +139,8 @@ const LeagueStandings = () => {
     const orphanStats = orphanIds.map(id => {
        const playerScores = scoresByPlayerId[id];
        const roundWithPlayer = currentRounds.find(r => r.player_id === id);
-       const name = roundWithPlayer && roundWithPlayer.player_name ? roundWithPlayer.player_name : "Unknown Player";
+       const rawName = roundWithPlayer && roundWithPlayer.player_name ? roundWithPlayer.player_name : "Unknown Player";
+       const name = formatDisplayName(rawName);
 
        let totalScore = 0;
        let playedCount = 0;

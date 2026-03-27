@@ -7,7 +7,7 @@ import Admin from './pages/Admin';
 import SignIn from './pages/SignIn';
 import History from './pages/History';
 import PrivateRoute from './components/PrivateRoute';
-import { useAuth } from './contexts/AuthContext';
+
 import LeagueStandings from './components/LeagueStandings';
 import PuttingDashboard from './components/PuttingDashboard';
 import Navigation from './components/Navigation';
@@ -15,7 +15,7 @@ import VenueDashboard from './pages/VenueDashboard';
 import './App.css';
 
 function App() {
-  const { currentUser } = useAuth();
+  //
 
   useEffect(() => {
     // Force dark theme globally for the new design

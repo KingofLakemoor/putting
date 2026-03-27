@@ -4,6 +4,8 @@ import { Trophy, Activity } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
 import LeagueStandings from '../components/LeagueStandings';
+import { formatDisplayName } from '../utils/format';
+
 
 const ROUNDS_KEY = 'putting_league_rounds';
 const PLAYERS_KEY = 'putting_league_players';
@@ -79,7 +81,7 @@ const VenueDashboard = () => {
 
       playersList.push({
         id: r.round_id + '_p1',
-        playerName: r.player_name || 'Unknown Player',
+        playerName: formatDisplayName(r.player_name),
         eventName: r.event_round_name || 'Practice Round',
         currentScore,
         relativeScore,
@@ -104,7 +106,7 @@ const VenueDashboard = () => {
         }
 
         const opponent = playersMap.get(r.opponent_id);
-        const oppName = opponent ? opponent.name : 'Unknown Opponent';
+        const oppName = opponent ? formatDisplayName(opponent.name) : 'Unknown Opponent';
         const oppRelativeScore = oppScore - oppParSum;
 
         playersList.push({

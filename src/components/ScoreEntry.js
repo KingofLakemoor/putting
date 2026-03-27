@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Minus, Plus, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
