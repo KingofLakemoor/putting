@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldAlert, Users, CalendarDays, ClipboardList, Map, UserCog, Edit, Trash2, Check, X, Settings, RefreshCw } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
@@ -732,18 +732,43 @@ function AdminScores() {
     }
   };
 
+  const playersMap = useMemo(() => {
+    const map = new Map();
+    players.forEach(p => {
+      if (p.player_id) map.set(p.player_id, p);
+      if (p.uid) map.set(p.uid, p);
+    });
+    return map;
+  }, [players]);
+
+  const playersByName = useMemo(() => {
+    const map = new Map();
+    players.forEach(p => {
+      if (p.name) map.set(p.name.toLowerCase(), p);
+    });
+    return map;
+  }, [players]);
+
+  const roundsMap = useMemo(() => {
+    const map = new Map();
+    rounds.forEach(r => {
+      if (r.round_id) map.set(r.round_id, r);
+    });
+    return map;
+  }, [rounds]);
+
   const getPlayerName = (id, round_id) => {
-    let player = players.find(p => p.player_id === id || p.uid === id);
+    let player = playersMap.get(id);
     if (!player && round_id) {
-       const round = rounds.find(r => r.round_id === round_id);
+       const round = roundsMap.get(round_id);
        if (round && round.player_id === id && round.player_name) {
-           player = players.find(p => p.name.toLowerCase() === round.player_name.toLowerCase());
+           player = playersByName.get(round.player_name.toLowerCase());
        }
     }
 
     // Fallback if player document STILL not found, just show the name from the round so it's not "Unknown"
     if (!player && round_id) {
-        const round = rounds.find(r => r.round_id === round_id);
+        const round = roundsMap.get(round_id);
         if (round && round.player_id === id && round.player_name) {
              return round.player_name;
         }
@@ -753,7 +778,7 @@ function AdminScores() {
   };
 
   const getRoundDetails = (id) => {
-    const round = rounds.find(r => r.round_id === id);
+    const round = roundsMap.get(id);
     if (!round) return 'Unknown Round';
 
     const dateStr = new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' });
