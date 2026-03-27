@@ -112,7 +112,7 @@ const PuttingDashboard = () => {
 
       try {
         const rounds = await getRounds();
-        const activeEvents = rounds.filter(r => (r.status || '').toLowerCase() === 'active' && !r.player_id);
+        const activeEvents = rounds.filter(r => (r.status || '').toLowerCase() === 'active' && !r.player_id && !r.event_round_id);
         setActiveEventRounds(activeEvents);
 
         // Fetch standings data
@@ -330,7 +330,14 @@ const PuttingDashboard = () => {
                         <p className="text-slate-400 text-sm">No active rounds available right now.</p>
                       ) : (
                         activeEventRounds.map((round) => {
-                          const dateStr = new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' });
+                          let dateStr = '';
+                          if (round.date) {
+                            const d = new Date(round.date);
+                            if (!isNaN(d.getTime())) {
+                              dateStr = d.toLocaleDateString('en-US', { timeZone: 'UTC' });
+                            }
+                          }
+
                           return (
                             <button
                               key={round.round_id}
@@ -342,7 +349,7 @@ const PuttingDashboard = () => {
                                   {round.name || 'Round'}
                                 </h3>
                                 <p className="text-xs text-slate-400">
-                                  {dateStr} • {round.location}
+                                  {dateStr ? `${dateStr} • ${round.location}` : round.location}
                                 </p>
                               </div>
                               <PlusCircle className="text-slate-500 group-hover:text-kelly-green transition-colors" size={20} />
@@ -385,12 +392,19 @@ const PuttingDashboard = () => {
            ) : (
              <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
                 {activeEventRounds.map(round => {
-                  const dateStr = new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' });
+                  let dateStr = '';
+                  if (round.date) {
+                    const d = new Date(round.date);
+                    if (!isNaN(d.getTime())) {
+                      dateStr = d.toLocaleDateString('en-US', { timeZone: 'UTC' });
+                    }
+                  }
+
                   return (
                     <div key={round.round_id} className="min-w-[280px] bg-dark-bg p-4 rounded-xl border border-slate-800 flex justify-between items-center shrink-0">
                       <div>
                         <p className="font-bold">{round.name ? round.name : 'Round'}</p>
-                        <p className="text-xs text-slate-500">{dateStr} - {round.location}</p>
+                        <p className="text-xs text-slate-500">{dateStr ? `${dateStr} - ${round.location}` : round.location}</p>
                       </div>
                       <button onClick={() => handleSelectEventRound(round)} className="bg-slate-800 px-4 py-2 rounded-lg text-xs font-bold hover:bg-kelly-green hover:text-dark-bg transition-colors">
                         SCORE

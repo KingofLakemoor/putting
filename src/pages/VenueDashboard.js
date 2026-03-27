@@ -79,9 +79,12 @@ const VenueDashboard = () => {
 
       const relativeScore = currentScore - parSum;
 
+      const playerProfile = playersMap.get(r.player_id) || playersMap.get(r.uid);
+      const actualName = playerProfile ? playerProfile.name : r.player_name;
+
       playersList.push({
         id: r.round_id + '_p1',
-        playerName: formatDisplayName(r.player_name),
+        playerName: formatDisplayName(actualName),
         eventName: r.event_round_name || 'Practice Round',
         currentScore,
         relativeScore,
