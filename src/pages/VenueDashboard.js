@@ -21,7 +21,7 @@ const VenueDashboard = () => {
     const unsubscribeRounds = onSnapshot(collection(db, ROUNDS_KEY), (snapshot) => {
       const allRounds = snapshot.docs.map(doc => doc.data());
       // Only keep 'Active' rounds that have a current user playing
-      const currentActive = allRounds.filter(r => (r.status || '').toLowerCase() === 'active' && r.player_id && r.scores);
+      const currentActive = allRounds.filter(r => (r.status || '').toLowerCase() === 'active' && r.player_id);
 
       // Sort by last updated (if available) or by date
       currentActive.sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0));
@@ -36,6 +36,12 @@ const VenueDashboard = () => {
 
   // Compute a snapshot of how far each player is in their current round
   const livePlayers = useMemo(() => {
+    const playersMap = new Map();
+    players.forEach(p => {
+      if (p.player_id) playersMap.set(p.player_id, p);
+      if (p.uid) playersMap.set(p.uid, p);
+    });
+
     const playersList = [];
 
     activeRounds.forEach(r => {
@@ -59,17 +65,19 @@ const VenueDashboard = () => {
         holesPlayed
       });
 
-      if (r.opponent_id && r.opponent_scores) {
+      if (r.opponent_id) {
         let oppScore = 0;
         let oppHolesPlayed = 0;
-        Object.values(r.opponent_scores).forEach(s => {
-          if (s > 0) {
-            oppScore += s;
-            oppHolesPlayed++;
-          }
-        });
+        if (r.opponent_scores) {
+          Object.values(r.opponent_scores).forEach(s => {
+            if (s > 0) {
+              oppScore += s;
+              oppHolesPlayed++;
+            }
+          });
+        }
 
-        const opponent = players.find(p => p.player_id === r.opponent_id || p.uid === r.opponent_id);
+        const opponent = playersMap.get(r.opponent_id);
         const oppName = opponent ? opponent.name : 'Unknown Opponent';
 
         playersList.push({
