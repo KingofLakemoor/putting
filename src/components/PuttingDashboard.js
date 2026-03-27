@@ -145,9 +145,15 @@ const PuttingDashboard = () => {
         const validRoundIds = roundsForStandings.map(r => r.round_id);
         const filteredScores = scores.filter(s => validRoundIds.includes(s.round_id));
 
+        const playersMap = new Map();
+        for (const p of players) {
+          if (p.uid) playersMap.set(p.uid, p);
+          if (p.player_id) playersMap.set(p.player_id, p);
+        }
+
         const scoresByPlayerId = {};
         for (const score of filteredScores) {
-          const player = players.find(p => p.uid === score.player_id || p.player_id === score.player_id);
+          const player = playersMap.get(score.player_id);
           const targetId = player ? player.player_id : score.player_id;
 
           if (!scoresByPlayerId[targetId]) {

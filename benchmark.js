@@ -1,41 +1,64 @@
-const { performance } = require('perf_hooks');
+const fs = require('fs');
+const players = [];
+const filteredScores = [];
 
-const course = {
-  holes: Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 3 }))
-};
-
-const HOLES = Array.from({ length: 18 }, (_, i) => i + 1);
-
-// Original
-const getParForHoleOriginal = (holeNum) => {
-  if (!course || !course.holes) return '-';
-  const holeData = course.holes.find(h => h.hole === holeNum);
-  return holeData ? holeData.par : '-';
-};
-
-// Optimized
-const holeParMap = {};
-if (course && course.holes) {
-  course.holes.forEach(h => {
-    holeParMap[h.hole] = h.par;
+// Generate dummy data
+for (let i = 0; i < 5000; i++) {
+  players.push({
+    player_id: `player_${i}`,
+    uid: i % 2 === 0 ? `uid_${i}` : null,
+    name: `Player ${i}`
   });
 }
-const getParForHoleOptimized = (holeNum) => {
-  return holeParMap[holeNum] !== undefined ? holeParMap[holeNum] : '-';
-};
 
-const ITERATIONS = 100000;
-
-let start = performance.now();
-for (let i = 0; i < ITERATIONS; i++) {
-  HOLES.forEach(hole => getParForHoleOriginal(hole));
+for (let i = 0; i < 20000; i++) {
+  filteredScores.push({
+    player_id: `player_${Math.floor(Math.random() * 5000)}`,
+    score: Math.floor(Math.random() * 50) + 18,
+    round_id: `round_${Math.floor(Math.random() * 100)}`
+  });
 }
-let end = performance.now();
-console.log(`Original: ${end - start} ms`);
 
-start = performance.now();
-for (let i = 0; i < ITERATIONS; i++) {
-  HOLES.forEach(hole => getParForHoleOptimized(hole));
+// O(N^2) Original
+const startOriginal = process.hrtime.bigint();
+
+const scoresByPlayerIdOriginal = {};
+for (const score of filteredScores) {
+  const player = players.find(p => p.uid === score.player_id || p.player_id === score.player_id);
+  const targetId = player ? player.player_id : score.player_id;
+
+  if (!scoresByPlayerIdOriginal[targetId]) {
+    scoresByPlayerIdOriginal[targetId] = [];
+  }
+  scoresByPlayerIdOriginal[targetId].push(score);
 }
-end = performance.now();
-console.log(`Optimized: ${end - start} ms`);
+
+const endOriginal = process.hrtime.bigint();
+const originalTimeMs = Number(endOriginal - startOriginal) / 1000000;
+console.log(`Original Time: ${originalTimeMs.toFixed(2)} ms`);
+
+
+// O(N) Optimized
+const startOptimized = process.hrtime.bigint();
+
+const playersMap = new Map();
+for (const p of players) {
+  if (p.uid) playersMap.set(p.uid, p);
+  if (p.player_id) playersMap.set(p.player_id, p);
+}
+
+const scoresByPlayerIdOptimized = {};
+for (const score of filteredScores) {
+  const player = playersMap.get(score.player_id);
+  const targetId = player ? player.player_id : score.player_id;
+
+  if (!scoresByPlayerIdOptimized[targetId]) {
+    scoresByPlayerIdOptimized[targetId] = [];
+  }
+  scoresByPlayerIdOptimized[targetId].push(score);
+}
+
+const endOptimized = process.hrtime.bigint();
+const optimizedTimeMs = Number(endOptimized - startOptimized) / 1000000;
+console.log(`Optimized Time: ${optimizedTimeMs.toFixed(2)} ms`);
+console.log(`Speedup: ${(originalTimeMs / optimizedTimeMs).toFixed(2)}x`);
