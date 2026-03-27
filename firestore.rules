@@ -21,7 +21,16 @@ service cloud.firestore {
     match /putting_league_players/{playerId} {
       allow create: if request.auth != null;
       // Allow the user to update their player record to merge the UID.
-      allow update: if request.auth != null;
+      allow update: if request.auth != null && (
+        isAdmin() ||
+        isCoordinator() ||
+        resource.data.uid == request.auth.uid ||
+        (
+          (!('uid' in resource.data) || resource.data.uid == null || resource.data.uid.size() == 36) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uid', 'name']) &&
+          request.resource.data.uid == request.auth.uid
+        )
+      );
       // Admin-only operations for other modifications
       allow delete: if isAdmin() || isCoordinator();
     }
