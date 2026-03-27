@@ -74,6 +74,7 @@ function AdminCoordinators() {
   const [coordinators, setCoordinators] = useState([]);
   const [players, setPlayers] = useState([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
+  const [error, setError] = useState('');
 
   const loadData = async () => {
     setCoordinators(await getCoordinators());
@@ -86,11 +87,12 @@ function AdminCoordinators() {
 
   const handleAddCoordinator = async (e) => {
     e.preventDefault();
+    setError('');
     if (!selectedPlayerId) return;
 
     const player = players.find(p => p.player_id === selectedPlayerId);
     if (!player || !player.uid) {
-      alert("This player does not have an associated user account (UID) and cannot be made a coordinator.");
+      setError("This player does not have an associated user account (UID) and cannot be made a coordinator.");
       return;
     }
 
@@ -100,24 +102,30 @@ function AdminCoordinators() {
       loadData();
     } catch (error) {
       console.error("Error adding coordinator:", error);
-      alert("Failed to add coordinator.");
+      setError("Failed to add coordinator.");
     }
   };
 
   const handleRemoveCoordinator = async (uid) => {
+    setError('');
     if (window.confirm("Are you sure you want to remove this coordinator?")) {
       try {
         await removeCoordinator(uid);
         loadData();
       } catch (error) {
         console.error("Error removing coordinator:", error);
-        alert("Failed to remove coordinator.");
+        setError("Failed to remove coordinator.");
       }
     }
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {error && (
+        <div className="bg-red-500/10 text-red-500 p-3 rounded-xl text-xs font-bold uppercase tracking-wider mb-2 lg:col-span-3">
+          {error}
+        </div>
+      )}
       <div className="lg:col-span-2">
         <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
           <UserCog size={20} className="text-kelly-green" /> Coordinators List
@@ -166,7 +174,10 @@ function AdminCoordinators() {
               <select
                 id="coordinatorSelect"
                 value={selectedPlayerId}
-                onChange={(e) => setSelectedPlayerId(e.target.value)}
+                onChange={(e) => {
+                  setSelectedPlayerId(e.target.value);
+                  setError('');
+                }}
                 required
                 className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
               >
