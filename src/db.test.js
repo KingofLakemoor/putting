@@ -141,5 +141,17 @@ describe('db.js tests', () => {
       // Verify updateDoc was called with the ref and the new status
       expect(updateDoc).toHaveBeenCalledWith(mockDocRef, { status: mockStatus });
     });
+
+    it('should throw an error if updateDoc fails', async () => {
+      const mockRoundId = 'round-error';
+      const mockStatus = 'active';
+      const mockError = new Error('Network error');
+      const mockDocRef = { id: mockRoundId };
+
+      doc.mockReturnValue(mockDocRef);
+      updateDoc.mockRejectedValueOnce(mockError);
+
+      await expect(updateRoundStatus(mockRoundId, mockStatus)).rejects.toThrow('Network error');
+    });
   });
 });
