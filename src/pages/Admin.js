@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldAlert, Users, CalendarDays, ClipboardList, Map, UserCog, Edit, Trash2, Check, X, Settings, RefreshCw } from 'lucide-react';
+import { ShieldAlert, Users, CalendarDays, ClipboardList, Map, UserCog, Edit, Trash2, Check, X, Settings, RefreshCw, BookOpen } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, addRound, updateRoundStatus, updateRoundSeason, deleteRound, getScores, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse, getCoordinators, addCoordinator, removeCoordinator, getSettings, updateLiveSeason, addArchivedSeason, removeArchivedSeason } from '../db';
 import { useAuth } from '../contexts/AuthContext';
@@ -32,11 +32,21 @@ function Admin() {
 
   return (
     <div className="min-h-screen bg-dark-bg text-white p-4 md:p-8 font-sans">
-      <div className="mb-8 border-b border-slate-800 pb-4">
-        <h2 className="font-sports text-4xl uppercase tracking-tighter text-white flex items-center gap-3">
-          <ShieldAlert className="text-kelly-green" size={32} /> Admin Dashboard
-        </h2>
-        <p className="font-data text-[10px] text-slate-500 uppercase tracking-[0.2em]">System Management</p>
+      <div className="mb-8 border-b border-slate-800 pb-4 flex justify-between items-start md:items-center flex-col md:flex-row gap-4 md:gap-0">
+        <div>
+          <h2 className="font-sports text-4xl uppercase tracking-tighter text-white flex items-center gap-3">
+            <ShieldAlert className="text-kelly-green" size={32} /> Admin Dashboard
+          </h2>
+          <p className="font-data text-[10px] text-slate-500 uppercase tracking-[0.2em]">System Management</p>
+        </div>
+        <a
+          href="/COORDINATOR_GUIDE.md"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white px-4 py-2 rounded-xl transition-all border border-slate-800 hover:border-slate-600 text-xs font-bold uppercase tracking-wider"
+        >
+          <BookOpen size={16} className="text-kelly-green" /> Coordinator Guide
+        </a>
       </div>
 
       <div className="flex overflow-x-auto mb-8 bg-slate-800/50 p-1 rounded-xl w-full sm:w-auto sm:inline-flex no-scrollbar">
