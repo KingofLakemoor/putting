@@ -234,7 +234,7 @@ const PuttingDashboard = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="order-2 md:order-none md:col-span-2 md:row-span-2 bg-dark-surface border border-slate-700/50 rounded-2xl p-6 relative overflow-hidden group flex flex-col"
+          className="order-2 row-span-2 md:order-none md:col-span-2 md:row-span-2 bg-dark-surface border border-slate-700/50 rounded-2xl p-6 relative overflow-hidden group flex flex-col"
         >
           <div className="flex justify-between items-center mb-6">
             <h2 className="flex items-center gap-2 font-sports text-2xl">
@@ -366,7 +366,7 @@ const PuttingDashboard = () => {
         </AnimatePresence>
 
         {/* MIDDLE RIGHT: RECENT PERFORMANCE (Small Square) */}
-        <div className="order-3 md:order-none bg-dark-surface border border-slate-700/50 rounded-2xl p-6 flex flex-col justify-between relative">
+        <div className="order-4 md:order-none bg-dark-surface border border-slate-700/50 rounded-2xl p-6 flex flex-col justify-between relative">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">My Avg</h3>
           <div className="text-5xl font-data font-black text-white">{myAvg}</div>
           {avgTrend && (
@@ -380,7 +380,7 @@ const PuttingDashboard = () => {
         </div>
 
         {/* BOTTOM FULL: ACTIVE ROUNDS / REPORTING (Horizontal) */}
-        <div className="order-4 md:order-none md:col-span-3 bg-dark-surface border border-slate-700/50 rounded-2xl p-6">
+        <div className="order-3 md:order-none md:col-span-3 bg-dark-surface border border-slate-700/50 rounded-2xl p-6">
            <div className="flex items-center gap-2 mb-4">
               <Activity size={18} className="text-kelly-green" />
               <h2 className="font-sports text-xl uppercase">Report Scores</h2>
