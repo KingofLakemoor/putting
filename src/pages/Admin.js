@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldAlert, Users, CalendarDays, ClipboardList, Map, UserCog, Edit, Trash2, Check, X, Settings, RefreshCw, BookOpen } from 'lucide-react';
+import { ShieldAlert, Users, CalendarDays, ClipboardList, Map, UserCog, Edit, Trash2, Check, X, Settings, RefreshCw, BookOpen, Star } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, addRound, updateRoundStatus, updateRoundSeason, deleteRound, getScores, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse, getCoordinators, addCoordinator, removeCoordinator, getSettings, updateLiveSeason, addArchivedSeason, removeArchivedSeason } from '../db';
+import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, addRound, updateRoundStatus, updateRoundSeason, deleteRound, getScores, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse, getCoordinators, addCoordinator, removeCoordinator, getSettings, updateLiveSeason, updateCupFinaleSeason, addArchivedSeason, removeArchivedSeason, recalculateCupPointsForEvent } from '../db';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 
 function Admin() {
@@ -442,10 +444,12 @@ function AdminRounds() {
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
   const [courseId, setCourseId] = useState('');
+  const [isSignature, setIsSignature] = useState(false);
   const [courses, setCourses] = useState([]);
   const [showArchived, setShowArchived] = useState(false);
   const [seasons, setSeasons] = useState([]);
   const [liveSeason, setLiveSeason] = useState('');
+  const [cupFinaleSeason, setCupFinaleSeason] = useState('');
   const [archivedSeasons, setArchivedSeasons] = useState([]);
 
   const loadData = async () => {
@@ -455,6 +459,7 @@ function AdminRounds() {
 
     const settings = await getSettings();
     setLiveSeason(settings.live_season || '');
+    setCupFinaleSeason(settings.cup_finale_season || '');
     setArchivedSeasons(settings.archived_seasons || []);
 
     const uniqueSeasons = [...new Set(allRounds.map(r => r.season).filter(Boolean))];
@@ -475,7 +480,8 @@ function AdminRounds() {
       name,
       date,
       location: selectedCourse ? selectedCourse.name : 'Unknown Location',
-      course_id: courseId
+      course_id: courseId,
+      is_signature: isSignature
     };
 
     await addRound(newRound);
@@ -484,11 +490,16 @@ function AdminRounds() {
     setName('');
     setDate('');
     setCourseId('');
+    setIsSignature(false);
     loadData();
   };
 
-  const handleStatusChange = async (id, newStatus) => {
+  const handleStatusChange = async (id, newStatus, round) => {
     await updateRoundStatus(id, newStatus);
+    if (newStatus.toLowerCase() === 'completed') {
+        // Calculate points when status is changed to completed
+        await recalculateCupPointsForEvent(id, round.is_signature);
+    }
     loadData();
   };
 
@@ -508,6 +519,18 @@ function AdminRounds() {
     const season = e.target.value;
     setLiveSeason(season);
     await updateLiveSeason(season);
+  };
+
+  const handleCupFinaleSeasonChange = async (e) => {
+    const season = e.target.value;
+    setCupFinaleSeason(season);
+    await updateCupFinaleSeason(season);
+  };
+
+  const toggleSignatureStatus = async (round_id, currentStatus) => {
+    const roundRef = doc(db, 'putting_league_rounds', round_id);
+    await updateDoc(roundRef, { is_signature: !currentStatus });
+    loadData();
   };
 
   const handleToggleArchiveSeason = async (season) => {
@@ -547,7 +570,23 @@ function AdminRounds() {
               <p className="text-[10px] text-slate-500 mt-2">Sets the default season shown on the dashboard when no active rounds exist.</p>
             </div>
 
-            <div className="flex-1">
+            <div className="flex-1 border-l border-slate-700 pl-8">
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="cupFinaleSeason">602 Cup Finale Season</label>
+              <select
+                id="cupFinaleSeason"
+                value={cupFinaleSeason}
+                onChange={handleCupFinaleSeasonChange}
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
+              >
+                <option value="">-- Select Finale Season --</option>
+                {seasons.map(season => (
+                  <option key={`finale_${season}`} value={season}>{season}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-slate-500 mt-2">Starting strokes (-4 to E) will be automatically applied to this season.</p>
+            </div>
+
+            <div className="flex-1 border-l border-slate-700 pl-8">
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Archive Seasons</label>
               {seasons.length === 0 ? (
                 <p className="text-slate-500 text-sm">No seasons available.</p>
@@ -606,7 +645,10 @@ function AdminRounds() {
               <tbody className="divide-y divide-slate-800">
                 {filteredRounds.map(round => (
                   <tr key={round.round_id} className="hover:bg-dark-surface/50 transition-colors">
-                    <td className="p-4 font-bold">{round.name || '-'}</td>
+                    <td className="p-4 font-bold">
+                       {round.name || '-'}
+                       {round.is_signature && <Star size={12} className="inline ml-2 text-yellow-500 mb-1" />}
+                    </td>
                     <td className="p-4">
                       <div className="flex flex-col">
                         <span className="text-white">{new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' })}</span>
@@ -624,7 +666,7 @@ function AdminRounds() {
                         />
                         <select
                           value={round.status}
-                          onChange={(e) => handleStatusChange(round.round_id, e.target.value)}
+                          onChange={(e) => handleStatusChange(round.round_id, e.target.value, round)}
                           className="w-full max-w-[120px] bg-dark-bg border border-slate-700 rounded px-2 py-1 text-xs text-white focus:border-kelly-green focus:outline-none appearance-none"
                         >
                           <option value="Active">Active</option>
@@ -640,6 +682,14 @@ function AdminRounds() {
                         </Link>
                         <button onClick={() => handleDelete(round.round_id)} className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-[10px] uppercase w-full justify-center">
                           <Trash2 size={12} /> Delete
+                        </button>
+                      </div>
+                      <div className="mt-2 text-right">
+                        <button
+                          onClick={() => toggleSignatureStatus(round.round_id, round.is_signature)}
+                          className={`text-[10px] uppercase font-bold px-2 py-1 rounded transition-colors ${round.is_signature ? 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}`}
+                        >
+                          {round.is_signature ? 'Signature Event (1.5x)' : 'Make Signature'}
                         </button>
                       </div>
                     </td>
@@ -698,6 +748,16 @@ function AdminRounds() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="flex items-center gap-3 p-4 bg-dark-bg border border-slate-700 rounded-xl cursor-pointer" onClick={() => setIsSignature(!isSignature)}>
+              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSignature ? 'bg-yellow-500 border-yellow-500' : 'border-slate-500'}`}>
+                 {isSignature && <Check size={14} className="text-dark-bg" />}
+              </div>
+              <div>
+                <p className="font-bold text-sm uppercase text-white">Signature Event</p>
+                <p className="text-[10px] text-slate-400 uppercase">1.5x Multiplier for 602 Cup Points</p>
+              </div>
             </div>
 
             <button type="submit" className="w-full bg-kelly-green text-dark-bg py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors mt-2 flex items-center justify-center gap-2">

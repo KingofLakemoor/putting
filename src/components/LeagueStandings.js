@@ -11,13 +11,15 @@ const PLAYERS_KEY = 'putting_league_players';
 const ROUNDS_KEY = 'putting_league_rounds';
 const SCORES_KEY = 'putting_league_scores';
 const COURSES_KEY = 'putting_league_courses';
+const CUP_POINTS_KEY = 'putting_league_cup_points';
 
 const LeagueStandings = () => {
-  const [filter, setFilter] = useState('all_time');
+  const [filter, setFilter] = useState('602_cup');
   const [players, setPlayers] = useState([]);
   const [rounds, setRounds] = useState([]);
   const [scores, setScores] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [cupPoints, setCupPoints] = useState([]);
   const [liveSeason, setLiveSeason] = useState(null);
 
   useEffect(() => {
@@ -41,16 +43,20 @@ const LeagueStandings = () => {
     const unsubscribeCourses = onSnapshot(collection(db, COURSES_KEY), (snapshot) => {
       setCourses(snapshot.docs.map((doc) => doc.data()));
     });
+    const unsubscribeCupPoints = onSnapshot(collection(db, CUP_POINTS_KEY), (snapshot) => {
+      setCupPoints(snapshot.docs.map((doc) => doc.data()));
+    });
 
     return () => {
       unsubscribePlayers();
       unsubscribeRounds();
       unsubscribeScores();
       unsubscribeCourses();
+      unsubscribeCupPoints();
     };
   }, []);
 
-  const calculateRankings = useCallback((targetDateMs = null, filterParam = 'all_time') => {
+  const calculateRankings = useCallback((targetDateMs = null, filterParam = '602_cup') => {
     let currentRounds = rounds;
     let currentScores = scores;
 
@@ -104,6 +110,44 @@ const LeagueStandings = () => {
         if (p.player_id) playersMap.set(p.player_id, p);
         if (p.name) playersByNameMap.set(p.name.toLowerCase(), p);
     });
+
+    if (filterParam === '602_cup') {
+       const currentYear = now.getFullYear();
+       const currentCupPoints = cupPoints.filter(cp => cp.year === currentYear);
+
+       const pointsByPlayerId = {};
+       for (const cp of currentCupPoints) {
+          const targetId = cp.player_id;
+          if (!pointsByPlayerId[targetId]) {
+             pointsByPlayerId[targetId] = { totalPoints: 0, eventsPlayed: 0 };
+          }
+          pointsByPlayerId[targetId].totalPoints += cp.points || 0;
+          pointsByPlayerId[targetId].eventsPlayed += 1;
+       }
+
+       const cupStats = Object.keys(pointsByPlayerId).map(playerId => {
+           const player = playersMap.get(playerId);
+           const playerName = player ? player.name : "Unknown Player";
+
+           return {
+               player_id: playerId,
+               uid: playerId,
+               name: formatDisplayName(playerName),
+               totalPoints: pointsByPlayerId[playerId].totalPoints,
+               eventsPlayed: pointsByPlayerId[playerId].eventsPlayed,
+               played: pointsByPlayerId[playerId].eventsPlayed // For consistency with `.filter((p) => p.played > 0)`
+           };
+       });
+
+       const activePlayers = cupStats.filter((p) => p.played > 0);
+       activePlayers.sort((a, b) => b.totalPoints - a.totalPoints); // Highest points first
+
+       return activePlayers.map((p, index) => ({
+         ...p,
+         id: p.player_id || p.uid,
+         rank: index + 1
+       }));
+    }
 
     const roundsMap = new Map();
     currentRounds.forEach(r => {
@@ -211,7 +255,7 @@ const LeagueStandings = () => {
       id: p.player_id || p.uid,
       rank: index + 1
     }));
-  }, [players, rounds, scores, liveSeason]);
+  }, [players, rounds, scores, liveSeason, cupPoints]);
 
   const currentRankings = useMemo(() => {
      return calculateRankings(null, filter);
@@ -253,7 +297,7 @@ const LeagueStandings = () => {
       {/* Filter Toggle */}
       <div className="flex justify-center mb-6">
         <div className="bg-slate-800 p-1 rounded-lg inline-flex gap-1">
-          {['all_time', 'this_month', 'current_tournament'].map((f) => (
+          {['602_cup', 'this_month', 'current_tournament'].map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -326,32 +370,52 @@ const LeagueStandings = () => {
 
             {/* Stats Block */}
             <div className="flex flex-1 sm:flex-none justify-between sm:justify-end items-center gap-4 sm:gap-8 mt-2 sm:mt-0">
-              <div className="text-center">
-                <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Avg</p>
-                <p className="text-xl font-data font-bold text-slate-300">
-                  {player.avgScore}
-                </p>
-              </div>
+              {filter === '602_cup' ? (
+                <>
+                  <div className="text-center">
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Events</p>
+                    <p className="text-xl font-data font-bold text-slate-300">
+                      {player.eventsPlayed}
+                    </p>
+                  </div>
 
-              <div className="text-center sm:border-l border-slate-800 sm:pl-8">
-                <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Thru</p>
-                <p className="text-xl font-data font-bold text-slate-300">
-                  {player.totalHoles}
-                </p>
-              </div>
+                  <div className="text-center sm:border-l border-slate-800 sm:pl-8 min-w-[60px]">
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Pts</p>
+                    <p className="text-3xl font-data font-black text-kelly-green">
+                      {player.totalPoints}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-center">
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Avg</p>
+                    <p className="text-xl font-data font-bold text-slate-300">
+                      {player.avgScore}
+                    </p>
+                  </div>
 
-              <div className="text-center sm:border-l border-slate-800 sm:pl-8 min-w-[60px]">
-                <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Tot</p>
-                <p className={`text-3xl font-data font-black ${
-                  player.relativeScore > 0 ? 'text-red-500' :
-                  player.relativeScore < 0 ? 'text-kelly-green' :
-                  'text-slate-300'
-                }`}>
-                  {player.relativeScore > 0 ? `+${player.relativeScore}` :
-                   player.relativeScore === 0 ? 'E' :
-                   player.relativeScore}
-                </p>
-              </div>
+                  <div className="text-center sm:border-l border-slate-800 sm:pl-8">
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Thru</p>
+                    <p className="text-xl font-data font-bold text-slate-300">
+                      {player.totalHoles}
+                    </p>
+                  </div>
+
+                  <div className="text-center sm:border-l border-slate-800 sm:pl-8 min-w-[60px]">
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Tot</p>
+                    <p className={`text-3xl font-data font-black ${
+                      player.relativeScore > 0 ? 'text-red-500' :
+                      player.relativeScore < 0 ? 'text-kelly-green' :
+                      'text-slate-300'
+                    }`}>
+                      {player.relativeScore > 0 ? `+${player.relativeScore}` :
+                       player.relativeScore === 0 ? 'E' :
+                       player.relativeScore}
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Subtle Glow Effect for Top Rank */}

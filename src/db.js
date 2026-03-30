@@ -19,6 +19,7 @@ const SCORES_KEY = 'putting_league_scores';
 const COURSES_KEY = 'putting_league_courses';
 const COORDINATORS_KEY = 'putting_league_coordinators';
 const SETTINGS_KEY = 'putting_league_settings';
+const CUP_POINTS_KEY = 'putting_league_cup_points';
 
 // --- Settings ---
 export const getSettings = async () => {
@@ -26,12 +27,17 @@ export const getSettings = async () => {
   if (!settingsDoc.empty) {
     return settingsDoc.docs[0].data();
   }
-  return { live_season: null, archived_seasons: [] };
+  return { live_season: null, archived_seasons: [], cup_finale_season: null };
 };
 
 export const updateLiveSeason = async (season) => {
   const settingsRef = doc(db, SETTINGS_KEY, 'global');
   await setDoc(settingsRef, { live_season: season }, { merge: true });
+};
+
+export const updateCupFinaleSeason = async (season) => {
+  const settingsRef = doc(db, SETTINGS_KEY, 'global');
+  await setDoc(settingsRef, { cup_finale_season: season }, { merge: true });
 };
 
 export const addArchivedSeason = async (season) => {
@@ -333,4 +339,132 @@ export const updateScore = async (score_id, scoreValue) => {
 
 export const deleteScore = async (score_id) => {
   await deleteDoc(doc(db, SCORES_KEY, score_id));
+};
+
+// --- 602 Cup Points ---
+export const getCupPoints = async () => {
+  const querySnapshot = await getDocs(collection(db, CUP_POINTS_KEY));
+  return querySnapshot.docs.map(doc => doc.data());
+};
+
+export const addCupPoints = async (pointsData) => {
+  const points_id = uuidv4();
+  const newPoints = {
+    points_id,
+    timestamp: new Date().toISOString(),
+    ...pointsData
+  };
+  await setDoc(doc(db, CUP_POINTS_KEY, points_id), newPoints);
+  return newPoints;
+};
+
+export const deleteCupPointsForEvent = async (event_round_id) => {
+  const q = query(collection(db, CUP_POINTS_KEY), where("event_round_id", "==", event_round_id));
+  const querySnapshot = await getDocs(q);
+  const deletePromises = querySnapshot.docs.map(docSnapshot => deleteDoc(doc(db, CUP_POINTS_KEY, docSnapshot.id)));
+  await Promise.all(deletePromises);
+};
+
+export const recalculateCupPointsForEvent = async (event_round_id, isSignatureEvent = false) => {
+  // Find all scores for this event to calculate positions
+  const scoresQuery = query(collection(db, SCORES_KEY), where("event_round_id", "==", event_round_id));
+  const querySnapshot = await getDocs(scoresQuery);
+  const eventScores = querySnapshot.docs.map(doc => doc.data());
+
+  if (eventScores.length === 0) return; // No scores, nothing to calculate
+
+  // We need to fetch the course par for this event to calculate total vs par for proper tie-breaking
+  // but for cup points it depends on purely total score. Let's get the event round to find the course
+  let coursePar = 0;
+  const roundQuery = query(collection(db, ROUNDS_KEY), where("round_id", "==", event_round_id));
+  const roundSnapshot = await getDocs(roundQuery);
+  if (!roundSnapshot.empty) {
+      const round = roundSnapshot.docs[0].data();
+      if (round.course_id) {
+         const course = await getCourse(round.course_id);
+         if (course && course.holes) {
+             coursePar = course.holes.reduce((sum, h) => sum + h.par, 0);
+         }
+      }
+  }
+
+  // Aggregate scores per player for this event
+  const playerTotals = {};
+  for (const s of eventScores) {
+    const pId = s.player_id;
+    if (!playerTotals[pId]) {
+      playerTotals[pId] = 0;
+    }
+    const scoreVal = parseInt(s.score, 10);
+    if (!isNaN(scoreVal)) {
+      playerTotals[pId] += scoreVal;
+    }
+  }
+
+  const playersArr = Object.keys(playerTotals).map(pId => ({
+    player_id: pId,
+    total: playerTotals[pId]
+  }));
+
+  // Sort lowest score first
+  playersArr.sort((a, b) => a.total - b.total);
+
+  // Distribute Points
+  const baseScale = [100, 75, 60, 50, 40, 35, 30, 25, 20, 15, 10, 10, 10, 10, 10];
+  const signatureScale = [150, 115, 90, 75, 60, 50, 45, 35, 30, 20, 15, 15, 15, 15, 15];
+  const scale = isSignatureEvent ? signatureScale : baseScale;
+  const participationPoints = isSignatureEvent ? 10 : 5;
+
+  let rank = 1;
+  const rankedPlayers = [];
+
+  // Handle ties
+  for (let i = 0; i < playersArr.length; ) {
+    const currentScore = playersArr[i].total;
+    let tieCount = 0;
+
+    // Count how many players have this exact score
+    while (i + tieCount < playersArr.length && playersArr[i + tieCount].total === currentScore) {
+      tieCount++;
+    }
+
+    // Calculate total points for these positions
+    let totalPointsForTie = 0;
+    for (let j = 0; j < tieCount; j++) {
+       const positionIndex = rank - 1 + j;
+       if (positionIndex < scale.length) {
+         totalPointsForTie += scale[positionIndex];
+       } else {
+         totalPointsForTie += participationPoints;
+       }
+    }
+
+    const pointsPerPlayer = totalPointsForTie / tieCount;
+
+    // Assign points
+    for (let j = 0; j < tieCount; j++) {
+       rankedPlayers.push({
+           player_id: playersArr[i + j].player_id,
+           points: pointsPerPlayer,
+           rank: rank
+       });
+    }
+
+    rank += tieCount;
+    i += tieCount;
+  }
+
+  // Clear existing points for this event
+  await deleteCupPointsForEvent(event_round_id);
+
+  // Save new points
+  const currentYear = new Date().getFullYear();
+  const promises = rankedPlayers.map(rp => addCupPoints({
+      event_round_id,
+      player_id: rp.player_id,
+      points: rp.points,
+      rank: rp.rank,
+      year: currentYear
+  }));
+  await Promise.all(promises);
 };
