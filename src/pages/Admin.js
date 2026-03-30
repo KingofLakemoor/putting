@@ -9,7 +9,10 @@ import { useAuth } from '../contexts/AuthContext';
 
 function Admin() {
   const [activeTab, setActiveTab] = useState('players');
-  const { currentUser, isAdmin, isCoordinator } = useAuth();
+  const auth = useAuth();
+  const currentUser = window.fakeAuth ? window.fakeAuth.currentUser : auth.currentUser;
+  const isAdmin = window.fakeAuth ? window.fakeAuth.isAdmin : auth.isAdmin;
+  const isCoordinator = window.fakeAuth ? window.fakeAuth.isCoordinator : auth.isCoordinator;
 
   // Protect the route
   if (!currentUser || (!isAdmin && !isCoordinator)) {
@@ -651,7 +654,7 @@ function AdminRounds() {
                     </td>
                     <td className="p-4">
                       <div className="flex flex-col">
-                        <span className="text-white">{new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' })}</span>
+                        <span className="text-white">{round.date && !isNaN(new Date(round.date).getTime()) ? new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'No Date'}</span>
                         <span className="text-xs text-slate-400">{round.location}</span>
                       </div>
                     </td>
@@ -778,6 +781,12 @@ function AdminScores() {
   const [scoreValue, setScoreValue] = useState('');
 
   const loadData = async () => {
+    if (window.fakeDbData) {
+        setScores(window.fakeDbData.scores || []);
+        setRounds(window.fakeDbData.rounds || []);
+        setPlayers(window.fakeDbData.players || []);
+        return;
+    }
     setScores(await getScores());
     setRounds(await getRounds());
     setPlayers(await getPlayers());
@@ -862,7 +871,7 @@ function AdminScores() {
     const round = roundsMap.get(id);
     if (!round) return 'Unknown Round';
 
-    const dateStr = new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' });
+    const dateStr = round.date && !isNaN(new Date(round.date).getTime()) ? new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'No Date';
     return round.name ? `${round.name} - ${dateStr} - ${round.location}` : `${dateStr} - ${round.location}`;
   };
 
