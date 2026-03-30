@@ -64,3 +64,9 @@ if __name__ == "__main__":
         finally:
             context.close()
             browser.close()
+
+            # Print the path of the generated video
+            import glob
+            video_files = glob.glob("/home/jules/verification/videos/*.webm")
+            if video_files:
+                print(f"Video saved to: {video_files[0]}")

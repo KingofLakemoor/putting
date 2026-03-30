@@ -57,13 +57,21 @@ function RoundDetails() {
     return <div className="page-container">Loading round...</div>;
   }
 
+  const playersMap = new Map();
+  const playersByNameMap = new Map();
+  players.forEach(p => {
+      if (p.uid) playersMap.set(p.uid, p);
+      if (p.player_id) playersMap.set(p.player_id, p);
+      if (p.name) playersByNameMap.set(p.name.toLowerCase(), p);
+  });
+
   // Map player info to scores for display
   const scoredPlayers = scores.map(score => {
-    let player = players.find(p => p.player_id === score.player_id || p.uid === score.player_id);
+    let player = playersMap.get(score.player_id);
 
     // Fallback: Link by player_name if the score belongs to the round's creator
     if (!player && round.player_id === score.player_id && round.player_name) {
-       player = players.find(p => p.name.toLowerCase() === round.player_name.toLowerCase());
+       player = playersByNameMap.get(round.player_name.toLowerCase());
     }
 
     const fallbackName = (round.player_id === score.player_id && round.player_name) ? round.player_name : 'Unknown Player';
@@ -78,8 +86,13 @@ function RoundDetails() {
   });
 
   // Get un-scored players for the dropdown
+  const scoredPlayerIds = new Set();
+  scores.forEach(s => {
+      if (s.player_id) scoredPlayerIds.add(s.player_id);
+  });
+
   const availablePlayers = players.filter(
-    p => !scores.some(s => s.player_id === p.player_id || s.player_id === p.uid)
+    p => !scoredPlayerIds.has(p.player_id) && !scoredPlayerIds.has(p.uid)
   );
 
   const dateStr = new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' });
