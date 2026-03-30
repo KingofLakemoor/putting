@@ -91,16 +91,29 @@ const LeagueStandings = () => {
        }
     }
 
+    const playersMap = new Map();
+    const playersByNameMap = new Map();
+    players.forEach(p => {
+        if (p.uid) playersMap.set(p.uid, p);
+        if (p.player_id) playersMap.set(p.player_id, p);
+        if (p.name) playersByNameMap.set(p.name.toLowerCase(), p);
+    });
+
+    const roundsMap = new Map();
+    currentRounds.forEach(r => {
+        if (r.round_id) roundsMap.set(r.round_id, r);
+    });
+
     const scoresByPlayerId = {};
     for (const score of currentScores) {
       // Find the actual player id if the score used the UID
-      let player = players.find(p => p.uid === score.player_id || p.player_id === score.player_id);
+      let player = playersMap.get(score.player_id);
 
       // Fallback: If UID connection is broken, link by player_name from the score's round
       if (!player) {
-         const round = currentRounds.find(r => r.round_id === score.round_id);
+         const round = roundsMap.get(score.round_id);
          if (round && round.player_name && round.player_id === score.player_id) {
-             player = players.find(p => p.name.toLowerCase() === round.player_name.toLowerCase());
+             player = playersByNameMap.get(round.player_name.toLowerCase());
          }
       }
 
@@ -138,7 +151,14 @@ const LeagueStandings = () => {
 
     const orphanStats = orphanIds.map(id => {
        const playerScores = scoresByPlayerId[id];
-       const roundWithPlayer = currentRounds.find(r => r.player_id === id);
+       // Check if there is a round matching this player_id using the rounds we already fetched
+       let roundWithPlayer = null;
+       for (const round of currentRounds) {
+           if (round.player_id === id) {
+               roundWithPlayer = round;
+               break;
+           }
+       }
        const rawName = roundWithPlayer && roundWithPlayer.player_name ? roundWithPlayer.player_name : "Unknown Player";
        const name = formatDisplayName(rawName);
 
