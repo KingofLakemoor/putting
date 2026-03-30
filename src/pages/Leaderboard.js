@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Medal, MapPin, Calendar } from 'lucide-react';
-import { getPlayers, getScores, getRounds, getSettings } from '../db';
+import { getPlayers, getScores, getRounds, getSettings, getCourses } from '../db';
 
 function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -16,6 +16,12 @@ function Leaderboard() {
       let scores = await getScores();
       const allRounds = await getRounds();
       const settings = await getSettings();
+      const courses = await getCourses();
+
+      const courseMap = {};
+      courses.forEach(c => {
+        courseMap[c.course_id] = c;
+      });
 
       const archivedSeasons = settings.archived_seasons || [];
 
@@ -50,6 +56,11 @@ function Leaderboard() {
          scores = scores.filter(s => visibleRoundIds.includes(s.round_id));
       }
 
+      const roundsMap = {};
+      allRounds.forEach(r => {
+        roundsMap[r.round_id] = r;
+      });
+
       // Pre-calculate a map of player_id to an array of scores
       // to reduce complexity of calculating aggregated score below
       // from O(N*M) to O(N+M)
@@ -70,23 +81,44 @@ function Leaderboard() {
         const playerScores = scoresByPlayerId[player.player_id] || [];
 
         let totalScore = 0;
-        let bestRoundScore = null;
+        let totalPar = 0;
+        let totalHoles = 0;
 
         for (let i = 0; i < playerScores.length; i++) {
-          const parsedScore = parseInt(playerScores[i].score);
-          totalScore += (parsedScore || 0);
+          const scoreObj = playerScores[i];
+          const parsedScore = parseInt(scoreObj.score);
 
           if (!isNaN(parsedScore)) {
-            if (bestRoundScore === null || parsedScore < bestRoundScore) {
-              bestRoundScore = parsedScore;
+            totalScore += parsedScore;
+
+            // Find round and course to determine par and holes
+            const round = roundsMap[scoreObj.round_id];
+            let parForRound = 36; // Default to 18 holes of par 2
+            let holesForRound = 18;
+
+            if (round && round.course_id) {
+               const course = courseMap[round.course_id];
+               if (course && course.holes) {
+                  parForRound = course.holes.reduce((sum, h) => sum + h.par, 0);
+                  holesForRound = course.holes.length;
+               }
             }
+
+            totalPar += parForRound;
+            totalHoles += holesForRound;
           }
         }
+
+        const relativeScore = totalScore - totalPar;
+        const avgScore = totalHoles > 0 ? ((totalScore / totalHoles) * 18).toFixed(1) : 0;
 
         return {
           ...player,
           totalScore,
-          bestRoundScore,
+          totalPar,
+          relativeScore,
+          totalHoles,
+          avgScore,
           roundsPlayed: playerScores.length
         };
       });
@@ -97,7 +129,7 @@ function Leaderboard() {
 
       // Sort by score ascending (lower is better)
       activePlayers.sort((a, b) => {
-        return a.totalScore - b.totalScore;
+        return a.relativeScore - b.relativeScore;
       });
 
       setLeaderboard(activePlayers);
@@ -206,18 +238,31 @@ function Leaderboard() {
                 </div>
 
                 {/* Stats Block */}
-                <div className="flex items-center gap-8 justify-between sm:justify-end">
+                <div className="flex flex-1 sm:flex-none justify-between sm:justify-end items-center gap-4 sm:gap-8 mt-2 sm:mt-0">
                   <div className="text-center">
-                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Best RND</p>
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Avg</p>
                     <p className="text-xl font-data font-bold text-slate-300">
-                      {player.bestRoundScore !== null ? player.bestRoundScore : '-'}
+                      {player.avgScore}
                     </p>
                   </div>
 
                   <div className="text-center sm:border-l border-slate-800 sm:pl-8">
-                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Total Score</p>
-                    <p className={`text-3xl font-data font-black ${index === 0 ? 'text-kelly-green' : 'text-white'}`}>
-                      {player.totalScore}
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Thru</p>
+                    <p className="text-xl font-data font-bold text-slate-300">
+                      {player.totalHoles}
+                    </p>
+                  </div>
+
+                  <div className="text-center sm:border-l border-slate-800 sm:pl-8 min-w-[60px]">
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Tot</p>
+                    <p className={`text-3xl font-data font-black ${
+                      player.relativeScore > 0 ? 'text-red-500' :
+                      player.relativeScore < 0 ? 'text-kelly-green' :
+                      'text-slate-300'
+                    }`}>
+                      {player.relativeScore > 0 ? `+${player.relativeScore}` :
+                       player.relativeScore === 0 ? 'E' :
+                       player.relativeScore}
                     </p>
                   </div>
                 </div>
