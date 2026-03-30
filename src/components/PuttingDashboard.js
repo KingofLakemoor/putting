@@ -119,6 +119,7 @@ const PuttingDashboard = () => {
         const scores = await getScores();
         const players = await getPlayers();
         const settings = await getSettings();
+        const courses = await getCourses();
 
         // Check for today's date
         // Note: round dates are typically stored as 'YYYY-MM-DD' local time
@@ -151,6 +152,16 @@ const PuttingDashboard = () => {
           if (p.player_id) playersMap.set(p.player_id, p);
         }
 
+        const coursesMap = new Map();
+        courses.forEach(c => {
+           if (c.course_id) coursesMap.set(c.course_id, c);
+        });
+
+        const roundsMap = new Map();
+        roundsForStandings.forEach(r => {
+           if (r.round_id) roundsMap.set(r.round_id, r);
+        });
+
         const scoresByPlayerId = {};
         for (const score of filteredScores) {
           const player = playersMap.get(score.player_id);
@@ -165,21 +176,42 @@ const PuttingDashboard = () => {
         const playerStats = players.map(player => {
           const playerScores = scoresByPlayerId[player.player_id] || [];
           let totalScore = 0;
+          let totalPar = 0;
+          let totalHoles = 0;
           for (const s of playerScores) {
             const parsed = parseInt(s.score, 10);
             if (!isNaN(parsed)) {
               totalScore += parsed;
+
+              const round = roundsMap.get(s.round_id);
+              let parForRound = 36;
+              let holesForRound = 18;
+
+              if (round && round.course_id) {
+                 const course = coursesMap.get(round.course_id);
+                 if (course && course.holes) {
+                    parForRound = course.holes.reduce((sum, h) => sum + h.par, 0);
+                    holesForRound = course.holes.length;
+                 }
+              }
+
+              totalPar += parForRound;
+              totalHoles += holesForRound;
             }
           }
+
+          const relativeScore = totalScore - totalPar;
+
           return {
             ...player,
             totalScore,
+            relativeScore,
             roundsPlayed: playerScores.length
           };
         });
 
         const activePlayers = playerStats.filter(p => p.roundsPlayed > 0);
-        activePlayers.sort((a, b) => a.totalScore - b.totalScore);
+        activePlayers.sort((a, b) => a.relativeScore - b.relativeScore);
 
         setDashboardStandings(activePlayers);
 
@@ -257,9 +289,17 @@ const PuttingDashboard = () => {
                     </div>
                   </div>
                   <div className="flex gap-6">
-                    <div className="text-center">
-                      <p className="text-[9px] text-slate-500 uppercase">Score</p>
-                      <p className="text-2xl font-data font-bold text-kelly-green">{player.totalScore}</p>
+                    <div className="text-center min-w-[60px]">
+                      <p className="text-[9px] text-slate-500 uppercase">Tot</p>
+                      <p className={`text-2xl font-data font-bold ${
+                        player.relativeScore > 0 ? 'text-red-500' :
+                        player.relativeScore < 0 ? 'text-kelly-green' :
+                        'text-slate-300'
+                      }`}>
+                        {player.relativeScore > 0 ? `+${player.relativeScore}` :
+                         player.relativeScore === 0 ? 'E' :
+                         player.relativeScore}
+                      </p>
                     </div>
                     <div className="flex flex-col items-center justify-center">
                       <TrendingUp size={16} className="text-kelly-green mb-1" />

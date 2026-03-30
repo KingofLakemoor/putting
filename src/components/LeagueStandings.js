@@ -10,12 +10,16 @@ import { formatDisplayName } from '../utils/format';
 const PLAYERS_KEY = 'putting_league_players';
 const ROUNDS_KEY = 'putting_league_rounds';
 const SCORES_KEY = 'putting_league_scores';
+const COURSES_KEY = 'putting_league_courses';
+const CUP_POINTS_KEY = 'putting_league_cup_points';
 
 const LeagueStandings = () => {
-  const [filter, setFilter] = useState('all_time');
+  const [filter, setFilter] = useState('602_cup');
   const [players, setPlayers] = useState([]);
   const [rounds, setRounds] = useState([]);
   const [scores, setScores] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [cupPoints, setCupPoints] = useState([]);
   const [liveSeason, setLiveSeason] = useState(null);
 
   useEffect(() => {
@@ -36,15 +40,23 @@ const LeagueStandings = () => {
     const unsubscribeScores = onSnapshot(collection(db, SCORES_KEY), (snapshot) => {
       setScores(snapshot.docs.map((doc) => doc.data()));
     });
+    const unsubscribeCourses = onSnapshot(collection(db, COURSES_KEY), (snapshot) => {
+      setCourses(snapshot.docs.map((doc) => doc.data()));
+    });
+    const unsubscribeCupPoints = onSnapshot(collection(db, CUP_POINTS_KEY), (snapshot) => {
+      setCupPoints(snapshot.docs.map((doc) => doc.data()));
+    });
 
     return () => {
       unsubscribePlayers();
       unsubscribeRounds();
       unsubscribeScores();
+      unsubscribeCourses();
+      unsubscribeCupPoints();
     };
   }, []);
 
-  const calculateRankings = useCallback((targetDateMs = null, filterParam = 'all_time') => {
+  const calculateRankings = useCallback((targetDateMs = null, filterParam = '602_cup') => {
     let currentRounds = rounds;
     let currentScores = scores;
 
@@ -99,9 +111,52 @@ const LeagueStandings = () => {
         if (p.name) playersByNameMap.set(p.name.toLowerCase(), p);
     });
 
+    if (filterParam === '602_cup') {
+       const currentYear = now.getFullYear();
+       const currentCupPoints = cupPoints.filter(cp => cp.year === currentYear);
+
+       const pointsByPlayerId = {};
+       for (const cp of currentCupPoints) {
+          const targetId = cp.player_id;
+          if (!pointsByPlayerId[targetId]) {
+             pointsByPlayerId[targetId] = { totalPoints: 0, eventsPlayed: 0 };
+          }
+          pointsByPlayerId[targetId].totalPoints += cp.points || 0;
+          pointsByPlayerId[targetId].eventsPlayed += 1;
+       }
+
+       const cupStats = Object.keys(pointsByPlayerId).map(playerId => {
+           const player = playersMap.get(playerId);
+           const playerName = player ? player.name : "Unknown Player";
+
+           return {
+               player_id: playerId,
+               uid: playerId,
+               name: formatDisplayName(playerName),
+               totalPoints: pointsByPlayerId[playerId].totalPoints,
+               eventsPlayed: pointsByPlayerId[playerId].eventsPlayed,
+               played: pointsByPlayerId[playerId].eventsPlayed // For consistency with `.filter((p) => p.played > 0)`
+           };
+       });
+
+       const activePlayers = cupStats.filter((p) => p.played > 0);
+       activePlayers.sort((a, b) => b.totalPoints - a.totalPoints); // Highest points first
+
+       return activePlayers.map((p, index) => ({
+         ...p,
+         id: p.player_id || p.uid,
+         rank: index + 1
+       }));
+    }
+
     const roundsMap = new Map();
     currentRounds.forEach(r => {
         if (r.round_id) roundsMap.set(r.round_id, r);
+    });
+
+    const coursesMap = new Map();
+    courses.forEach(c => {
+        if (c.course_id) coursesMap.set(c.course_id, c);
     });
 
     const scoresByPlayerId = {};
@@ -125,24 +180,52 @@ const LeagueStandings = () => {
       scoresByPlayerId[targetId].push(score);
     }
 
-    const playerStats = players.map((player) => {
-      const playerScores = scoresByPlayerId[player.player_id] || [];
+    const calculateStats = (playerId, playerName, playerScores) => {
       let totalScore = 0;
+      let totalPar = 0;
+      let totalHoles = 0;
       let playedCount = 0;
+
       for (const s of playerScores) {
         const parsed = parseInt(s.score);
         if (!isNaN(parsed)) {
             totalScore += parsed;
             playedCount++;
+
+            const round = roundsMap.get(s.round_id);
+            let parForRound = 36;
+            let holesForRound = 18;
+
+            if (round && round.course_id) {
+               const course = coursesMap.get(round.course_id);
+               if (course && course.holes) {
+                  parForRound = course.holes.reduce((sum, h) => sum + h.par, 0);
+                  holesForRound = course.holes.length;
+               }
+            }
+
+            totalPar += parForRound;
+            totalHoles += holesForRound;
         }
       }
-      const avgScore = playedCount > 0 ? (totalScore / playedCount).toFixed(1) : 0;
+
+      const relativeScore = totalScore - totalPar;
+      const avgScore = totalHoles > 0 ? ((totalScore / totalHoles) * 18).toFixed(1) : 0;
+
       return {
-        ...player,
-        name: formatDisplayName(player.name),
-        score: avgScore,
+        player_id: playerId,
+        uid: playerId,
+        name: formatDisplayName(playerName),
+        avgScore: avgScore,
+        relativeScore: relativeScore,
+        totalHoles: totalHoles,
         played: playedCount,
       };
+    };
+
+    const playerStats = players.map((player) => {
+      const playerScores = scoresByPlayerId[player.player_id] || [];
+      return calculateStats(player.player_id, player.name, playerScores);
     });
 
     // Handle truly orphaned scores that couldn't be linked to any player profile
@@ -160,36 +243,19 @@ const LeagueStandings = () => {
            }
        }
        const rawName = roundWithPlayer && roundWithPlayer.player_name ? roundWithPlayer.player_name : "Unknown Player";
-       const name = formatDisplayName(rawName);
 
-       let totalScore = 0;
-       let playedCount = 0;
-       for (const s of playerScores) {
-         const parsed = parseInt(s.score);
-         if (!isNaN(parsed)) {
-             totalScore += parsed;
-             playedCount++;
-         }
-       }
-       const avgScore = playedCount > 0 ? (totalScore / playedCount).toFixed(1) : 0;
-       return {
-         player_id: id,
-         uid: id,
-         name: name,
-         score: avgScore,
-         played: playedCount,
-       };
+       return calculateStats(id, rawName, playerScores);
     });
 
     const activePlayers = [...playerStats, ...orphanStats].filter((p) => p.played > 0);
-    activePlayers.sort((a, b) => parseFloat(a.score) - parseFloat(b.score));
+    activePlayers.sort((a, b) => a.relativeScore - b.relativeScore);
 
     return activePlayers.map((p, index) => ({
       ...p,
       id: p.player_id || p.uid,
       rank: index + 1
     }));
-  }, [players, rounds, scores, liveSeason]);
+  }, [players, rounds, scores, liveSeason, cupPoints]);
 
   const currentRankings = useMemo(() => {
      return calculateRankings(null, filter);
@@ -231,7 +297,7 @@ const LeagueStandings = () => {
       {/* Filter Toggle */}
       <div className="flex justify-center mb-6">
         <div className="bg-slate-800 p-1 rounded-lg inline-flex gap-1">
-          {['all_time', 'this_month', 'current_tournament'].map((f) => (
+          {['602_cup', 'this_month', 'current_tournament'].map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -303,18 +369,53 @@ const LeagueStandings = () => {
             </div>
 
             {/* Stats Block */}
-            <div className="flex items-center gap-8">
-              <div className="text-center">
-                <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Avg Score</p>
-                <p className={`text-2xl font-data font-black ${index === 0 ? 'text-kelly-green' : 'text-white'}`}>
-                  {player.score}
-                </p>
-              </div>
+            <div className="flex flex-1 sm:flex-none justify-between sm:justify-end items-center gap-4 sm:gap-8 mt-2 sm:mt-0">
+              {filter === '602_cup' ? (
+                <>
+                  <div className="text-center">
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Events</p>
+                    <p className="text-xl font-data font-bold text-slate-300">
+                      {player.eventsPlayed}
+                    </p>
+                  </div>
 
-              <div className="hidden sm:block text-center border-l border-slate-800 pl-8">
-                <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Rounds</p>
-                <p className="text-2xl font-data font-bold text-slate-300">{player.played}</p>
-              </div>
+                  <div className="text-center sm:border-l border-slate-800 sm:pl-8 min-w-[60px]">
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Pts</p>
+                    <p className="text-3xl font-data font-black text-kelly-green">
+                      {player.totalPoints}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-center">
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Avg</p>
+                    <p className="text-xl font-data font-bold text-slate-300">
+                      {player.avgScore}
+                    </p>
+                  </div>
+
+                  <div className="text-center sm:border-l border-slate-800 sm:pl-8">
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Thru</p>
+                    <p className="text-xl font-data font-bold text-slate-300">
+                      {player.totalHoles}
+                    </p>
+                  </div>
+
+                  <div className="text-center sm:border-l border-slate-800 sm:pl-8 min-w-[60px]">
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Tot</p>
+                    <p className={`text-3xl font-data font-black ${
+                      player.relativeScore > 0 ? 'text-red-500' :
+                      player.relativeScore < 0 ? 'text-kelly-green' :
+                      'text-slate-300'
+                    }`}>
+                      {player.relativeScore > 0 ? `+${player.relativeScore}` :
+                       player.relativeScore === 0 ? 'E' :
+                       player.relativeScore}
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Subtle Glow Effect for Top Rank */}
