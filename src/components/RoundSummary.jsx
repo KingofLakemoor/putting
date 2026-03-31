@@ -27,7 +27,13 @@ const RoundSummary = ({ roundData, onFinalize, onDiscard, isPB }) => {
     setIsDiscardModalOpen(false);
   };
 
-  const dateStr = roundData.date ? new Date(roundData.date).toLocaleDateString('en-US', { timeZone: 'UTC' }).toUpperCase() : new Date().toLocaleDateString('en-US', { timeZone: 'UTC' }).toUpperCase();
+  let dateStr = "UNKNOWN DATE";
+  if (roundData.date && !isNaN(new Date(roundData.date).getTime())) {
+    dateStr = new Date(roundData.date).toLocaleDateString('en-US', { timeZone: 'UTC' }).toUpperCase();
+  } else {
+    dateStr = new Date().toLocaleDateString('en-US', { timeZone: 'UTC' }).toUpperCase();
+  }
+
   const locationStr = roundData.location ? roundData.location.toUpperCase() : "DOBSON RANCH";
   const roundName = roundData?.event_round_name || roundData?.name || "Casual Round";
 

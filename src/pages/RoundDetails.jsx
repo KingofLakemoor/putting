@@ -9,6 +9,7 @@ function RoundDetails() {
   const [round, setRound] = useState(null);
   const [players, setPlayers] = useState([]);
   const [scores, setScores] = useState([]);
+  const [error, setError] = useState(null);
 
   // Form State
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
@@ -35,9 +36,10 @@ function RoundDetails() {
 
     // Check if player already has a score for this round
     if (scores.some(s => s.player_id === selectedPlayerId)) {
-      alert("This player already has a score recorded for this round.");
+      setError("This player already has a score recorded for this round.");
       return;
     }
+    setError(null);
 
     const newScore = {
       player_id: selectedPlayerId,
@@ -95,7 +97,8 @@ function RoundDetails() {
     p => !scoredPlayerIds.has(p.player_id) && !scoredPlayerIds.has(p.uid)
   );
 
-  const dateStr = new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' });
+  const dateObj = new Date(round.date);
+  const dateStr = !isNaN(dateObj.getTime()) ? dateObj.toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Unknown Date';
 
   return (
     <div className="min-h-screen bg-dark-bg text-white p-4 md:p-8 font-sans">

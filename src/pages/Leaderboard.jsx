@@ -61,13 +61,19 @@ function Leaderboard() {
         roundsMap[r.round_id] = r;
       });
 
+      const playersMap = new Map();
+      players.forEach(p => {
+        if (p.uid) playersMap.set(p.uid, p);
+        if (p.player_id) playersMap.set(p.player_id, p);
+      });
+
       // Pre-calculate a map of player_id to an array of scores
       // to reduce complexity of calculating aggregated score below
       // from O(N*M) to O(N+M)
       const scoresByPlayerId = {};
       for (let i = 0; i < scores.length; i++) {
         const score = scores[i];
-        const player = players.find(p => p.uid === score.player_id || p.player_id === score.player_id);
+        const player = playersMap.get(score.player_id);
         const targetId = player ? player.player_id : score.player_id;
 
         if (!scoresByPlayerId[targetId]) {
@@ -140,7 +146,10 @@ function Leaderboard() {
 
   const getHeaderTitle = () => {
     if (filter.startsWith('season_')) return `${filter.substring(7)} Rankings`;
-    if (filter.startsWith('date_')) return `${new Date(filter.substring(5)).toLocaleDateString('en-US', { timeZone: 'UTC' })} Rankings`;
+    if (filter.startsWith('date_')) {
+      const d = new Date(filter.substring(5));
+      return !isNaN(d.getTime()) ? `${d.toLocaleDateString('en-US', { timeZone: 'UTC' })} Rankings` : 'Date Rankings';
+    }
     if (filter === 'global') return 'Global Rankings';
     return 'Event Leaderboard';
   };
@@ -174,16 +183,21 @@ function Leaderboard() {
             )}
             {dates.length > 0 && (
               <optgroup label="Dates">
-                {dates.map(date => (
-                  <option key={`date_${date}`} value={`date_${date}`}>
-                    {new Date(date).toLocaleDateString('en-US', { timeZone: 'UTC' })}
-                  </option>
-                ))}
+                {dates.map(date => {
+                  const d = new Date(date);
+                  const validDate = !isNaN(d.getTime());
+                  return (
+                    <option key={`date_${date}`} value={`date_${date}`}>
+                      {validDate ? d.toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Unknown Date'}
+                    </option>
+                  );
+                })}
               </optgroup>
             )}
             <optgroup label="Events / Rounds">
               {rounds.map(round => {
-                const dateStr = new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' });
+                const d = new Date(round.date);
+                const dateStr = !isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Unknown Date';
                 const displayStr = round.name ? `${round.name} - ${dateStr} - ${round.location}` : `${dateStr} - ${round.location}`;
                 return (
                   <option key={round.round_id} value={round.round_id}>

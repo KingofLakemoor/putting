@@ -67,6 +67,16 @@ const History = () => {
       roundMap[round.round_id] = round;
     }
 
+    // Precompute a players map
+    const playersMap = new Map();
+    for (const p of allPlayers) {
+      if (p.uid) playersMap.set(p.uid, p);
+      if (p.player_id) playersMap.set(p.player_id, p);
+    }
+
+    const currentUserProfile = playersMap.get(currentUser.uid);
+    const currentUserActualId = currentUserProfile ? currentUserProfile.player_id : currentUser.uid;
+
     // 3. Process Player Scores into Round History
     const historyList = [];
     const pbMap = {}; // course_id -> min_score
@@ -104,10 +114,9 @@ const History = () => {
       // Find player's rank
       // Index + 1 because array is 0-indexed
       const playerRank = sortedScores.findIndex(s => {
-        const p = allPlayers.find(pl => pl.uid === s.player_id || pl.player_id === s.player_id);
+        const p = playersMap.get(s.player_id);
         const actualId = p ? p.player_id : s.player_id;
-        const currentId = allPlayers.find(pl => pl.uid === currentUser.uid)?.player_id || currentUser.uid;
-        return actualId === currentId || actualId === currentUser.uid;
+        return actualId === currentUserActualId || actualId === currentUser.uid;
       }) + 1;
       const totalPlayers = sortedScores.length;
 
@@ -203,7 +212,13 @@ const History = () => {
                                     <div>
                                         <p className="font-bold text-sm text-white uppercase">{pb.courseName}</p>
                                         <p className="text-[10px] text-slate-500 font-data">
-                                            {pb.date ? new Date(pb.date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Unknown Date'}
+                                            {(() => {
+                                                if (pb.date) {
+                                                    const d = new Date(pb.date);
+                                                    return !isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Unknown Date';
+                                                }
+                                                return 'Unknown Date';
+                                            })()}
                                         </p>
                                     </div>
                                     <div className="text-2xl font-data font-bold text-kelly-green">{pb.score}</div>
@@ -231,20 +246,25 @@ const History = () => {
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        {historyData.rounds.map((round, idx) => (
-                            <div key={round.id} className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-dark-bg/50 rounded-xl border border-slate-800 hover:border-kelly-green/50 transition-colors gap-4 sm:gap-0">
-                                <div className="flex items-center gap-4">
-                                    <div className="bg-slate-800/50 p-3 rounded-lg flex flex-col items-center justify-center min-w-[60px]">
-                                        <span className="text-xs text-slate-400 font-data uppercase">{new Date(round.date).toLocaleString('en-US', { month: 'short' })}</span>
-                                        <span className="text-lg font-bold text-white font-data">{new Date(round.date).toLocaleString('en-US', { day: '2-digit' })}</span>
+                        {historyData.rounds.map((round, idx) => {
+                            const d = new Date(round.date);
+                            const validDate = !isNaN(d.getTime());
+                            const monthStr = validDate ? d.toLocaleString('en-US', { month: 'short' }) : '---';
+                            const dayStr = validDate ? d.toLocaleString('en-US', { day: '2-digit' }) : '--';
+                            return (
+                                <div key={round.id} className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-dark-bg/50 rounded-xl border border-slate-800 hover:border-kelly-green/50 transition-colors gap-4 sm:gap-0">
+                                    <div className="flex items-center gap-4">
+                                        <div className="bg-slate-800/50 p-3 rounded-lg flex flex-col items-center justify-center min-w-[60px]">
+                                            <span className="text-xs text-slate-400 font-data uppercase">{monthStr}</span>
+                                            <span className="text-lg font-bold text-white font-data">{dayStr}</span>
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-white uppercase text-sm sm:text-base">{round.roundName || round.courseName}</p>
+                                            <p className="text-[10px] sm:text-xs text-slate-500 flex items-center gap-1 uppercase tracking-wider mt-1">
+                                                <MapPin size={10} className="text-kelly-green" /> {round.courseName}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-bold text-white uppercase text-sm sm:text-base">{round.roundName || round.courseName}</p>
-                                        <p className="text-[10px] sm:text-xs text-slate-500 flex items-center gap-1 uppercase tracking-wider mt-1">
-                                            <MapPin size={10} className="text-kelly-green" /> {round.courseName}
-                                        </p>
-                                    </div>
-                                </div>
 
                                 <div className="flex items-center justify-between sm:justify-end gap-6 sm:gap-8 border-t border-slate-800 pt-3 sm:border-0 sm:pt-0">
                                     <div className="text-center">
@@ -263,7 +283,8 @@ const History = () => {
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </motion.div>

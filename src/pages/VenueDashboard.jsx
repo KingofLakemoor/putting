@@ -61,6 +61,11 @@ const VenueDashboard = () => {
     activeRounds.forEach(r => {
       const course = coursesMap.get(r.course_id);
 
+      const holesMap = new Map();
+      if (course?.holes) {
+        course.holes.forEach(h => holesMap.set(h.hole, h));
+      }
+
       let currentScore = 0;
       let holesPlayed = 0;
       let parSum = 0;
@@ -71,7 +76,7 @@ const VenueDashboard = () => {
             currentScore += s;
             holesPlayed++;
             const hNum = parseInt(holeNum, 10);
-            const holeData = course?.holes?.find(h => h.hole === hNum);
+            const holeData = holesMap.get(hNum);
             parSum += holeData ? holeData.par : 2; // Default par 2 if not found
           }
         });
@@ -102,7 +107,7 @@ const VenueDashboard = () => {
               oppScore += s;
               oppHolesPlayed++;
               const hNum = parseInt(holeNum, 10);
-              const holeData = course?.holes?.find(h => h.hole === hNum);
+              const holeData = holesMap.get(hNum);
               oppParSum += holeData ? holeData.par : 2;
             }
           });

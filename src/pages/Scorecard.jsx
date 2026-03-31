@@ -19,6 +19,7 @@ const ScorecardPage = () => {
   const [players, setPlayers] = useState([]);
   const { currentUser } = useAuth();
   const saveTimeoutRef = useRef(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchRoundAndPlayers = async () => {
@@ -95,7 +96,8 @@ const ScorecardPage = () => {
           const opponentTotal = Object.values(roundData.opponent_scores || {}).reduce((a, b) => a + b, 0);
           const existingScores = await getScoresForRound(eventRoundId);
           if (existingScores.some(s => s.player_id === roundData.opponent_id)) {
-            alert("Opponent was already scored and their previous score will not be overwritten.");
+            setError("Opponent was already scored and their previous score will not be overwritten.");
+            return;
           } else {
             await addScore({
               player_id: roundData.opponent_id,
@@ -105,6 +107,7 @@ const ScorecardPage = () => {
           }
         }
 
+        setError(null);
         navigate('/');
       }
     } catch (error) {
@@ -199,12 +202,19 @@ const ScorecardPage = () => {
 
   if (isRoundComplete && roundData) {
     return (
-      <RoundSummary
-        roundData={roundData}
-        onFinalize={handleFinalize}
-        onDiscard={handleDiscard}
-        isPB={isPB}
-      />
+      <div className="flex flex-col">
+        {error && (
+          <div className="bg-red-500/10 text-red-500 p-3 m-4 rounded-xl text-xs font-bold uppercase tracking-wider text-center">
+            {error}
+          </div>
+        )}
+        <RoundSummary
+          roundData={roundData}
+          onFinalize={handleFinalize}
+          onDiscard={handleDiscard}
+          isPB={isPB}
+        />
+      </div>
     );
   }
 
@@ -212,7 +222,11 @@ const ScorecardPage = () => {
   const totalHoles = courseData?.holes?.length || 9;
 
   // Find par for the current hole
-  const currentHoleData = courseData?.holes?.find(h => h.hole === currentHole);
+  const holesMap = new Map();
+  if (courseData?.holes) {
+    courseData.holes.forEach(h => holesMap.set(h.hole, h));
+  }
+  const currentHoleData = holesMap.get(currentHole);
   const currentPar = currentHoleData ? currentHoleData.par : 3;
 
   return (

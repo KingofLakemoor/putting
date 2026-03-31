@@ -267,8 +267,11 @@ const LeagueStandings = () => {
   }, [calculateRankings, filter]);
 
   const topPlayers = useMemo(() => {
+      const prevRankingsMap = new Map();
+      previousRankings.forEach(p => prevRankingsMap.set(p.id, p));
+
       return currentRankings.map(player => {
-          const prevPlayer = previousRankings.find(p => p.id === player.id);
+          const prevPlayer = prevRankingsMap.get(player.id);
           let trend = 'stable';
 
           if (!prevPlayer) {
