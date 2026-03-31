@@ -1,26 +1,27 @@
+import { vi } from 'vitest';
 import { addCourse, getScoresForRound, deletePlayer, updateRoundStatus } from './db';
 import { v4 as uuidv4 } from 'uuid';
 import { setDoc, doc, collection, query, where, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
-jest.mock('uuid');
-jest.mock('./firebase', () => ({
+vi.mock('uuid');
+vi.mock('./firebase', () => ({
   db: {}
 }));
-jest.mock('firebase/firestore', () => ({
-  doc: jest.fn(),
-  setDoc: jest.fn(),
-  collection: jest.fn(),
-  getDocs: jest.fn(),
-  updateDoc: jest.fn(),
-  deleteDoc: jest.fn(),
-  query: jest.fn(),
-  where: jest.fn()
+vi.mock('firebase/firestore', () => ({
+  doc: vi.fn(),
+  setDoc: vi.fn(),
+  collection: vi.fn(),
+  getDocs: vi.fn(),
+  updateDoc: vi.fn(),
+  deleteDoc: vi.fn(),
+  query: vi.fn(),
+  where: vi.fn()
 }));
 
 describe('db.js tests', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('addCourse', () => {
