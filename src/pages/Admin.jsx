@@ -31,7 +31,7 @@ function Admin() {
     { id: 'scores', label: 'Manage Scores', icon: ClipboardList },
   ];
   if (isAdmin) {
-    tabs.push({ id: 'courses', label: 'Manage Courses', icon: Map });
+    tabs.push({ id: 'courses', label: 'Manage Courses', icon: MapIcon });
     tabs.push({ id: 'coordinators', label: 'Manage Coordinators', icon: UserCog });
   }
 
