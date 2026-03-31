@@ -221,6 +221,7 @@ function AdminPlayers() {
   const [email, setEmail] = useState('');
   const [uid, setUid] = useState('');
   const [editingId, setEditingId] = useState(null);
+  const [error, setError] = useState(null);
 
   const loadPlayers = async () => {
     setPlayers(await getPlayers());
@@ -295,7 +296,8 @@ function AdminPlayers() {
   const handleGenerateMissingUids = async () => {
     const playersMissingUid = players.filter(p => !p.uid);
     if (playersMissingUid.length === 0) {
-      alert("All players already have a UID.");
+      setError("All players already have a UID.");
+      setTimeout(() => setError(null), 3000);
       return;
     }
 
@@ -314,12 +316,15 @@ function AdminPlayers() {
           <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 flex items-center gap-2">
             <Users size={20} className="text-kelly-green" /> Players List
           </h3>
-          <button
+          <div className="flex items-center gap-2">
+            {error && <div className="bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider">{error}</div>}
+            <button
             onClick={handleGenerateMissingUids}
             className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase"
           >
-            <RefreshCw size={14} /> Generate Missing UIDs
-          </button>
+              <RefreshCw size={14} /> Generate Missing UIDs
+            </button>
+          </div>
         </div>
 
         {players.length === 0 ? (

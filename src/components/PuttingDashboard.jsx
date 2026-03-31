@@ -47,8 +47,10 @@ const PuttingDashboard = () => {
             }
 
             const roundCourseMap = {};
+            const roundMap = {};
             for (const r of rounds) {
                roundCourseMap[r.round_id] = r.course_id;
+               roundMap[r.round_id] = r;
             }
 
             const now = Date.now();
@@ -72,7 +74,7 @@ const PuttingDashboard = () => {
 
               // Check if score is older than 7 days
               // We'll use the score's timestamp or the round's date
-              const roundObj = rounds.find(r => r.round_id === score.round_id);
+              const roundObj = roundMap[score.round_id];
               const scoreDate = score.timestamp ? new Date(score.timestamp).getTime() : (roundObj && roundObj.date ? new Date(roundObj.date).getTime() : 0);
 
               if (scoreDate && scoreDate <= sevenDaysAgo) {

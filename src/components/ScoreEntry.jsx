@@ -129,7 +129,13 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
         {opponentId && (
           <div className="flex flex-col items-center gap-4">
             <div className="text-xs font-bold text-slate-400 uppercase tracking-widest truncate max-w-[120px]">
-              {players.find(p => p.player_id === opponentId)?.name || 'Opponent'}
+              {(() => {
+                const playersMap = new Map();
+                for (const p of players) {
+                  if (p.player_id) playersMap.set(p.player_id, p);
+                }
+                return playersMap.get(opponentId)?.name || 'Opponent';
+              })()}
             </div>
             <AnimatePresence mode="wait">
               <motion.div
