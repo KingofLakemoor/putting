@@ -1,70 +1,49 @@
-# Getting Started with Vite
+# Club 602 Putting League
 
-This project was bootstrapped with [Vite](https://github.com/facebook/create-react-app).
+The official live leaderboard and scoring application for the Club 602 Putting League.
 
-## Available Scripts
+This project was built using [React](https://react.dev/) and is bundled with [Vite](https://vitejs.dev/).
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (version matching your environment)
+- A Firebase project for database/auth
+
+### Running Locally
 
 In the project directory, you can run:
 
-### `npm start`
+#### `npm run start` (or `npm run dev`)
 
-Runs the app in the development mode.\
+Runs the app in development mode.
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+The page will hot-reload when you make changes.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+#### `npm run test`
 
-### `npm test`
+Launches the [Vitest](https://vitest.dev/) test runner in interactive watch mode.
+Use this to run and verify unit tests. Note: to prevent Firebase initialization errors in tests, you may need to provide dummy API keys in your environment variables.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+#### `npm run build`
 
-### `npm run build`
+Builds the app for production to the `build` folder.
+It correctly bundles React in production mode and optimizes the build for best performance, including splitting out vendor chunks (like Firebase, React, and Lucide) to keep bundle sizes manageable.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+#### `npm run preview`
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Boots up a local static web server that serves the files from your `build` folder. This allows you to preview your production build locally before deploying.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Configuration & Environment Variables
 
-### `npm run eject`
+Environment variables must be prefixed with `VITE_` (e.g., `VITE_FIREBASE_API_KEY`) and are accessed in the code via `import.meta.env`.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Architecture & Tooling
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Vite documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- **Frontend Framework:** React 19
+- **Bundler:** Vite
+- **Testing:** Vitest + React Testing Library + Playwright
+- **Styling:** Tailwind CSS + Headless UI + Framer Motion
+- **Icons:** Lucide React
+- **Backend/Database:** Firebase (Auth, Firestore)
