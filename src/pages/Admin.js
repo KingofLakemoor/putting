@@ -823,8 +823,9 @@ function AdminScores() {
   };
 
   const playersMap = useMemo(() => {
-    const map = new Map();
+    const map = new window.Map();
     players.forEach(p => {
+      if (!p) return;
       if (p.player_id) map.set(p.player_id, p);
       if (p.uid) map.set(p.uid, p);
     });
@@ -832,16 +833,18 @@ function AdminScores() {
   }, [players]);
 
   const playersByName = useMemo(() => {
-    const map = new Map();
+    const map = new window.Map();
     players.forEach(p => {
+      if (!p) return;
       if (p.name) map.set(p.name.toLowerCase(), p);
     });
     return map;
   }, [players]);
 
   const roundsMap = useMemo(() => {
-    const map = new Map();
+    const map = new window.Map();
     rounds.forEach(r => {
+      if (!r) return;
       if (r.round_id) map.set(r.round_id, r);
     });
     return map;
@@ -851,7 +854,7 @@ function AdminScores() {
     let player = playersMap.get(id);
     if (!player && round_id) {
        const round = roundsMap.get(round_id);
-       if (round && round.player_id === id && round.player_name) {
+       if (round && round.player_id === id && typeof round.player_name === 'string') {
            player = playersByName.get(round.player_name.toLowerCase());
        }
     }
