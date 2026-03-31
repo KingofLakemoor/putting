@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldAlert, Users, CalendarDays, ClipboardList, Map, UserCog, Edit, Trash2, Check, X, Settings, RefreshCw, BookOpen, Star } from 'lucide-react';
+import { ShieldAlert, Users, CalendarDays, ClipboardList, Map as MapIcon, UserCog, Edit, Trash2, Check, X, Settings, RefreshCw, BookOpen, Star } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, addRound, updateRoundStatus, updateRoundSeason, deleteRound, getScores, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse, getCoordinators, addCoordinator, removeCoordinator, getSettings, updateLiveSeason, updateCupFinaleSeason, addArchivedSeason, removeArchivedSeason, recalculateCupPointsForEvent } from '../db';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -823,7 +823,7 @@ function AdminScores() {
   };
 
   const playersMap = useMemo(() => {
-    const map = new window.Map();
+    const map = new Map();
     players.forEach(p => {
       if (!p) return;
       if (p.player_id) map.set(p.player_id, p);
@@ -833,7 +833,7 @@ function AdminScores() {
   }, [players]);
 
   const playersByName = useMemo(() => {
-    const map = new window.Map();
+    const map = new Map();
     players.forEach(p => {
       if (!p) return;
       if (p.name) map.set(p.name.toLowerCase(), p);
@@ -842,7 +842,7 @@ function AdminScores() {
   }, [players]);
 
   const roundsMap = useMemo(() => {
-    const map = new window.Map();
+    const map = new Map();
     rounds.forEach(r => {
       if (!r) return;
       if (r.round_id) map.set(r.round_id, r);
@@ -1026,7 +1026,7 @@ function AdminCourses() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2">
         <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
-          <Map size={20} className="text-kelly-green" /> Courses List
+          <MapIcon size={20} className="text-kelly-green" /> Courses List
         </h3>
 
         {courses.length === 0 ? (
