@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Dialog } from '@headlessui/react';
 import { useAuth } from '../contexts/AuthContext';
 import { getActiveRoundForUser, createActiveRound, getRounds, getScoresForPlayer, getCourses, getScores, getPlayers, getSettings } from '../db';
+import { formatDisplayName } from '../utils/format';
 
 const PuttingDashboard = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -212,6 +213,7 @@ const PuttingDashboard = () => {
 
           return {
             ...player,
+            name: formatDisplayName(player.name),
             totalScore,
             relativeScore,
             roundsPlayed: playerScores.length

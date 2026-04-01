@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Medal, MapPin, Calendar } from 'lucide-react';
 import { getPlayers, getScores, getRounds, getSettings, getCourses } from '../db';
+import { formatDisplayName } from '../utils/format';
 
 function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -124,6 +125,7 @@ function Leaderboard() {
 
         return {
           ...player,
+          name: formatDisplayName(player.name),
           totalScore,
           totalPar,
           relativeScore,

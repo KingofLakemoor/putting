@@ -5,7 +5,7 @@ def run_cuj(page):
     # Mock firebase auth and db via window.fakeDbData to bypass complex setup
     page.add_init_script("""
         window.fakeDbData = {
-            currentUser: { uid: 'user1', displayName: 'Test User' },
+            currentUser: { uid: 'user1', displayName: 'Rick D.' },
             rounds: [
                 {
                     round_id: 'r1',
@@ -14,18 +14,19 @@ def run_cuj(page):
                     event_round_name: 'Test Event',
                     course_id: 'c1',
                     player_id: 'user1',
-                    player_name: 'Rick',
+                    player_name: 'Rick Doe',
                     scores: { '1': 3, '2': 1, '3': 2 },
                     opponent_id: 'user2',
                     opponent_scores: { '1': 2, '2': 3, '3': 2 }
                 }
             ],
             scores: [
-                { player_id: 'user1', score: 36, round_id: 'r1' }
+                { player_id: 'user1', score: 36, round_id: 'r1' },
+                { player_id: 'user2', score: 38, round_id: 'r1' }
             ],
             players: [
-                { player_id: 'user1', uid: 'user1', name: 'Rick' },
-                { player_id: 'user2', uid: 'user2', name: 'Brendan' }
+                { player_id: 'user1', uid: 'user1', name: 'Rick Doe', email: 'rick@example.com' },
+                { player_id: 'user2', uid: 'user2', name: 'Brendan Smith', email: 'brendan@example.com' }
             ],
             courses: [
                 {
