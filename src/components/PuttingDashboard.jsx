@@ -276,7 +276,7 @@ const PuttingDashboard = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="order-2 row-span-2 md:order-none md:col-span-2 md:row-span-2 bg-dark-surface border border-slate-700/50 rounded-2xl p-6 relative overflow-hidden group flex flex-col"
+          className="order-2 row-span-3 md:order-none md:col-span-2 md:row-span-3 bg-dark-surface border border-slate-700/50 rounded-2xl p-6 relative overflow-hidden group flex flex-col"
         >
           <div className="flex justify-between items-center mb-6">
             <h2 className="flex items-center gap-2 font-sports text-2xl">
@@ -287,7 +287,7 @@ const PuttingDashboard = () => {
           </div>
 
           <div className="space-y-3 flex-1">
-            {dashboardStandings.slice(0, 3).map((player, index) => {
+            {dashboardStandings.slice(0, 5).map((player, index) => {
               const rank = index + 1;
               return (
                 <div key={player.player_id} className="flex items-center justify-between p-4 bg-dark-bg/50 rounded-xl border-l-4 border-kelly-green group-hover:translate-x-1 transition-transform">
@@ -415,6 +415,30 @@ const PuttingDashboard = () => {
           )}
         </AnimatePresence>
 
+        {/* ADVERTISEMENT (Small Square) */}
+        <motion.a
+          href="https://www.club602.com/merch/p/april-15th-may-20th-putting-league-putting-world"
+          target="_blank"
+          rel="noopener noreferrer"
+          whileHover={{ scale: 0.98 }}
+          whileTap={{ scale: 0.95 }}
+          className="order-3 md:order-none bg-dark-surface border border-slate-700/50 rounded-2xl relative overflow-hidden group flex flex-col items-center justify-center text-center p-4 min-h-[180px]"
+        >
+          <img
+            src="/putting-league-ad-final.jpg"
+            alt="Upcoming Putting League"
+            className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity duration-300"
+          />
+          <div className="relative z-10">
+            <h3 className="font-sports text-2xl text-white drop-shadow-lg group-hover:text-kelly-green transition-colors">
+              Putting League
+            </h3>
+            <p className="text-xs font-bold text-white uppercase tracking-wider mt-2 drop-shadow-md">
+              Sign Up Now
+            </p>
+          </div>
+        </motion.a>
+
         {/* MIDDLE RIGHT: RECENT PERFORMANCE (Small Square) */}
         <div className="order-4 md:order-none bg-dark-surface border border-slate-700/50 rounded-2xl p-6 flex flex-col justify-between relative">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">My Avg</h3>
@@ -430,7 +454,7 @@ const PuttingDashboard = () => {
         </div>
 
         {/* BOTTOM FULL: ACTIVE ROUNDS / REPORTING (Horizontal) */}
-        <div className="order-3 md:order-none md:col-span-3 bg-dark-surface border border-slate-700/50 rounded-2xl p-6">
+        <div className="order-5 md:order-none md:col-span-3 bg-dark-surface border border-slate-700/50 rounded-2xl p-6">
            <div className="flex items-center gap-2 mb-4">
               <Activity size={18} className="text-kelly-green" />
               <h2 className="font-sports text-xl uppercase">Report Scores</h2>
