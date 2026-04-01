@@ -6,7 +6,7 @@ export default function PrivateRoute({ children }) {
   const { currentUser } = useAuth();
   const location = useLocation();
 
-  if (!currentUser && !window.fakeAuth) {
+  if (!currentUser) {
     // Redirect them to the /signin page, but save the current location they were
     // trying to go to when they were redirected. This allows us to send them
     // along to that page after they login, which is a nicer user experience

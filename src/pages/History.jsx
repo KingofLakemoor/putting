@@ -23,23 +23,13 @@ const History = () => {
       try {
         setLoading(true);
         // Fetch necessary data
-        // Check for test mock data
-        let playerScores, allRounds, courses, allScores, allPlayers;
-        if (window.fakeDbData) {
-            playerScores = window.fakeDbData.scores;
-            allRounds = window.fakeDbData.rounds;
-            courses = window.fakeDbData.courses;
-            allScores = window.fakeDbData.allScores;
-            allPlayers = window.fakeDbData.players || [];
-        } else {
-            [playerScores, allRounds, courses, allScores, allPlayers] = await Promise.all([
-              getScoresForPlayer(currentUser.uid),
-              getRounds(),
-              getCourses(),
-              getScores(),
-              getPlayers()
-            ]);
-        }
+        const [playerScores, allRounds, courses, allScores, allPlayers] = await Promise.all([
+          getScoresForPlayer(currentUser.uid),
+          getRounds(),
+          getCourses(),
+          getScores(),
+          getPlayers()
+        ]);
 
         // Process data
         processData(playerScores, allRounds, courses, allScores, allPlayers);
