@@ -156,7 +156,13 @@ const PuttingDashboard = () => {
 
         const coursesMap = new Map();
         courses.forEach(c => {
-           if (c.course_id) coursesMap.set(c.course_id, c);
+           if (c.course_id) {
+               coursesMap.set(c.course_id, {
+                   ...c,
+                   _computedTotalPar: Array.isArray(c.holes) ? c.holes.reduce((sum, h) => sum + (h.par || 2), 0) : 36,
+                   _computedTotalHoles: Array.isArray(c.holes) ? c.holes.length : 18
+               });
+           }
         });
 
         const roundsMap = new Map();
@@ -191,9 +197,9 @@ const PuttingDashboard = () => {
 
               if (round && round.course_id) {
                  const course = coursesMap.get(round.course_id);
-                 if (course && course.holes) {
-                    parForRound = course.holes.reduce((sum, h) => sum + h.par, 0);
-                    holesForRound = course.holes.length;
+                 if (course) {
+                    parForRound = course._computedTotalPar;
+                    holesForRound = course._computedTotalHoles;
                  }
               }
 
