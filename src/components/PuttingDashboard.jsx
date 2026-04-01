@@ -427,16 +427,8 @@ const PuttingDashboard = () => {
           <img
             src="/putting-league-ad-final.jpg"
             alt="Upcoming Putting League"
-            className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity duration-300"
+            className="absolute inset-0 w-full h-full object-cover opacity-100 group-hover:opacity-80 transition-opacity duration-300"
           />
-          <div className="relative z-10">
-            <h3 className="font-sports text-2xl text-white drop-shadow-lg group-hover:text-kelly-green transition-colors">
-              Putting League
-            </h3>
-            <p className="text-xs font-bold text-white uppercase tracking-wider mt-2 drop-shadow-md">
-              Sign Up Now
-            </p>
-          </div>
         </motion.a>
 
         {/* MIDDLE RIGHT: RECENT PERFORMANCE (Small Square) */}
