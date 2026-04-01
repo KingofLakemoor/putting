@@ -454,6 +454,7 @@ function AdminRounds() {
   const [date, setDate] = useState('');
   const [courseId, setCourseId] = useState('');
   const [isSignature, setIsSignature] = useState(false);
+  const [scoreLimit, setScoreLimit] = useState('');
   const [courses, setCourses] = useState([]);
   const [showArchived, setShowArchived] = useState(false);
   const [seasons, setSeasons] = useState([]);
@@ -490,7 +491,8 @@ function AdminRounds() {
       date,
       location: selectedCourse ? selectedCourse.name : 'Unknown Location',
       course_id: courseId,
-      is_signature: isSignature
+      is_signature: isSignature,
+      score_limit: scoreLimit ? parseInt(scoreLimit, 10) : null
     };
 
     await addRound(newRound);
@@ -500,6 +502,7 @@ function AdminRounds() {
     setDate('');
     setCourseId('');
     setIsSignature(false);
+    setScoreLimit('');
     loadData();
   };
 
@@ -662,6 +665,9 @@ function AdminRounds() {
                       <div className="flex flex-col">
                         <span className="text-white">{round.date && !isNaN(new Date(round.date).getTime()) ? new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'No Date'}</span>
                         <span className="text-xs text-slate-400">{round.location}</span>
+                        {round.score_limit && (
+                          <span className="text-[10px] text-kelly-green uppercase font-bold mt-1">Limit: {round.score_limit} Scores</span>
+                        )}
                       </div>
                     </td>
                     <td className="p-4">
@@ -757,6 +763,21 @@ function AdminRounds() {
                   </option>
                 ))}
               </select>
+            </div>
+
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="scoreLimit">Score Submission Limit</label>
+              <input
+                type="number"
+                id="scoreLimit"
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors"
+                value={scoreLimit}
+                onChange={(e) => setScoreLimit(e.target.value)}
+                placeholder="Leave blank for unlimited"
+                min="1"
+              />
+              <p className="text-[10px] text-slate-500 mt-2">Maximum number of scores a single player can submit for this round.</p>
             </div>
 
             <div className="flex items-center gap-3 p-4 bg-dark-bg border border-slate-700 rounded-xl cursor-pointer" onClick={() => setIsSignature(!isSignature)}>
