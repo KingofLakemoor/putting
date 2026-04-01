@@ -10,9 +10,9 @@ import { useAuth } from '../contexts/AuthContext';
 function Admin() {
   const [activeTab, setActiveTab] = useState('players');
   const auth = useAuth();
-  const currentUser = window.fakeAuth ? window.fakeAuth.currentUser : auth.currentUser;
-  const isAdmin = window.fakeAuth ? window.fakeAuth.isAdmin : auth.isAdmin;
-  const isCoordinator = window.fakeAuth ? window.fakeAuth.isCoordinator : auth.isCoordinator;
+  const currentUser = auth.currentUser;
+  const isAdmin = auth.isAdmin;
+  const isCoordinator = auth.isCoordinator;
 
   // Protect the route
   if (!currentUser || (!isAdmin && !isCoordinator)) {
@@ -786,12 +786,6 @@ function AdminScores() {
   const [scoreValue, setScoreValue] = useState('');
 
   const loadData = async () => {
-    if (window.fakeDbData) {
-        setScores(window.fakeDbData.scores || []);
-        setRounds(window.fakeDbData.rounds || []);
-        setPlayers(window.fakeDbData.players || []);
-        return;
-    }
     setScores(await getScores());
     setRounds(await getRounds());
     setPlayers(await getPlayers());
