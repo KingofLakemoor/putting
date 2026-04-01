@@ -367,7 +367,7 @@ const LeagueStandings = () => {
 
               <div>
                 <p className={`font-bold text-lg uppercase tracking-tight ${index === 0 ? 'text-kelly-green' : 'text-white'}`}>
-                  {player.name}
+                  {formatDisplayName(player.name)}
                 </p>
                 <div className="flex items-center gap-2">
                   {getTrendIcon(player.trend)}

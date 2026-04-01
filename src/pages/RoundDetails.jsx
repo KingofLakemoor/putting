@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronLeft, MapPin, Calendar, PlusCircle, Trophy, Medal } from 'lucide-react';
 import { getRound, getPlayers, getScoresForRound, addScore } from '../db';
+import { formatDisplayName } from '../utils/format';
 
 function RoundDetails() {
   const { id } = useParams();
@@ -80,7 +81,7 @@ function RoundDetails() {
 
     return {
       ...score,
-      playerName: player ? player.name : fallbackName,
+      playerName: formatDisplayName(player ? player.name : fallbackName),
     };
   }).sort((a, b) => {
     // Sort by score ascending (lower is better)
@@ -203,7 +204,7 @@ function RoundDetails() {
                       <option value="">-- Choose a player --</option>
                       {availablePlayers.map(player => (
                         <option key={player.player_id} value={player.player_id}>
-                          {player.name}
+                          {formatDisplayName(player.name)}
                         </option>
                       ))}
                     </select>
