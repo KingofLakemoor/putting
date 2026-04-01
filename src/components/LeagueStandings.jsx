@@ -156,7 +156,12 @@ const LeagueStandings = () => {
 
     const coursesMap = new Map();
     courses.forEach(c => {
-        if (c.course_id) coursesMap.set(c.course_id, c);
+        if (c.course_id) {
+            // Precompute par and holes to save reduce operations in the scoring loop
+            const totalPar = Array.isArray(c.holes) ? c.holes.reduce((sum, h) => sum + (h.par || 2), 0) : 36;
+            const totalHoles = Array.isArray(c.holes) ? c.holes.length : 18;
+            coursesMap.set(c.course_id, { ...c, _computedTotalPar: totalPar, _computedTotalHoles: totalHoles });
+        }
     });
 
     const scoresByPlayerId = {};
@@ -198,9 +203,9 @@ const LeagueStandings = () => {
 
             if (round && round.course_id) {
                const course = coursesMap.get(round.course_id);
-               if (course && course.holes) {
-                  parForRound = course.holes.reduce((sum, h) => sum + h.par, 0);
-                  holesForRound = course.holes.length;
+               if (course) {
+                  parForRound = course._computedTotalPar;
+                  holesForRound = course._computedTotalHoles;
                }
             }
 
