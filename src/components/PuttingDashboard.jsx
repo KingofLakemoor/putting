@@ -18,6 +18,7 @@ const PuttingDashboard = () => {
   const [avgTrend, setAvgTrend] = useState(null);
   const [trendIcon, setTrendIcon] = useState(null);
   const [trendColor, setTrendColor] = useState('text-slate-500');
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
@@ -238,15 +239,31 @@ const PuttingDashboard = () => {
         navigate(`/scorecard/${activeRoundId}`);
       } else {
         setIsOpen(true);
+        setError(null);
       }
     } catch (error) {
       console.error("Error starting round:", error);
     }
   };
 
+
   const handleSelectEventRound = async (eventRound) => {
     try {
+      if (eventRound.score_limit) {
+         // Check how many scores they've submitted for this event
+         const historicalScores = await getScoresForPlayer(currentUser.uid);
+         // Filter for this event round
+         const scoresForEvent = historicalScores.filter(s => s.round_id === eventRound.round_id);
+         if (scoresForEvent.length >= eventRound.score_limit) {
+            setError(`You have reached the limit of ${eventRound.score_limit} score(s) for this event.`);
+            // Clear error after a few seconds
+            setTimeout(() => setError(null), 5000);
+            return;
+         }
+      }
+
       setIsOpen(false);
+      setError(null);
       const userName = currentUser.displayName || currentUser.email;
       const newRound = await createActiveRound(currentUser.uid, userName, eventRound.round_id, eventRound.name, eventRound.course_id);
       navigate(`/scorecard/${newRound.round_id}`);
@@ -343,7 +360,7 @@ const PuttingDashboard = () => {
               static
               as={motion.div}
               open={isOpen}
-              onClose={() => setIsOpen(false)}
+              onClose={() => { setIsOpen(false); setError(null); }}
               className="relative z-50"
             >
               {/* Backdrop */}
@@ -375,6 +392,11 @@ const PuttingDashboard = () => {
                       </button>
                     </div>
 
+                    {error && (
+                      <div className="bg-red-500/10 text-red-500 p-3 rounded-xl text-xs font-bold uppercase tracking-wider mb-4">
+                        {error}
+                      </div>
+                    )}
                     <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                       {activeEventRounds.length === 0 ? (
                         <p className="text-slate-400 text-sm">No active rounds available right now.</p>
@@ -447,6 +469,11 @@ const PuttingDashboard = () => {
 
         {/* BOTTOM FULL: ACTIVE ROUNDS / REPORTING (Horizontal) */}
         <div className="order-5 md:order-none md:col-span-3 bg-dark-surface border border-slate-700/50 rounded-2xl p-6">
+           {error && (
+              <div className="bg-red-500/10 text-red-500 p-3 rounded-xl text-xs font-bold uppercase tracking-wider mb-4">
+                {error}
+              </div>
+           )}
            <div className="flex items-center gap-2 mb-4">
               <Activity size={18} className="text-kelly-green" />
               <h2 className="font-sports text-xl uppercase">Report Scores</h2>
