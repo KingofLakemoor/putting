@@ -455,6 +455,9 @@ function AdminRounds() {
   const [courseId, setCourseId] = useState('');
   const [isSignature, setIsSignature] = useState(false);
   const [scoreLimit, setScoreLimit] = useState('');
+  const [roundFormat, setRoundFormat] = useState('Standard');
+  const [cutLine, setCutLine] = useState('');
+  const [numberOfRounds, setNumberOfRounds] = useState('');
   const [courses, setCourses] = useState([]);
   const [showArchived, setShowArchived] = useState(false);
   const [seasons, setSeasons] = useState([]);
@@ -492,7 +495,10 @@ function AdminRounds() {
       location: selectedCourse ? selectedCourse.name : 'Unknown Location',
       course_id: courseId,
       is_signature: isSignature,
-      score_limit: scoreLimit ? parseInt(scoreLimit, 10) : null
+      score_limit: scoreLimit ? parseInt(scoreLimit, 10) : null,
+      round_format: roundFormat,
+      ...(roundFormat === 'Cut Down' && cutLine && { cut_line: parseInt(cutLine, 10) }),
+      ...((roundFormat === 'Cut Down' || roundFormat === 'Tour') && numberOfRounds && { number_of_rounds: parseInt(numberOfRounds, 10) })
     };
 
     await addRound(newRound);
@@ -503,6 +509,9 @@ function AdminRounds() {
     setCourseId('');
     setIsSignature(false);
     setScoreLimit('');
+    setRoundFormat('Standard');
+    setCutLine('');
+    setNumberOfRounds('');
     loadData();
   };
 
@@ -668,6 +677,9 @@ function AdminRounds() {
                         {round.score_limit && (
                           <span className="text-[10px] text-kelly-green uppercase font-bold mt-1">Limit: {round.score_limit} Scores</span>
                         )}
+                        {round.round_format && round.round_format !== 'Standard' && (
+                          <span className="text-[10px] text-yellow-500 uppercase font-bold mt-1">Format: {round.round_format}</span>
+                        )}
                       </div>
                     </td>
                     <td className="p-4">
@@ -765,6 +777,53 @@ function AdminRounds() {
               </select>
             </div>
 
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="roundFormat">Round Format</label>
+              <select
+                id="roundFormat"
+                value={roundFormat}
+                onChange={(e) => setRoundFormat(e.target.value)}
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
+              >
+                <option value="Standard">Standard</option>
+                <option value="Cut Down">Cut Down</option>
+                <option value="Match Play">Match Play</option>
+                <option value="Tour">Tour</option>
+              </select>
+            </div>
+
+            {roundFormat === 'Cut Down' && (
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="cutLine">Cut Line</label>
+                <input
+                  type="number"
+                  id="cutLine"
+                  className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors"
+                  value={cutLine}
+                  onChange={(e) => setCutLine(e.target.value)}
+                  placeholder="e.g., top X players"
+                  min="1"
+                  required
+                />
+              </div>
+            )}
+
+            {(roundFormat === 'Cut Down' || roundFormat === 'Tour') && (
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="numberOfRounds">Number of Rounds</label>
+                <input
+                  type="number"
+                  id="numberOfRounds"
+                  className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors"
+                  value={numberOfRounds}
+                  onChange={(e) => setNumberOfRounds(e.target.value)}
+                  placeholder="Total rounds in event"
+                  min="1"
+                  required
+                />
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="scoreLimit">Score Submission Limit</label>
