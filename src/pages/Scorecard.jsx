@@ -18,6 +18,7 @@ const ScorecardPage = () => {
   const [isPB, setIsPB] = useState(false);
   const [players, setPlayers] = useState([]);
   const { currentUser } = useAuth();
+  const [currentPlayerName, setCurrentPlayerName] = useState("You");
   const saveTimeoutRef = useRef(null);
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,7 +54,12 @@ const ScorecardPage = () => {
 
         const allPlayers = await getPlayers();
         if (currentUser) {
-          setPlayers(allPlayers.filter(p => p.player_id !== currentUser.uid));
+          setPlayers(allPlayers.filter(p => p.player_id !== currentUser.uid && p.uid !== currentUser.uid));
+          const actualId = await getActualPlayerId(currentUser.uid);
+          const currentPlayerObj = allPlayers.find(p => p.player_id === actualId || p.uid === currentUser.uid);
+          if (currentPlayerObj) {
+            setCurrentPlayerName(currentPlayerObj.name);
+          }
         } else {
           setPlayers(allPlayers);
         }
@@ -247,6 +253,30 @@ const ScorecardPage = () => {
   const currentHoleData = holesMap.get(currentHole);
   const currentPar = currentHoleData ? currentHoleData.par : 3;
 
+  // Calculate totals and relative scores
+  let userStrokes = 0;
+  let userRelative = 0;
+  let opponentStrokes = 0;
+  let opponentRelative = 0;
+
+  if (roundData && courseData?.holes) {
+    courseData.holes.forEach(hole => {
+      const hScore = roundData.scores?.[hole.hole];
+      if (hScore !== undefined && hScore !== null) {
+        userStrokes += hScore;
+        userRelative += (hScore - hole.par);
+      }
+
+      if (roundData.opponent_id) {
+        const oppHScore = roundData.opponent_scores?.[hole.hole];
+        if (oppHScore !== undefined && oppHScore !== null) {
+          opponentStrokes += oppHScore;
+          opponentRelative += (oppHScore - hole.par);
+        }
+      }
+    });
+  }
+
   return (
     <ScoreEntry
       holeNumber={currentHole}
@@ -278,6 +308,11 @@ const ScorecardPage = () => {
       onSelectOpponent={handleSelectOpponent}
       roundName={roundName}
       error={error}
+      playerName={currentPlayerName}
+      userStrokes={userStrokes}
+      userRelative={userRelative}
+      opponentStrokes={opponentStrokes}
+      opponentRelative={opponentRelative}
     />
   );
 };
