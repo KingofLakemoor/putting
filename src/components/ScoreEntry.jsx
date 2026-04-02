@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Minus, Plus, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCancel, onPrev, onNext, totalHoles = 9, scoreValue, opponentScoreValue, players = [], opponentId, onSelectOpponent, roundName }) => {
+const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCancel, onPrev, onNext, totalHoles = 9, scoreValue, opponentScoreValue, players = [], opponentId, onSelectOpponent, roundName, error }) => {
   const [score, setScore] = useState(scoreValue !== undefined ? scoreValue : null);
   const [opponentScore, setOpponentScore] = useState(opponentScoreValue !== undefined ? opponentScoreValue : null);
   const [prevHole, setPrevHole] = useState(holeNumber);
@@ -37,6 +37,13 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
       {roundName && (
         <div className="text-center text-xs text-slate-400 mb-2 font-bold uppercase tracking-widest">
           {roundName}
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-500/10 text-red-500 p-3 mb-4 rounded-xl text-xs font-bold uppercase tracking-wider text-center">
+          {error}
         </div>
       )}
 
