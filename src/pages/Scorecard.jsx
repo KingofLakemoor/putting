@@ -255,6 +255,7 @@ const ScorecardPage = () => {
       onScoreChange={handleScoreChange}
       onAdvance={handleAdvanceHole}
       onCancel={() => navigate('/')}
+      onDiscard={handleDiscard}
       onNext={() => {
         if (currentHole < totalHoles) {
           // ensure doc updates before moving
