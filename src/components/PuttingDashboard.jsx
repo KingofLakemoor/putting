@@ -249,6 +249,12 @@ const PuttingDashboard = () => {
 
   const handleSelectEventRound = async (eventRound) => {
     try {
+      if (activeRoundId) {
+        setError("You already have an active round. Please complete or discard it before starting a new one.");
+        setTimeout(() => setError(null), 5000);
+        return;
+      }
+
       if (eventRound.score_limit) {
          // Check how many scores they've submitted for this event
          const historicalScores = await getScoresForPlayer(currentUser.uid);

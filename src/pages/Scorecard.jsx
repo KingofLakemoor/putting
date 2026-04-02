@@ -4,7 +4,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import ScoreEntry from '../components/ScoreEntry';
 import RoundSummary from '../components/RoundSummary';
-import { getScoresForPlayer, updateRoundStatus, addScore, deleteRound, getPlayers, getScoresForRound, getCourse, getRound, getActualPlayerId } from '../db';
+import { getScoresForPlayer, updateRoundStatus, addScore, deleteRound, getPlayers, getScoresForRound, getCourse, getRound, getActualPlayerId, getActiveRoundForUser } from '../db';
 import { useAuth } from '../contexts/AuthContext';
 
 const ScorecardPage = () => {
@@ -125,6 +125,13 @@ const ScorecardPage = () => {
 
   const handleSelectOpponent = async (opponentId) => {
     try {
+      const activeRound = await getActiveRoundForUser(opponentId);
+      if (activeRound) {
+        setError("This player already has an active round.");
+        setTimeout(() => setError(null), 5000);
+        return;
+      }
+
       const roundRef = doc(db, 'putting_league_rounds', roundId);
       await updateDoc(roundRef, {
         opponent_id: opponentId,
@@ -133,6 +140,8 @@ const ScorecardPage = () => {
       setRoundData(prev => ({ ...prev, opponent_id: opponentId, opponent_scores: {} }));
     } catch (error) {
       console.error("Error selecting opponent:", error);
+      setError("Failed to select opponent.");
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -267,6 +276,7 @@ const ScorecardPage = () => {
       opponentId={roundData?.opponent_id}
       onSelectOpponent={handleSelectOpponent}
       roundName={roundName}
+      error={error}
     />
   );
 };
