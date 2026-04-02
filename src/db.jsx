@@ -245,7 +245,18 @@ export const deletePlayer = async (player_id) => {
 // --- Rounds ---
 export const getRounds = async () => {
   const querySnapshot = await getDocs(collection(db, ROUNDS_KEY));
-  return querySnapshot.docs.map(doc => doc.data());
+  const rounds = querySnapshot.docs.map(doc => doc.data());
+  return rounds.sort((a, b) => {
+    const dateA = new Date(a.date || 0).getTime();
+    const dateB = new Date(b.date || 0).getTime();
+    if (dateA !== dateB) {
+      return dateB - dateA; // Date descending
+    }
+    // Date is the same, sort by name ascending
+    const nameA = a.name || '';
+    const nameB = b.name || '';
+    return nameA.localeCompare(nameB);
+  });
 };
 
 export const getRound = async (round_id) => {
