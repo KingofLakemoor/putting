@@ -225,9 +225,10 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
       </div>
 
       {/* Detailed Scorecard Grid */}
-      <div className="mt-auto pt-4 overflow-x-auto w-full pb-2">
-        <div className="min-w-max border border-slate-800 rounded-xl overflow-hidden bg-dark-surface">
-          {/* Hole Row */}
+      <div className="mt-auto pt-4 w-full">
+        <div className="overflow-x-auto w-full pb-2">
+          <div className="min-w-max border border-slate-800 rounded-xl overflow-hidden bg-dark-surface">
+            {/* Hole Row */}
           <div className="flex border-b border-slate-800">
             <div className="w-16 sm:w-20 shrink-0 bg-slate-900/50 p-2 flex items-center justify-center border-r border-slate-800 text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest">
               Hole
@@ -281,32 +282,33 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
             ))}
           </div>
 
-          {/* Opponent Score Row */}
-          {opponentId && (
-            <div className="flex">
-              <div className="w-16 sm:w-20 shrink-0 bg-slate-900/50 p-2 flex items-center justify-center border-r border-slate-800 text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">
-                {(() => {
-                  const playersMap = new Map();
-                  for (const p of players) {
-                    if (p.player_id) playersMap.set(p.player_id, p);
-                  }
-                  const oppName = playersMap.get(opponentId)?.name || 'Opp';
-                  return formatDisplayName(oppName, players).split(' ')[0];
-                })()}
-              </div>
-              {holesData.map((h) => (
-                <div
-                  key={`opp-score-${h.hole}`}
-                  onClick={() => onGoToHole && onGoToHole(h.hole)}
-                  className={`w-10 sm:w-12 shrink-0 p-1 flex items-center justify-center border-r border-slate-800 cursor-pointer transition-colors
-                    ${h.hole === holeNumber ? 'bg-kelly-green/10' : 'hover:bg-slate-800/50'}
-                  `}
-                >
-                  {renderScoreWithSymbol(allOpponentScores[h.hole], h.par)}
+            {/* Opponent Score Row */}
+            {opponentId && (
+              <div className="flex">
+                <div className="w-16 sm:w-20 shrink-0 bg-slate-900/50 p-2 flex items-center justify-center border-r border-slate-800 text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">
+                  {(() => {
+                    const playersMap = new Map();
+                    for (const p of players) {
+                      if (p.player_id) playersMap.set(p.player_id, p);
+                    }
+                    const oppName = playersMap.get(opponentId)?.name || 'Opp';
+                    return formatDisplayName(oppName, players).split(' ')[0];
+                  })()}
                 </div>
-              ))}
-            </div>
-          )}
+                {holesData.map((h) => (
+                  <div
+                    key={`opp-score-${h.hole}`}
+                    onClick={() => onGoToHole && onGoToHole(h.hole)}
+                    className={`w-10 sm:w-12 shrink-0 p-1 flex items-center justify-center border-r border-slate-800 cursor-pointer transition-colors
+                      ${h.hole === holeNumber ? 'bg-kelly-green/10' : 'hover:bg-slate-800/50'}
+                    `}
+                  >
+                    {renderScoreWithSymbol(allOpponentScores[h.hole], h.par)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Actions */}
