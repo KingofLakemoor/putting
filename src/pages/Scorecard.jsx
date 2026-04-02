@@ -20,6 +20,7 @@ const ScorecardPage = () => {
   const { currentUser } = useAuth();
   const saveTimeoutRef = useRef(null);
   const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchRoundAndPlayers = async () => {
@@ -77,6 +78,8 @@ const ScorecardPage = () => {
   };
 
   const handleFinalize = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       if (currentUser && roundData) {
         await updateRoundStatus(roundId, 'completed');
@@ -86,32 +89,39 @@ const ScorecardPage = () => {
 
         const actualId = await getActualPlayerId(currentUser.uid);
 
+        let skipOpponent = false;
+        if (roundData.opponent_id) {
+          const existingScores = await getScoresForRound(eventRoundId);
+          if (existingScores.some(s => s.player_id === roundData.opponent_id)) {
+            setError("Opponent was already scored and their previous score will not be overwritten.");
+            skipOpponent = true;
+          }
+        }
+
         await addScore({
           player_id: actualId,
           round_id: eventRoundId,
           score: currentTotal
         });
 
-        if (roundData.opponent_id) {
+        if (roundData.opponent_id && !skipOpponent) {
           const opponentTotal = Object.values(roundData.opponent_scores || {}).reduce((a, b) => a + b, 0);
-          const existingScores = await getScoresForRound(eventRoundId);
-          if (existingScores.some(s => s.player_id === roundData.opponent_id)) {
-            setError("Opponent was already scored and their previous score will not be overwritten.");
-            return;
-          } else {
-            await addScore({
-              player_id: roundData.opponent_id,
-              round_id: eventRoundId,
-              score: opponentTotal
-            });
-          }
+          await addScore({
+            player_id: roundData.opponent_id,
+            round_id: eventRoundId,
+            score: opponentTotal
+          });
         }
 
-        setError(null);
+        if (!skipOpponent) {
+            setError(null);
+        }
         navigate('/');
       }
     } catch (error) {
       console.error("Error finalizing round:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -209,6 +219,7 @@ const ScorecardPage = () => {
           </div>
         )}
         <RoundSummary
+          isSubmitting={isSubmitting}
           roundData={roundData}
           onFinalize={handleFinalize}
           onDiscard={handleDiscard}
