@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldAlert, Users, CalendarDays, ClipboardList, Map as MapIcon, UserCog, Edit, Trash2, Check, X, Settings, RefreshCw, BookOpen, Star } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, addRound, updateRoundStatus, updateRoundSeason, deleteRound, getScores, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse, getCoordinators, addCoordinator, removeCoordinator, getSettings, updateLiveSeason, updateCupFinaleSeason, addArchivedSeason, removeArchivedSeason, recalculateCupPointsForEvent } from '../db';
+import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, addRound, updateRoundStatus, updateRoundSeason, deleteRound, getScores, addScore, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse, getCoordinators, addCoordinator, removeCoordinator, getSettings, updateLiveSeason, updateCupFinaleSeason, addArchivedSeason, removeArchivedSeason, recalculateCupPointsForEvent } from '../db';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -807,6 +807,13 @@ function AdminScores() {
   const [editingId, setEditingId] = useState(null);
   const [scoreValue, setScoreValue] = useState('');
 
+  // New Score Form State
+  const [newRoundId, setNewRoundId] = useState('');
+  const [newPlayerId, setNewPlayerId] = useState('');
+  const [newScoreValue, setNewScoreValue] = useState('');
+  const [isSubmittingScore, setIsSubmittingScore] = useState(false);
+  const [scoreError, setScoreError] = useState(null);
+
   const loadData = async () => {
     setScores(await getScores());
     setRounds(await getRounds());
@@ -820,6 +827,47 @@ function AdminScores() {
   const handleEdit = (score) => {
     setEditingId(score.score_id);
     setScoreValue(score.score);
+  };
+
+  const handleAddScore = async (e) => {
+    e.preventDefault();
+    setScoreError(null);
+
+    if (!newRoundId || !newPlayerId || newScoreValue === '') {
+      setScoreError('Please fill in all fields.');
+      return;
+    }
+
+    if (isSubmittingScore) return;
+
+    // Check for duplicate score for this player in this round
+    const existingScore = scores.find(
+      s => s.round_id === newRoundId && s.player_id === newPlayerId
+    );
+
+    if (existingScore) {
+      setScoreError('This player already has a score recorded for this round.');
+      return;
+    }
+
+    setIsSubmittingScore(true);
+    try {
+      await addScore({
+        player_id: newPlayerId,
+        round_id: newRoundId,
+        score: parseInt(newScoreValue, 10)
+      });
+
+      setNewRoundId('');
+      setNewPlayerId('');
+      setNewScoreValue('');
+      loadData();
+    } catch (error) {
+      console.error("Error adding score:", error);
+      setScoreError('Failed to add score.');
+    } finally {
+      setIsSubmittingScore(false);
+    }
   };
 
   const handleSave = async (id) => {
@@ -900,69 +948,160 @@ function AdminScores() {
   };
 
   return (
-    <div>
-      <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
-        <ClipboardList size={20} className="text-kelly-green" /> Scores Management
-      </h3>
-      {scores.length === 0 ? (
-        <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
-          No scores reported yet.
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-800">
-          <table className="w-full border-collapse text-left text-sm whitespace-nowrap">
-            <thead className="bg-slate-800 text-slate-400 uppercase tracking-wider text-xs">
-              <tr>
-                <th className="p-4 font-bold">Round</th>
-                <th className="p-4 font-bold">Player</th>
-                <th className="p-4 font-bold">Score</th>
-                <th className="p-4 font-bold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800">
-              {scores.map(score => (
-                <tr key={score.score_id} className="hover:bg-dark-surface/50 transition-colors">
-                  <td className="p-4 text-slate-300">{getRoundDetails(score.round_id)}</td>
-                  <td className="p-4 font-bold">{getPlayerName(score.player_id, score.round_id)}</td>
-                  <td className="p-4">
-                    {editingId === score.score_id ? (
-                      <input
-                        type="number"
-                        className="w-16 bg-dark-bg border border-slate-700 rounded px-2 py-1 text-white focus:border-kelly-green focus:outline-none text-center font-data"
-                        value={scoreValue}
-                        onChange={(e) => setScoreValue(e.target.value)}
-                      />
-                    ) : (
-                      <span className="font-data font-bold text-kelly-green">{score.score}</span>
-                    )}
-                  </td>
-                  <td className="p-4 text-right">
-                    {editingId === score.score_id ? (
-                      <div className="flex justify-end gap-2">
-                        <button onClick={() => handleSave(score.score_id)} className="inline-flex items-center gap-1 bg-kelly-green text-dark-bg px-3 py-1.5 rounded-lg font-bold hover:bg-green-500 transition-colors text-xs uppercase">
-                          <Check size={14} /> Save
-                        </button>
-                        <button onClick={handleCancel} className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase">
-                          <X size={14} /> Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex justify-end gap-2">
-                        <button onClick={() => handleEdit(score)} className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase">
-                          <Edit size={14} /> Edit
-                        </button>
-                        <button onClick={() => handleDelete(score.score_id)} className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-xs uppercase">
-                          <Trash2 size={14} /> Delete
-                        </button>
-                      </div>
-                    )}
-                  </td>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-2">
+        <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
+          <ClipboardList size={20} className="text-kelly-green" /> Scores Management
+        </h3>
+        {scores.length === 0 ? (
+          <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
+            No scores reported yet.
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-slate-800">
+            <table className="w-full border-collapse text-left text-sm whitespace-nowrap">
+              <thead className="bg-slate-800 text-slate-400 uppercase tracking-wider text-xs">
+                <tr>
+                  <th className="p-4 font-bold">Round</th>
+                  <th className="p-4 font-bold">Player</th>
+                  <th className="p-4 font-bold">Score</th>
+                  <th className="p-4 font-bold text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {scores.map(score => (
+                  <tr key={score.score_id} className="hover:bg-dark-surface/50 transition-colors">
+                    <td className="p-4 text-slate-300">{getRoundDetails(score.round_id)}</td>
+                    <td className="p-4 font-bold">{getPlayerName(score.player_id, score.round_id)}</td>
+                    <td className="p-4">
+                      {editingId === score.score_id ? (
+                        <input
+                          type="number"
+                          className="w-16 bg-dark-bg border border-slate-700 rounded px-2 py-1 text-white focus:border-kelly-green focus:outline-none text-center font-data"
+                          value={scoreValue}
+                          onChange={(e) => setScoreValue(e.target.value)}
+                        />
+                      ) : (
+                        <span className="font-data font-bold text-kelly-green">{score.score}</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-right">
+                      {editingId === score.score_id ? (
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => handleSave(score.score_id)} className="inline-flex items-center gap-1 bg-kelly-green text-dark-bg px-3 py-1.5 rounded-lg font-bold hover:bg-green-500 transition-colors text-xs uppercase">
+                            <Check size={14} /> Save
+                          </button>
+                          <button onClick={handleCancel} className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase">
+                            <X size={14} /> Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => handleEdit(score)} className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase">
+                            <Edit size={14} /> Edit
+                          </button>
+                          <button onClick={() => handleDelete(score.score_id)} className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-xs uppercase">
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
+          <Edit size={20} className="text-kelly-green" /> Add New Score
+        </h3>
+
+        <div className="bg-dark-surface border border-slate-800 rounded-2xl p-6 shadow-xl">
+          {scoreError && (
+            <div className="bg-red-500/10 text-red-500 p-3 rounded-xl text-xs font-bold uppercase tracking-wider mb-4">
+              {scoreError}
+            </div>
+          )}
+          <form onSubmit={handleAddScore} className="flex flex-col gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="scoreRound">Select Round *</label>
+              <select
+                id="scoreRound"
+                value={newRoundId}
+                onChange={(e) => {
+                  setNewRoundId(e.target.value);
+                  setScoreError(null);
+                }}
+                required
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
+              >
+                <option value="">-- Choose a round --</option>
+                {rounds.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map(round => (
+                  <option key={round.round_id} value={round.round_id}>
+                    {round.name || 'Unnamed Round'} - {round.date ? new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'No Date'}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="scorePlayer">Select Player *</label>
+              <select
+                id="scorePlayer"
+                value={newPlayerId}
+                onChange={(e) => {
+                  setNewPlayerId(e.target.value);
+                  setScoreError(null);
+                }}
+                required
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
+              >
+                <option value="">-- Choose a player --</option>
+                {players.slice().sort((a, b) => {
+                   const aName = a.name ? a.name.toLowerCase() : '';
+                   const bName = b.name ? b.name.toLowerCase() : '';
+                   return aName.localeCompare(bName);
+                }).map(player => (
+                  <option key={player.player_id} value={player.player_id}>
+                    {formatDisplayName(player.name)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="scoreValue">Total Score *</label>
+              <input
+                type="number"
+                id="scoreValue"
+                min="0"
+                value={newScoreValue}
+                onChange={(e) => {
+                  setNewScoreValue(e.target.value);
+                  setScoreError(null);
+                }}
+                required
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors font-data text-xl text-center"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmittingScore}
+              className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider transition-colors mt-2 flex items-center justify-center gap-2 ${
+                isSubmittingScore
+                  ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                  : 'bg-kelly-green text-dark-bg hover:bg-green-500'
+              }`}
+            >
+              {isSubmittingScore ? 'Submitting...' : 'Submit Score'}
+            </button>
+          </form>
         </div>
-      )}
+      </div>
     </div>
   );
 }
