@@ -840,13 +840,16 @@ function AdminScores() {
 
     if (isSubmittingScore) return;
 
-    // Check for duplicate score for this player in this round
-    const existingScore = scores.find(
-      s => s.round_id === newRoundId && s.player_id === newPlayerId
-    );
+    // Check for score limit for this round
+    const round = rounds.find(r => r.round_id === newRoundId);
+    const limit = (round && round.score_limit) ? round.score_limit : 1;
 
-    if (existingScore) {
-      setScoreError('This player already has a score recorded for this round.');
+    const existingScoresCount = scores.filter(
+      s => s.round_id === newRoundId && s.player_id === newPlayerId
+    ).length;
+
+    if (existingScoresCount >= limit) {
+      setScoreError(`This player already has reached the limit of ${limit} score(s) for this round.`);
       return;
     }
 
