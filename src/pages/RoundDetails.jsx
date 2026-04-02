@@ -35,9 +35,12 @@ function RoundDetails() {
     e.preventDefault();
     if (!selectedPlayerId || roundScore === '') return;
 
-    // Check if player already has a score for this round
-    if (scores.some(s => s.player_id === selectedPlayerId)) {
-      setError("This player already has a score recorded for this round.");
+    // Check if player has reached the score limit for this round
+    const limit = round.score_limit || 1;
+    const existingScoresCount = scores.filter(s => s.player_id === selectedPlayerId).length;
+
+    if (existingScoresCount >= limit) {
+      setError(`This player already has reached the limit of ${limit} score(s) for this round.`);
       return;
     }
     setError(null);
@@ -88,15 +91,19 @@ function RoundDetails() {
     return a.score - b.score;
   });
 
-  // Get un-scored players for the dropdown
-  const scoredPlayerIds = new Set();
+  // Filter available players based on score limit
+  const limit = round.score_limit || 1;
+  const playerScoresCount = {};
   scores.forEach(s => {
-      if (s.player_id) scoredPlayerIds.add(s.player_id);
+    if (s.player_id) {
+      playerScoresCount[s.player_id] = (playerScoresCount[s.player_id] || 0) + 1;
+    }
   });
 
-  const availablePlayers = players.filter(
-    p => !scoredPlayerIds.has(p.player_id) && !scoredPlayerIds.has(p.uid)
-  );
+  const availablePlayers = players.filter(p => {
+    const count = Math.max(playerScoresCount[p.player_id] || 0, playerScoresCount[p.uid] || 0);
+    return count < limit;
+  });
 
   const dateObj = new Date(round.date);
   const dateStr = !isNaN(dateObj.getTime()) ? dateObj.toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Unknown Date';
