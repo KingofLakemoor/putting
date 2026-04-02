@@ -1,0 +1,17 @@
+
+> putting-league@0.1.0 start
+> vite
+
+
+  VITE v8.0.3  ready in 380 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: use --host to expose
+12:55:20 PM [vite] (client) hmr update /src/components/PrivateRoute.jsx, /src/index.css
+12:55:36 PM [vite] (client) hmr update /src/contexts/AuthContext.jsx, /src/index.css
+12:55:59 PM [vite] (client) hmr update /src/index.css, /src/pages/Leaderboard.jsx, /src/pages/Scorecard.jsx, /src/pages/Admin.jsx, /src/pages/RoundDetails.jsx, /src/pages/History.jsx, /src/components/PuttingDashboard.jsx, /src/components/LeagueStandings.jsx, /src/pages/SignIn.jsx
+12:56:04 PM [vite] (client) hmr update /src/pages/Scorecard.jsx, /src/index.css
+12:58:25 PM [vite] (client) hmr update /src/components/PrivateRoute.jsx, /src/index.css
+12:58:28 PM [vite] (client) hmr update /src/contexts/AuthContext.jsx, /src/index.css
+12:58:34 PM [vite] (client) hmr update /src/index.css, /src/pages/Leaderboard.jsx, /src/pages/Scorecard.jsx, /src/pages/Admin.jsx, /src/pages/RoundDetails.jsx, /src/pages/History.jsx, /src/components/PuttingDashboard.jsx, /src/components/LeagueStandings.jsx, /src/pages/SignIn.jsx
+12:58:40 PM [vite] (client) hmr update /src/pages/Scorecard.jsx, /src/index.css

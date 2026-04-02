@@ -4,7 +4,7 @@ import { Dialog } from '@headlessui/react';
 import { Minus, Plus, Check, X, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { formatDisplayName } from '../utils/format';
 
-const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCancel, onDiscard, onPrev, onNext, totalHoles = 9, scoreValue, opponentScoreValue, players = [], opponentId, onSelectOpponent, roundName, error }) => {
+const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCancel, onDiscard, onPrev, onNext, totalHoles = 9, scoreValue, opponentScoreValue, players = [], opponentId, onSelectOpponent, roundName, error, playerName, userStrokes, userRelative, opponentStrokes, opponentRelative }) => {
   const [score, setScore] = useState(scoreValue !== undefined ? scoreValue : null);
   const [opponentScore, setOpponentScore] = useState(opponentScoreValue !== undefined ? opponentScoreValue : null);
   const [prevHole, setPrevHole] = useState(holeNumber);
@@ -24,6 +24,11 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
   const handleOpponentScoreUpdate = (newVal) => {
     setOpponentScore(newVal);
     if (onScoreChange) onScoreChange(score, newVal);
+  };
+
+  const formatRelativeScore = (relative) => {
+    if (relative === 0) return 'E';
+    return relative > 0 ? `+${relative}` : `${relative}`;
   };
 
   // Quick Win: Visual feedback based on score vs par
@@ -93,7 +98,9 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
 
         {/* User Stepper */}
         <div className="flex flex-col items-center gap-4">
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">You</div>
+          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+            {formatDisplayName(playerName, players)} ({formatRelativeScore(userRelative)}) {userStrokes}
+          </div>
           <AnimatePresence mode="wait">
             <motion.div
               key={`${holeNumber}-user`}
@@ -138,13 +145,14 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
         {/* Opponent Stepper */}
         {opponentId && (
           <div className="flex flex-col items-center gap-4">
-            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest truncate max-w-[120px]">
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
               {(() => {
                 const playersMap = new Map();
                 for (const p of players) {
                   if (p.player_id) playersMap.set(p.player_id, p);
                 }
-                return playersMap.get(opponentId)?.name || 'Opponent';
+                const oppName = playersMap.get(opponentId)?.name || 'Opponent';
+                return `${formatDisplayName(oppName, players)} (${formatRelativeScore(opponentRelative)}) ${opponentStrokes}`;
               })()}
             </div>
             <AnimatePresence mode="wait">
