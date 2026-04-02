@@ -20,6 +20,7 @@ const ScorecardPage = () => {
   const { currentUser } = useAuth();
   const saveTimeoutRef = useRef(null);
   const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchRoundAndPlayers = async () => {
@@ -78,7 +79,8 @@ const ScorecardPage = () => {
 
   const handleFinalize = async () => {
     try {
-      if (currentUser && roundData) {
+      if (currentUser && roundData && !isSubmitting) {
+        setIsSubmitting(true);
         await updateRoundStatus(roundId, 'completed');
 
         const currentTotal = Object.values(roundData.scores || {}).reduce((a, b) => a + b, 0);
@@ -92,12 +94,24 @@ const ScorecardPage = () => {
           score: currentTotal
         });
 
+        let opponentSkipped = false;
         if (roundData.opponent_id) {
           const opponentTotal = Object.values(roundData.opponent_scores || {}).reduce((a, b) => a + b, 0);
           const existingScores = await getScoresForRound(eventRoundId);
-          if (existingScores.some(s => s.player_id === roundData.opponent_id)) {
-            setError("Opponent was already scored and their previous score will not be overwritten.");
-            return;
+
+          let opponentScoreCount = existingScores.filter(s => s.player_id === roundData.opponent_id).length;
+          let limit = null;
+
+          const eventRound = await getRound(eventRoundId);
+          if (eventRound && eventRound.score_limit) {
+            limit = eventRound.score_limit;
+          } else {
+            // Default to 1 if no specific score limit is defined for the event round, or if it's a casual round
+            limit = 1;
+          }
+
+          if (opponentScoreCount >= limit) {
+            opponentSkipped = true;
           } else {
             await addScore({
               player_id: roundData.opponent_id,
@@ -107,11 +121,19 @@ const ScorecardPage = () => {
           }
         }
 
-        setError(null);
-        navigate('/');
+        if (opponentSkipped) {
+          setError("Your score was submitted, but your opponent has reached their round limit. Their score was not saved.");
+          setTimeout(() => {
+            navigate('/');
+          }, 4000);
+        } else {
+          setError(null);
+          navigate('/');
+        }
       }
     } catch (error) {
       console.error("Error finalizing round:", error);
+      setIsSubmitting(false);
     }
   };
 
@@ -213,6 +235,7 @@ const ScorecardPage = () => {
           onFinalize={handleFinalize}
           onDiscard={handleDiscard}
           isPB={isPB}
+          isSubmitting={isSubmitting}
         />
       </div>
     );
