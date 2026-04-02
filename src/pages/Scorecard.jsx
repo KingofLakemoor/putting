@@ -17,6 +17,7 @@ const ScorecardPage = () => {
   const [courseData, setCourseData] = useState(null);
   const [isPB, setIsPB] = useState(false);
   const [players, setPlayers] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { currentUser } = useAuth();
   const saveTimeoutRef = useRef(null);
   const [error, setError] = useState(null);
@@ -77,41 +78,83 @@ const ScorecardPage = () => {
   };
 
   const handleFinalize = async () => {
+    if (isSubmitting) return;
+
     try {
       if (currentUser && roundData) {
-        await updateRoundStatus(roundId, 'completed');
-
-        const currentTotal = Object.values(roundData.scores || {}).reduce((a, b) => a + b, 0);
-        const eventRoundId = roundData.event_round_id || roundId;
+        setIsSubmitting(true);
+        setError(null);
 
         const actualId = await getActualPlayerId(currentUser.uid);
+        const eventRoundId = roundData.event_round_id || roundId;
+        const currentTotal = Object.values(roundData.scores || {}).reduce((a, b) => a + b, 0);
 
-        await addScore({
-          player_id: actualId,
-          round_id: eventRoundId,
-          score: currentTotal
-        });
+        // 1. Validation Checks
+        let eventRoundTemplate = null;
+        if (roundData.event_round_id) {
+          eventRoundTemplate = await getRound(roundData.event_round_id);
+        }
 
-        if (roundData.opponent_id) {
-          const opponentTotal = Object.values(roundData.opponent_scores || {}).reduce((a, b) => a + b, 0);
-          const existingScores = await getScoresForRound(eventRoundId);
-          if (existingScores.some(s => s.player_id === roundData.opponent_id)) {
-            setError("Opponent was already scored and their previous score will not be overwritten.");
+        // Check player limit
+        if (eventRoundTemplate?.score_limit) {
+          const historicalScores = await getScoresForPlayer(actualId);
+          const scoresForEvent = historicalScores.filter(s => s.round_id === eventRoundId);
+          if (scoresForEvent.length >= eventRoundTemplate.score_limit) {
+            setError(`You have already reached the limit of ${eventRoundTemplate.score_limit} score(s) for this event.`);
+            setIsSubmitting(false);
             return;
-          } else {
-            await addScore({
-              player_id: roundData.opponent_id,
-              round_id: eventRoundId,
-              score: opponentTotal
-            });
           }
         }
 
-        setError(null);
+        // Check opponent validation if applicable
+        let opponentScoreToSubmit = null;
+        let opponentError = null;
+        if (roundData.opponent_id) {
+          const existingScores = await getScoresForRound(eventRoundId);
+          if (existingScores.some(s => s.player_id === roundData.opponent_id)) {
+            opponentError = "Opponent was already scored for this event and their score will not be overwritten.";
+          } else if (eventRoundTemplate?.score_limit) {
+            const opponentHistoricalScores = await getScoresForPlayer(roundData.opponent_id);
+            const opponentScoresForEvent = opponentHistoricalScores.filter(s => s.round_id === eventRoundId);
+            if (opponentScoresForEvent.length >= eventRoundTemplate.score_limit) {
+              opponentError = `Opponent has already reached the limit of ${eventRoundTemplate.score_limit} score(s) for this event. Their score will not be submitted.`;
+            }
+          }
+
+          if (!opponentError) {
+            opponentScoreToSubmit = Object.values(roundData.opponent_scores || {}).reduce((a, b) => a + b, 0);
+          } else {
+            setError(opponentError);
+          }
+        }
+
+        // 2. Execution (Idempotent)
+        const submissionPromises = [
+          updateRoundStatus(roundId, 'completed'),
+          addScore({
+            player_id: actualId,
+            round_id: eventRoundId,
+            score: currentTotal
+          }, `score_${roundId}_${actualId}`)
+        ];
+
+        if (roundData.opponent_id && opponentScoreToSubmit !== null) {
+          submissionPromises.push(
+            addScore({
+              player_id: roundData.opponent_id,
+              round_id: eventRoundId,
+              score: opponentScoreToSubmit
+            }, `score_${roundId}_${roundData.opponent_id}`)
+          );
+        }
+
+        await Promise.all(submissionPromises);
         navigate('/');
       }
-    } catch (error) {
-      console.error("Error finalizing round:", error);
+    } catch (err) {
+      console.error("Error finalizing round:", err);
+      setError("An error occurred while submitting your score. Please try again.");
+      setIsSubmitting(false);
     }
   };
 
@@ -213,6 +256,7 @@ const ScorecardPage = () => {
           onFinalize={handleFinalize}
           onDiscard={handleDiscard}
           isPB={isPB}
+          isSubmitting={isSubmitting}
         />
       </div>
     );
