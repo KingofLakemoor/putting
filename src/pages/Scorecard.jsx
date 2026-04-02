@@ -20,6 +20,8 @@ const ScorecardPage = () => {
   const { currentUser } = useAuth();
   const saveTimeoutRef = useRef(null);
   const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   useEffect(() => {
     const fetchRoundAndPlayers = async () => {
@@ -77,41 +79,72 @@ const ScorecardPage = () => {
   };
 
   const handleFinalize = async () => {
+    if (isSubmitting) return;
+
+    if (isSubmitted) {
+       navigate('/');
+       return;
+    }
+
     try {
+      setIsSubmitting(true);
+      setError(null);
+
       if (currentUser && roundData) {
-        await updateRoundStatus(roundId, 'completed');
+        // Fetch latest round data to ensure it hasn't already been completed
+        const roundRef = doc(db, 'putting_league_rounds', roundId);
+        const roundSnap = await getDoc(roundRef);
+
+        if (roundSnap.exists() && roundSnap.data().status === 'completed') {
+           setIsSubmitted(true);
+           navigate('/');
+           return;
+        }
 
         const currentTotal = Object.values(roundData.scores || {}).reduce((a, b) => a + b, 0);
         const eventRoundId = roundData.event_round_id || roundId;
-
         const actualId = await getActualPlayerId(currentUser.uid);
 
+        // Pre-flight checks for both primary and opponent BEFORE any DB writes
+        let hasOpponentError = false;
+        if (roundData.opponent_id) {
+          const existingScores = await getScoresForRound(eventRoundId);
+          if (existingScores.some(s => s.player_id === roundData.opponent_id)) {
+            setError("Opponent was already scored and their previous score will not be overwritten.");
+            hasOpponentError = true;
+          }
+        }
+
+        // Write primary score
         await addScore({
           player_id: actualId,
           round_id: eventRoundId,
           score: currentTotal
-        });
+        }, `score_${eventRoundId}_${actualId}`);
 
-        if (roundData.opponent_id) {
+        // Write opponent score if no error
+        if (roundData.opponent_id && !hasOpponentError) {
           const opponentTotal = Object.values(roundData.opponent_scores || {}).reduce((a, b) => a + b, 0);
-          const existingScores = await getScoresForRound(eventRoundId);
-          if (existingScores.some(s => s.player_id === roundData.opponent_id)) {
-            setError("Opponent was already scored and their previous score will not be overwritten.");
-            return;
-          } else {
-            await addScore({
-              player_id: roundData.opponent_id,
-              round_id: eventRoundId,
-              score: opponentTotal
-            });
-          }
+          await addScore({
+            player_id: roundData.opponent_id,
+            round_id: eventRoundId,
+            score: opponentTotal
+          }, `score_${eventRoundId}_${roundData.opponent_id}`);
         }
 
-        setError(null);
-        navigate('/');
+        // Finalize round status
+        await updateRoundStatus(roundId, 'completed');
+
+        setIsSubmitted(true);
+        if (!hasOpponentError) {
+          navigate('/');
+        }
       }
     } catch (error) {
       console.error("Error finalizing round:", error);
+      setError("An error occurred while saving the score. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -213,6 +246,8 @@ const ScorecardPage = () => {
           onFinalize={handleFinalize}
           onDiscard={handleDiscard}
           isPB={isPB}
+          isSubmitting={isSubmitting}
+          isSubmitted={isSubmitted}
         />
       </div>
     );
