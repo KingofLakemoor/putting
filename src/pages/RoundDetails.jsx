@@ -125,7 +125,7 @@ function RoundDetails() {
             <span className={`px-2 py-1 rounded font-bold text-[10px] ${(round.status || '').toLowerCase() === 'active' ? 'bg-kelly-green/20 text-kelly-green' : 'bg-slate-800 text-slate-300'}`}>
               {round.status}
             </span>
-            {round.round_format && round.round_format !== 'Standard' && (
+            {round.round_format && round.round_format !== 'Open' && (
               <span className="px-2 py-1 rounded font-bold text-[10px] bg-yellow-500/20 text-yellow-500">
                 Format: {round.round_format}
               </span>

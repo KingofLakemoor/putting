@@ -28,7 +28,7 @@ function Admin() {
 
   const tabs = [
     { id: 'players', label: 'Manage Players', icon: Users },
-    { id: 'rounds', label: 'Manage Rounds', icon: CalendarDays },
+    { id: 'rounds', label: 'Manage Events', icon: CalendarDays },
     { id: 'scores', label: 'Manage Scores', icon: ClipboardList },
   ];
   if (isAdmin) {
@@ -77,7 +77,7 @@ function Admin() {
 
       <div className="admin-content">
         {activeTab === 'players' && <AdminPlayers />}
-        {activeTab === 'rounds' && <AdminRounds />}
+        {activeTab === 'rounds' && <AdminEvents />}
         {activeTab === 'scores' && <AdminScores />}
         {activeTab === 'courses' && isAdmin && <AdminCourses />}
         {activeTab === 'coordinators' && isAdmin && <AdminCoordinators />}
@@ -448,14 +448,14 @@ function AdminPlayers() {
   );
 }
 
-function AdminRounds() {
+function AdminEvents() {
   const [rounds, setRounds] = useState([]);
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
   const [courseId, setCourseId] = useState('');
   const [isSignature, setIsSignature] = useState(false);
   const [scoreLimit, setScoreLimit] = useState('');
-  const [roundFormat, setRoundFormat] = useState('Standard');
+  const [roundFormat, setRoundFormat] = useState('Open');
   const [cutLine, setCutLine] = useState('');
   const [numberOfRounds, setNumberOfRounds] = useState('');
   const [courses, setCourses] = useState([]);
@@ -489,19 +489,36 @@ function AdminRounds() {
 
     const selectedCourse = courses.find(c => c.course_id === courseId);
 
-    const newRound = {
-      name,
+    // Grouping event ID
+    const event_id = uuidv4();
+
+    const baseRound = {
       date,
       location: selectedCourse ? selectedCourse.name : 'Unknown Location',
       course_id: courseId,
       is_signature: isSignature,
       score_limit: scoreLimit ? parseInt(scoreLimit, 10) : null,
       round_format: roundFormat,
+      event_id: event_id,
       ...(roundFormat === 'Cut Down' && cutLine && { cut_line: parseInt(cutLine, 10) }),
       ...((roundFormat === 'Cut Down' || roundFormat === 'Tour') && numberOfRounds && { number_of_rounds: parseInt(numberOfRounds, 10) })
     };
 
-    await addRound(newRound);
+    const numRounds = parseInt(numberOfRounds, 10);
+
+    if (!isNaN(numRounds) && numRounds > 1 && (roundFormat === 'Cut Down' || roundFormat === 'Tour')) {
+      for (let i = 1; i <= numRounds; i++) {
+        await addRound({
+          ...baseRound,
+          name: `${name} - Round ${i}`
+        });
+      }
+    } else {
+      await addRound({
+        ...baseRound,
+        name
+      });
+    }
 
     // Reset form
     setName('');
@@ -509,7 +526,7 @@ function AdminRounds() {
     setCourseId('');
     setIsSignature(false);
     setScoreLimit('');
-    setRoundFormat('Standard');
+    setRoundFormat('Open');
     setCutLine('');
     setNumberOfRounds('');
     loadData();
@@ -518,8 +535,10 @@ function AdminRounds() {
   const handleStatusChange = async (id, newStatus, round) => {
     await updateRoundStatus(id, newStatus);
     if (newStatus.toLowerCase() === 'completed') {
-        // Calculate points when status is changed to completed
-        await recalculateCupPointsForEvent(id, round.is_signature);
+        // Calculate points when status is changed to completed, skip for Open formats
+        if (round.round_format !== 'Open') {
+          await recalculateCupPointsForEvent(id, round.is_signature);
+        }
     }
     loadData();
   };
@@ -638,19 +657,19 @@ function AdminRounds() {
         <div>
           <div className="flex justify-between items-center mb-6">
           <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 flex items-center gap-2">
-            <CalendarDays size={20} className="text-kelly-green" /> {showArchived ? 'Archived Rounds' : 'Rounds Management'}
+            <CalendarDays size={20} className="text-kelly-green" /> {showArchived ? 'Archived Events' : 'Events Management'}
           </h3>
           <button
             onClick={() => setShowArchived(!showArchived)}
             className="text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-colors"
           >
-            {showArchived ? 'View Active & Completed' : 'View Archived Rounds'}
+            {showArchived ? 'View Active & Completed' : 'View Archived Events'}
           </button>
         </div>
 
         {filteredRounds.length === 0 ? (
           <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
-            {showArchived ? 'No archived rounds.' : 'No active or completed rounds added yet.'}
+            {showArchived ? 'No archived events.' : 'No active or completed events added yet.'}
           </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-slate-800">
@@ -677,7 +696,7 @@ function AdminRounds() {
                         {round.score_limit && (
                           <span className="text-[10px] text-kelly-green uppercase font-bold mt-1">Limit: {round.score_limit} Scores</span>
                         )}
-                        {round.round_format && round.round_format !== 'Standard' && (
+                        {round.round_format && round.round_format !== 'Open' && (
                           <span className="text-[10px] text-yellow-500 uppercase font-bold mt-1">Format: {round.round_format}</span>
                         )}
                       </div>
@@ -731,12 +750,12 @@ function AdminRounds() {
 
       <div>
         <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
-          <Edit size={20} className="text-kelly-green" /> Create New Round
+          <Edit size={20} className="text-kelly-green" /> Create New Event
         </h3>
         <div className="bg-dark-surface border border-slate-800 rounded-2xl p-6 shadow-xl">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="name">Round Name</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="name">Event Name</label>
               <input
                 type="text"
                 id="name"
@@ -779,14 +798,14 @@ function AdminRounds() {
 
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="roundFormat">Round Format</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="roundFormat">Event Format</label>
               <select
                 id="roundFormat"
                 value={roundFormat}
                 onChange={(e) => setRoundFormat(e.target.value)}
                 className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
               >
-                <option value="Standard">Standard</option>
+                <option value="Open">Open</option>
                 <option value="Cut Down">Cut Down</option>
                 <option value="Match Play">Match Play</option>
                 <option value="Tour">Tour</option>
@@ -850,7 +869,7 @@ function AdminRounds() {
             </div>
 
             <button type="submit" className="w-full bg-kelly-green text-dark-bg py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors mt-2 flex items-center justify-center gap-2">
-              <Check size={16} /> Create Round
+              <Check size={16} /> Create Event
             </button>
           </form>
         </div>
