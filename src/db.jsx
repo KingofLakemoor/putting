@@ -261,6 +261,9 @@ export const addRound = async (round) => {
   const newRound = {
     round_id,
     status: 'Active', // Default status
+    round_format: round.round_format || 'Standard',
+    ...(round.cut_line && { cut_line: round.cut_line }),
+    ...(round.number_of_rounds && { number_of_rounds: round.number_of_rounds }),
     ...round
   };
   await setDoc(doc(db, ROUNDS_KEY, round_id), newRound);
