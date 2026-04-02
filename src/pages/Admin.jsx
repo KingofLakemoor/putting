@@ -1132,7 +1132,7 @@ function AdminScores() {
                 className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
               >
                 <option value="">-- Choose a round --</option>
-                {rounds.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).map(round => (
+                {rounds.map(round => (
                   <option key={round.round_id} value={round.round_id}>
                     {round.name || 'Unnamed Round'} - {round.date ? new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'No Date'}
                   </option>
