@@ -4,7 +4,7 @@ import { Dialog } from '@headlessui/react';
 import { Minus, Plus, Check, X, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { formatDisplayName } from '../utils/format';
 
-const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCancel, onDiscard, onPrev, onNext, totalHoles = 9, scoreValue, opponentScoreValue, players = [], opponentId, onSelectOpponent, roundName, error, playerName, userStrokes, userRelative, opponentStrokes, opponentRelative }) => {
+const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCancel, onDiscard, onPrev, onNext, totalHoles = 9, scoreValue, opponentScoreValue, allScores = {}, allOpponentScores = {}, holesData = [], onGoToHole, players = [], opponentId, onSelectOpponent, roundName, error, playerName, userStrokes, userRelative, opponentStrokes, opponentRelative }) => {
   const [score, setScore] = useState(scoreValue !== undefined ? scoreValue : null);
   const [opponentScore, setOpponentScore] = useState(opponentScoreValue !== undefined ? opponentScoreValue : null);
   const [prevHole, setPrevHole] = useState(holeNumber);
@@ -37,6 +37,31 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
     if (s < par) return 'text-kelly-green border-kelly-green bg-kelly-green/10';
     if (s > par) return 'text-red-500 border-red-500 bg-red-500/10';
     return 'text-white border-slate-700 bg-slate-800/50';
+  };
+
+  const renderScoreWithSymbol = (score, holePar) => {
+    if (score === null || score === undefined) return '-';
+    const diff = score - holePar;
+
+    let containerClass = "flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 font-data font-bold text-xs sm:text-sm mx-auto transition-colors";
+
+    if (diff === -1) {
+      containerClass += " rounded-full border border-kelly-green text-kelly-green";
+    } else if (diff <= -2) {
+      containerClass += " rounded-full bg-kelly-green text-dark-bg";
+    } else if (diff === 1) {
+      containerClass += " border border-slate-400 text-slate-300";
+    } else if (diff >= 2) {
+      containerClass += " border-2 border-slate-400 text-slate-300";
+    } else {
+      containerClass += " text-white";
+    }
+
+    return (
+      <div className={containerClass}>
+        {score}
+      </div>
+    );
   };
 
   return (
@@ -108,7 +133,7 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
               animate={{ x: 0, opacity: 1, scale: 1 }}
               exit={{ x: -100, opacity: 0, scale: 0.8 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className={`w-32 h-32 md:w-40 md:h-40 rounded-3xl border-2 flex items-center justify-center transition-colors duration-300 ${getScoreColor(score)}`}
+              className={`w-24 h-24 md:w-32 md:h-32 rounded-3xl border-2 flex items-center justify-center transition-colors duration-300 ${getScoreColor(score)}`}
             >
               <AnimatePresence mode="popLayout">
                 <motion.span
@@ -128,14 +153,14 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
           <div className="flex items-center gap-4 md:gap-6">
             <button
               onClick={() => handleScoreUpdate(score === null ? 1 : Math.max(1, score - 1))}
-              className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-dark-surface border border-slate-700 flex items-center justify-center active:bg-slate-800 active:scale-95 transition-all"
+              className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-dark-surface border border-slate-700 flex items-center justify-center active:bg-slate-800 active:scale-95 transition-all"
             >
               <Minus size={24} />
             </button>
 
             <button
               onClick={() => handleScoreUpdate(score === null ? 1 : score + 1)}
-              className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-kelly-green text-dark-bg flex items-center justify-center active:scale-95 transition-all"
+              className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-kelly-green text-dark-bg flex items-center justify-center active:scale-95 transition-all"
             >
               <Plus size={24} />
             </button>
@@ -162,7 +187,7 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
                 animate={{ x: 0, opacity: 1, scale: 1 }}
                 exit={{ x: -100, opacity: 0, scale: 0.8 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className={`w-32 h-32 md:w-40 md:h-40 rounded-3xl border-2 flex items-center justify-center transition-colors duration-300 ${getScoreColor(opponentScore)}`}
+                className={`w-24 h-24 md:w-32 md:h-32 rounded-3xl border-2 flex items-center justify-center transition-colors duration-300 ${getScoreColor(opponentScore)}`}
               >
                 <AnimatePresence mode="popLayout">
                   <motion.span
@@ -182,14 +207,14 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
             <div className="flex items-center gap-4 md:gap-6">
               <button
                 onClick={() => handleOpponentScoreUpdate(opponentScore === null ? 1 : Math.max(1, opponentScore - 1))}
-                className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-dark-surface border border-slate-700 flex items-center justify-center active:bg-slate-800 active:scale-95 transition-all"
+                className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-dark-surface border border-slate-700 flex items-center justify-center active:bg-slate-800 active:scale-95 transition-all"
               >
                 <Minus size={24} />
               </button>
 
               <button
                 onClick={() => handleOpponentScoreUpdate(opponentScore === null ? 1 : opponentScore + 1)}
-                className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-kelly-green text-dark-bg flex items-center justify-center active:scale-95 transition-all"
+                className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-kelly-green text-dark-bg flex items-center justify-center active:scale-95 transition-all"
               >
                 <Plus size={24} />
               </button>
@@ -199,16 +224,89 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
 
       </div>
 
-      {/* 9-Hole Quick Nav Grid */}
-      <div className="mt-auto pt-8">
-        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 text-center">Round Progress</p>
-        <div className="grid grid-cols-9 gap-2">
-          {[...Array(totalHoles)].map((_, i) => (
-            <div
-              key={i}
-              className={`h-1.5 rounded-full ${i + 1 === holeNumber ? 'bg-kelly-green' : 'bg-slate-800'}`}
-            />
-          ))}
+      {/* Detailed Scorecard Grid */}
+      <div className="mt-auto pt-4 overflow-x-auto w-full pb-2">
+        <div className="min-w-max border border-slate-800 rounded-xl overflow-hidden bg-dark-surface">
+          {/* Hole Row */}
+          <div className="flex border-b border-slate-800">
+            <div className="w-16 sm:w-20 shrink-0 bg-slate-900/50 p-2 flex items-center justify-center border-r border-slate-800 text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              Hole
+            </div>
+            {holesData.map((h) => (
+              <div
+                key={`hole-${h.hole}`}
+                onClick={() => onGoToHole && onGoToHole(h.hole)}
+                className={`w-10 sm:w-12 shrink-0 p-2 flex items-center justify-center font-sports text-sm sm:text-base border-r border-slate-800 cursor-pointer transition-colors
+                  ${h.hole === holeNumber ? 'bg-kelly-green/20 text-kelly-green' : 'text-slate-300 hover:bg-slate-800/50'}
+                `}
+              >
+                {h.hole}
+              </div>
+            ))}
+          </div>
+
+          {/* Par Row */}
+          <div className="flex border-b border-slate-800">
+            <div className="w-16 sm:w-20 shrink-0 bg-slate-900/50 p-2 flex items-center justify-center border-r border-slate-800 text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              Par
+            </div>
+            {holesData.map((h) => (
+              <div
+                key={`par-${h.hole}`}
+                onClick={() => onGoToHole && onGoToHole(h.hole)}
+                className={`w-10 sm:w-12 shrink-0 p-2 flex items-center justify-center font-data text-xs sm:text-sm border-r border-slate-800 cursor-pointer transition-colors text-slate-500
+                  ${h.hole === holeNumber ? 'bg-kelly-green/10' : 'hover:bg-slate-800/50'}
+                `}
+              >
+                {h.par}
+              </div>
+            ))}
+          </div>
+
+          {/* Player Score Row */}
+          <div className={`flex ${opponentId ? 'border-b border-slate-800' : ''}`}>
+            <div className="w-16 sm:w-20 shrink-0 bg-slate-900/50 p-2 flex items-center justify-center border-r border-slate-800 text-[9px] sm:text-[10px] font-bold text-white uppercase tracking-widest truncate">
+              {formatDisplayName(playerName, players).split(' ')[0]}
+            </div>
+            {holesData.map((h) => (
+              <div
+                key={`score-${h.hole}`}
+                onClick={() => onGoToHole && onGoToHole(h.hole)}
+                className={`w-10 sm:w-12 shrink-0 p-1 flex items-center justify-center border-r border-slate-800 cursor-pointer transition-colors
+                  ${h.hole === holeNumber ? 'bg-kelly-green/10' : 'hover:bg-slate-800/50'}
+                `}
+              >
+                {renderScoreWithSymbol(allScores[h.hole], h.par)}
+              </div>
+            ))}
+          </div>
+
+          {/* Opponent Score Row */}
+          {opponentId && (
+            <div className="flex">
+              <div className="w-16 sm:w-20 shrink-0 bg-slate-900/50 p-2 flex items-center justify-center border-r border-slate-800 text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">
+                {(() => {
+                  const playersMap = new Map();
+                  for (const p of players) {
+                    if (p.player_id) playersMap.set(p.player_id, p);
+                  }
+                  const oppName = playersMap.get(opponentId)?.name || 'Opp';
+                  return formatDisplayName(oppName, players).split(' ')[0];
+                })()}
+              </div>
+              {holesData.map((h) => (
+                <div
+                  key={`opp-score-${h.hole}`}
+                  onClick={() => onGoToHole && onGoToHole(h.hole)}
+                  className={`w-10 sm:w-12 shrink-0 p-1 flex items-center justify-center border-r border-slate-800 cursor-pointer transition-colors
+                    ${h.hole === holeNumber ? 'bg-kelly-green/10' : 'hover:bg-slate-800/50'}
+                  `}
+                >
+                  {renderScoreWithSymbol(allOpponentScores[h.hole], h.par)}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Actions */}
