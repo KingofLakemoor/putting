@@ -1,136 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Trophy, Activity } from 'lucide-react';
-import { db } from '../firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
-import LeagueStandings from '../components/LeagueStandings';
-import { formatDisplayName } from '../utils/format';
-
-
-const ROUNDS_KEY = 'putting_league_rounds';
-const PLAYERS_KEY = 'putting_league_players';
-const COURSES_KEY = 'putting_league_courses';
+import { Activity } from 'lucide-react';
+import PGALeaderboard from '../components/PGALeaderboard';
 
 const VenueDashboard = () => {
-  const [activeRounds, setActiveRounds] = useState([]);
-  const [players, setPlayers] = useState([]);
-  const [courses, setCourses] = useState([]);
-
-  useEffect(() => {
-    const unsubscribePlayers = onSnapshot(collection(db, PLAYERS_KEY), (snapshot) => {
-      setPlayers(snapshot.docs.map(doc => doc.data()));
-    });
-
-    const unsubscribeCourses = onSnapshot(collection(db, COURSES_KEY), (snapshot) => {
-      setCourses(snapshot.docs.map(doc => doc.data()));
-    });
-
-    // Listen for live rounds on the course
-    const unsubscribeRounds = onSnapshot(collection(db, ROUNDS_KEY), (snapshot) => {
-      const allRounds = snapshot.docs.map(doc => doc.data());
-      // Only keep 'Active' rounds that have a current user playing
-      const currentActive = allRounds.filter(r => (r.status || '').toLowerCase() === 'active' && r.player_id);
-
-      // Sort by last updated (if available) or by date
-      currentActive.sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0));
-      setActiveRounds(currentActive);
-    });
-
-    return () => {
-      unsubscribeRounds();
-      unsubscribePlayers();
-      unsubscribeCourses();
-    };
-  }, []);
-
-  // Compute a snapshot of how far each player is in their current round
-  const livePlayers = useMemo(() => {
-    const playersMap = new Map();
-    players.forEach(p => {
-      if (p.player_id) playersMap.set(p.player_id, p);
-      if (p.uid) playersMap.set(p.uid, p);
-    });
-
-    const coursesMap = new Map();
-    courses.forEach(c => {
-      if (c.course_id) coursesMap.set(c.course_id, c);
-    });
-
-    const playersList = [];
-
-    activeRounds.forEach(r => {
-      const course = coursesMap.get(r.course_id);
-
-      const holesMap = new Map();
-      if (course?.holes) {
-        course.holes.forEach(h => holesMap.set(h.hole, h));
-      }
-
-      let currentScore = 0;
-      let holesPlayed = 0;
-      let parSum = 0;
-
-      if (r.scores) {
-        Object.entries(r.scores).forEach(([holeNum, s]) => {
-          if (s > 0) {
-            currentScore += s;
-            holesPlayed++;
-            const hNum = parseInt(holeNum, 10);
-            const holeData = holesMap.get(hNum);
-            parSum += holeData ? holeData.par : 2; // Default par 2 if not found
-          }
-        });
-      }
-
-      const relativeScore = currentScore - parSum;
-
-      const playerProfile = playersMap.get(r.player_id) || playersMap.get(r.uid);
-      const actualName = playerProfile ? playerProfile.name : r.player_name;
-
-      playersList.push({
-        id: r.round_id + '_p1',
-        playerName: formatDisplayName(actualName, players),
-        eventName: r.event_round_name || 'Practice Round',
-        currentScore,
-        relativeScore,
-        holesPlayed
-      });
-
-      if (r.opponent_id) {
-        let oppScore = 0;
-        let oppHolesPlayed = 0;
-        let oppParSum = 0;
-
-        if (r.opponent_scores) {
-          Object.entries(r.opponent_scores).forEach(([holeNum, s]) => {
-            if (s > 0) {
-              oppScore += s;
-              oppHolesPlayed++;
-              const hNum = parseInt(holeNum, 10);
-              const holeData = holesMap.get(hNum);
-              oppParSum += holeData ? holeData.par : 2;
-            }
-          });
-        }
-
-        const opponent = playersMap.get(r.opponent_id);
-        const oppName = opponent ? formatDisplayName(opponent.name, players) : 'Unknown Opponent';
-        const oppRelativeScore = oppScore - oppParSum;
-
-        playersList.push({
-          id: r.round_id + '_p2',
-          playerName: oppName,
-          eventName: r.event_round_name || 'Practice Round',
-          currentScore: oppScore,
-          relativeScore: oppRelativeScore,
-          holesPlayed: oppHolesPlayed
-        });
-      }
-    });
-
-    return playersList.sort((a, b) => b.holesPlayed - a.holesPlayed); // Most progress first
-  }, [activeRounds, players, courses]);
-
   return (
     <div className="min-h-screen bg-dark-bg text-white font-sans p-8 flex flex-col">
       {/* Header */}
@@ -145,67 +17,17 @@ const VenueDashboard = () => {
         </div>
       </header>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1">
-
-        {/* Left Column: Live Action on Course */}
-        <div className="bg-dark-surface border border-slate-700/50 rounded-3xl p-8 flex flex-col">
-          <div className="flex items-center gap-4 mb-8">
-            <Activity className="text-kelly-green" size={32} />
-            <h2 className="font-sports text-4xl uppercase">On The Course</h2>
-          </div>
-
-          <div className="space-y-4 flex-1 overflow-y-auto no-scrollbar">
-            {livePlayers.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-slate-500 opacity-50">
-                <Trophy size={64} className="mb-4" />
-                <p className="font-sports text-2xl uppercase">Course is Clear</p>
-                <p className="font-data text-sm uppercase">Waiting for players to tee off...</p>
-              </div>
-            ) : (
-              livePlayers.map((player, index) => (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  key={player.id}
-                  className="bg-dark-bg border border-slate-800 p-6 rounded-2xl flex justify-between items-center"
-                >
-                  <div>
-                    <h3 className="font-bold text-2xl uppercase text-white">{player.playerName}</h3>
-                    <p className="text-kelly-green text-sm font-data uppercase tracking-wider">{player.eventName}</p>
-                  </div>
-                  <div className="flex gap-8 text-center">
-                    <div>
-                      <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">Thru</p>
-                      <p className="text-3xl font-data font-black text-slate-300">{player.holesPlayed}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">Score</p>
-                      <div className="flex items-baseline justify-center gap-2">
-                        <p className={`text-3xl font-data font-black ${player.relativeScore > 0 ? 'text-red-500' : player.relativeScore < 0 ? 'text-kelly-green' : 'text-slate-300'}`}>
-                          {player.holesPlayed === 0 ? 'E' : player.relativeScore > 0 ? `+${player.relativeScore}` : player.relativeScore === 0 ? 'E' : player.relativeScore}
-                        </p>
-                        {player.holesPlayed > 0 && (
-                          <p className="text-sm font-data text-slate-500">({player.currentScore})</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))
-            )}
-          </div>
+      {/* Main Full-Width Container: PGA Leaderboard */}
+      <div className="bg-dark-surface border border-slate-700/50 rounded-3xl p-8 flex flex-col flex-1">
+        <div className="flex items-center gap-4 mb-8">
+          <Activity className="text-kelly-green" size={32} />
+          <h2 className="font-sports text-4xl uppercase">Expanded Leaderboard</h2>
         </div>
 
-        {/* Right Column: Embedded Leaderboard Standings */}
-        <div className="bg-dark-surface border border-slate-700/50 rounded-3xl p-8 flex flex-col">
-          <div className="scale-110 transform origin-top w-[90%] mx-auto">
-            {/* Using the existing preview standings component which handles its own real-time data */}
-            <LeagueStandings />
-          </div>
+        <div className="flex-1 overflow-hidden rounded-xl border border-slate-700/50">
+          {/* Render the full-width PGA Leaderboard */}
+          <PGALeaderboard />
         </div>
-
       </div>
     </div>
   );
