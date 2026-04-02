@@ -3,7 +3,11 @@
 > vite
 
 
-  VITE v8.0.3  ready in 386 ms
+  VITE v8.0.3  ready in 529 ms
 
   ➜  Local:   http://localhost:3000/
   ➜  Network: use --host to expose
+2:30:42 PM [vite] (client) ✨ new dependencies optimized: @playwright/test
+2:30:42 PM [vite] (client) ✨ optimized dependencies changed. reloading
+2:31:04 PM [vite] vite.config.mjs changed, restarting server...
+2:31:04 PM [vite] server restarted.
