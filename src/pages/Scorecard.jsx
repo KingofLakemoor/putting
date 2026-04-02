@@ -183,6 +183,17 @@ const ScorecardPage = () => {
     }, 500);
   };
 
+  const handleGoToHole = async (holeIndex) => {
+    if (holeIndex === currentHole) return;
+    try {
+      const roundRef = doc(db, 'putting_league_rounds', roundId);
+      updateDoc(roundRef, { current_hole: holeIndex }).catch(e => console.error(e));
+      setCurrentHole(holeIndex);
+    } catch (error) {
+      console.error("Error navigating to hole:", error);
+    }
+  };
+
   const handleAdvanceHole = async () => {
     try {
       const totalHoles = courseData?.holes?.length || 9;
@@ -303,6 +314,10 @@ const ScorecardPage = () => {
       }}
       scoreValue={roundData?.scores?.[currentHole]}
       opponentScoreValue={roundData?.opponent_scores?.[currentHole]}
+      allScores={roundData?.scores || {}}
+      allOpponentScores={roundData?.opponent_scores || {}}
+      holesData={courseData?.holes || []}
+      onGoToHole={handleGoToHole}
       players={players}
       opponentId={roundData?.opponent_id}
       onSelectOpponent={handleSelectOpponent}
