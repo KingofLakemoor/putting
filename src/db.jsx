@@ -261,7 +261,7 @@ export const addRound = async (round) => {
   const newRound = {
     round_id,
     status: 'Active', // Default status
-    round_format: round.round_format || 'Standard',
+    round_format: round.round_format || 'Open',
     ...(round.cut_line && { cut_line: round.cut_line }),
     ...(round.number_of_rounds && { number_of_rounds: round.number_of_rounds }),
     ...round
