@@ -150,6 +150,16 @@ function Leaderboard() {
     fetchData();
   }, [filter]);
 
+  const getActiveRound = () => {
+    if (!filter.startsWith('season_') && !filter.startsWith('date_') && filter !== 'global') {
+      return rounds.find(r => r.round_id === filter);
+    }
+    return null;
+  };
+
+  const activeRound = getActiveRound();
+  const cutLine = activeRound?.cut_line;
+
   const getHeaderTitle = () => {
     if (filter.startsWith('season_')) return `${filter.substring(7)} Rankings`;
     if (filter.startsWith('date_')) {
@@ -224,16 +234,32 @@ function Leaderboard() {
         <div className="space-y-3">
           {leaderboard.map((player, index) => {
             const rank = index + 1;
+            const isBelowCut = cutLine && rank > cutLine;
+
             return (
+              <React.Fragment key={player.player_id}>
+                {cutLine && rank === cutLine + 1 && (
+                  <div className="relative py-2">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t-2 border-dashed border-purple-500/50"></div>
+                    </div>
+                    <div className="relative flex justify-center">
+                      <span className="bg-dark-bg px-4 text-[10px] font-bold uppercase tracking-widest text-purple-400">
+                        Projected Cut Line
+                      </span>
+                    </div>
+                  </div>
+                )}
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
-                key={player.player_id}
                 className={`relative group flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border transition-all duration-300 gap-4 sm:gap-0
                   ${index < 3
                     ? 'bg-dark-surface border-slate-700 shadow-[0_0_15px_rgba(76,187,23,0.1)] border-l-4 border-l-kelly-green'
-                    : 'bg-transparent border-slate-800 opacity-90 hover:opacity-100 hover:bg-dark-surface/50'
+                    : isBelowCut
+                      ? 'bg-transparent border-slate-800 opacity-50'
+                      : 'bg-transparent border-slate-800 opacity-90 hover:opacity-100 hover:bg-dark-surface/50'
                   }`}
               >
                 {/* Rank and Name */}
@@ -292,6 +318,7 @@ function Leaderboard() {
                   <div className="absolute inset-0 bg-kelly-green/5 rounded-xl pointer-events-none blur-xl -z-10" />
                 )}
               </motion.div>
+              </React.Fragment>
             );
           })}
         </div>

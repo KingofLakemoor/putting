@@ -88,12 +88,32 @@ const ScorecardPage = () => {
     setIsSubmitting(true);
     try {
       if (currentUser && roundData) {
+        const eventRoundId = roundData.event_round_id || roundId;
+        const actualId = await getActualPlayerId(currentUser.uid);
+
+        // Pre-flight validation for score limits
+        let limit = 1; // Default to 1 if not specified
+        if (roundData.event_round_id) {
+          const eventRound = await getRound(roundData.event_round_id);
+          if (eventRound && eventRound.score_limit) {
+            limit = eventRound.score_limit;
+          }
+        } else if (roundData.score_limit) {
+          limit = roundData.score_limit;
+        }
+
+        const existingScores = await getScoresForRound(eventRoundId);
+
+        const userScoreCount = existingScores.filter(s => s.player_id === actualId).length;
+        if (userScoreCount >= limit) {
+          setError(`You have already reached the limit of ${limit} score(s) for this round.`);
+          setIsSubmitting(false);
+          return;
+        }
+
         await updateRoundStatus(roundId, 'completed');
 
         const currentTotal = Object.values(roundData.scores || {}).reduce((a, b) => a + b, 0);
-        const eventRoundId = roundData.event_round_id || roundId;
-
-        const actualId = await getActualPlayerId(currentUser.uid);
 
         await addScore({
           player_id: actualId,
@@ -103,13 +123,13 @@ const ScorecardPage = () => {
 
         let skipNavigation = false;
         if (roundData.opponent_id) {
-          const opponentTotal = Object.values(roundData.opponent_scores || {}).reduce((a, b) => a + b, 0);
-          const existingScores = await getScoresForRound(eventRoundId);
-          if (existingScores.some(s => s.player_id === roundData.opponent_id)) {
-            setError("Opponent was already scored and their previous score will not be overwritten.");
+          const opponentScoreCount = existingScores.filter(s => s.player_id === roundData.opponent_id).length;
+          if (opponentScoreCount >= limit) {
+            setError(`Opponent has already reached the limit of ${limit} score(s) for this round. Your score was saved.`);
             skipNavigation = true;
-            setTimeout(() => navigate('/'), 3000);
+            setTimeout(() => navigate('/'), 4000);
           } else {
+            const opponentTotal = Object.values(roundData.opponent_scores || {}).reduce((a, b) => a + b, 0);
             await addScore({
               player_id: roundData.opponent_id,
               round_id: eventRoundId,
