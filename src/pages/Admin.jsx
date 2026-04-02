@@ -507,7 +507,7 @@ function AdminEvents() {
       location: selectedCourse ? selectedCourse.name : 'Unknown Location',
       course_id: courseId,
       is_signature: isSignature,
-      score_limit: scoreLimit ? parseInt(scoreLimit, 10) : null,
+      score_limit: ['Tour', 'Match Play', 'Cut Down'].includes(roundFormat) ? 1 : (scoreLimit ? parseInt(scoreLimit, 10) : null),
       round_format: roundFormat,
       event_id: event_id,
       ...(roundFormat === 'Cut Down' && cutLine && { cut_line: parseInt(cutLine, 10) }),
@@ -854,19 +854,21 @@ function AdminEvents() {
               </div>
             )}
 
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="scoreLimit">Score Submission Limit</label>
-              <input
-                type="number"
-                id="scoreLimit"
-                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors"
-                value={scoreLimit}
-                onChange={(e) => setScoreLimit(e.target.value)}
-                placeholder="Leave blank for unlimited"
-                min="1"
-              />
-              <p className="text-[10px] text-slate-500 mt-2">Maximum number of scores a single player can submit for this round.</p>
-            </div>
+            {!['Tour', 'Match Play', 'Cut Down'].includes(roundFormat) && (
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="scoreLimit">Score Submission Limit</label>
+                <input
+                  type="number"
+                  id="scoreLimit"
+                  className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors"
+                  value={scoreLimit}
+                  onChange={(e) => setScoreLimit(e.target.value)}
+                  placeholder="Leave blank for unlimited"
+                  min="1"
+                />
+                <p className="text-[10px] text-slate-500 mt-2">Maximum number of scores a single player can submit for this round.</p>
+              </div>
+            )}
 
             <div className="flex items-center gap-3 p-4 bg-dark-bg border border-slate-700 rounded-xl cursor-pointer" onClick={() => setIsSignature(!isSignature)}>
               <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSignature ? 'bg-yellow-500 border-yellow-500' : 'border-slate-500'}`}>
