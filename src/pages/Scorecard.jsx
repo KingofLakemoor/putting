@@ -205,6 +205,25 @@ const ScorecardPage = () => {
         setCurrentHole(prev => prev + 1);
       } else {
         // Final hole completed
+        const missingHoles = [];
+        for (let i = 1; i <= totalHoles; i++) {
+          const userScore = roundData?.scores?.[i];
+          const opponentScore = roundData?.opponent_id ? roundData?.opponent_scores?.[i] : null;
+
+          const userMissing = userScore === undefined || userScore === null;
+          const opponentMissing = roundData?.opponent_id && (opponentScore === undefined || opponentScore === null);
+
+          if (userMissing || opponentMissing) {
+            missingHoles.push(i);
+          }
+        }
+
+        if (missingHoles.length > 0) {
+          setError(`Cannot finish round. Missing scores on holes: ${missingHoles.join(', ')}`);
+          setTimeout(() => setError(null), 5000);
+          return;
+        }
+
         await updateDoc(roundRef, { current_hole: currentHole });
         setIsRoundComplete(true);
         if (currentUser && roundData) {
