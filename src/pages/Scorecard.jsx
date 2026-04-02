@@ -20,6 +20,7 @@ const ScorecardPage = () => {
   const { currentUser } = useAuth();
   const saveTimeoutRef = useRef(null);
   const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchRoundAndPlayers = async () => {
@@ -77,8 +78,22 @@ const ScorecardPage = () => {
   };
 
   const handleFinalize = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     try {
       if (currentUser && roundData) {
+        // Double check status before submitting
+        const roundRef = doc(db, 'putting_league_rounds', roundId);
+        const latestRoundSnap = await getDoc(roundRef);
+        if (latestRoundSnap.exists()) {
+          const latestData = latestRoundSnap.data();
+          if (latestData.status === 'completed') {
+             navigate('/');
+             return;
+          }
+        }
+
         await updateRoundStatus(roundId, 'completed');
 
         const currentTotal = Object.values(roundData.scores || {}).reduce((a, b) => a + b, 0);
@@ -96,7 +111,10 @@ const ScorecardPage = () => {
           const opponentTotal = Object.values(roundData.opponent_scores || {}).reduce((a, b) => a + b, 0);
           const existingScores = await getScoresForRound(eventRoundId);
           if (existingScores.some(s => s.player_id === roundData.opponent_id)) {
-            setError("Opponent was already scored and their previous score will not be overwritten.");
+            setError("Opponent was already scored and their previous score will not be overwritten. Redirecting...");
+            setTimeout(() => {
+              navigate('/');
+            }, 3000);
             return;
           } else {
             await addScore({
@@ -112,6 +130,7 @@ const ScorecardPage = () => {
       }
     } catch (error) {
       console.error("Error finalizing round:", error);
+      setIsSubmitting(false);
     }
   };
 
@@ -213,6 +232,7 @@ const ScorecardPage = () => {
           onFinalize={handleFinalize}
           onDiscard={handleDiscard}
           isPB={isPB}
+          isSubmitting={isSubmitting}
         />
       </div>
     );
