@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog } from '@headlessui/react';
 import { Minus, Plus, Check, X, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { formatDisplayName } from '../utils/format';
 
 const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCancel, onDiscard, onPrev, onNext, totalHoles = 9, scoreValue, opponentScoreValue, players = [], opponentId, onSelectOpponent, roundName, error }) => {
   const [score, setScore] = useState(scoreValue !== undefined ? scoreValue : null);
@@ -59,7 +60,7 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
           >
             <option value="" disabled>Select an opponent (optional)</option>
             {players.map(p => (
-              <option key={p.player_id} value={p.player_id}>{p.name}</option>
+              <option key={p.player_id} value={p.player_id}>{formatDisplayName(p.name, players)}</option>
             ))}
           </select>
         </div>

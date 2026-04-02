@@ -132,7 +132,7 @@ const LeagueStandings = () => {
            return {
                player_id: playerId,
                uid: playerId,
-               name: formatDisplayName(playerName),
+               name: formatDisplayName(playerName, players),
                totalPoints: pointsByPlayerId[playerId].totalPoints,
                eventsPlayed: pointsByPlayerId[playerId].eventsPlayed,
                played: pointsByPlayerId[playerId].eventsPlayed // For consistency with `.filter((p) => p.played > 0)`
@@ -220,7 +220,7 @@ const LeagueStandings = () => {
       return {
         player_id: playerId,
         uid: playerId,
-        name: formatDisplayName(playerName),
+        name: formatDisplayName(playerName, players),
         avgScore: avgScore,
         relativeScore: relativeScore,
         totalHoles: totalHoles,
@@ -367,7 +367,7 @@ const LeagueStandings = () => {
 
               <div>
                 <p className={`font-bold text-lg uppercase tracking-tight ${index === 0 ? 'text-kelly-green' : 'text-white'}`}>
-                  {formatDisplayName(player.name)}
+                  {formatDisplayName(player.name, players)}
                 </p>
                 <div className="flex items-center gap-2">
                   {getTrendIcon(player.trend)}

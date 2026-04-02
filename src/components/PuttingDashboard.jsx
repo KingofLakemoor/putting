@@ -214,7 +214,7 @@ const PuttingDashboard = () => {
 
           return {
             ...player,
-            name: formatDisplayName(player.name),
+            name: formatDisplayName(player.name, players),
             totalScore,
             relativeScore,
             roundsPlayed: playerScores.length
