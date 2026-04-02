@@ -45,14 +45,24 @@ function Admin() {
           </h2>
           <p className="font-data text-[10px] text-slate-500 uppercase tracking-[0.2em]">System Management</p>
         </div>
-        <a
-          href="/COORDINATOR_GUIDE.md"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white px-4 py-2 rounded-xl transition-all border border-slate-800 hover:border-slate-600 text-xs font-bold uppercase tracking-wider"
-        >
-          <BookOpen size={16} className="text-kelly-green" /> Coordinator Guide
-        </a>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <a
+            href="/SEASON_1_FAQ.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white px-4 py-2 rounded-xl transition-all border border-slate-800 hover:border-slate-600 text-xs font-bold uppercase tracking-wider"
+          >
+            <BookOpen size={16} className="text-kelly-green" /> Season 1 FAQ
+          </a>
+          <a
+            href="/COORDINATOR_GUIDE.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white px-4 py-2 rounded-xl transition-all border border-slate-800 hover:border-slate-600 text-xs font-bold uppercase tracking-wider"
+          >
+            <BookOpen size={16} className="text-kelly-green" /> Coordinator Guide
+          </a>
+        </div>
       </div>
 
       <div className="flex overflow-x-auto mb-8 bg-slate-800/50 p-1 rounded-xl w-full sm:w-auto sm:inline-flex no-scrollbar">

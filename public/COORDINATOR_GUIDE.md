@@ -13,7 +13,7 @@ To access the administrative tools:
 2. Navigate to the Admin Dashboard (usually accessible via the navigation menu or the `/admin` route).
 3. If you are authorized, you will see a screen with the following tabs:
    * **Manage Players**
-   * **Manage Rounds**
+   * **Manage Events**
    * **Manage Scores**
 
 *(Note: The "Manage Courses" and "Manage Coordinators" tabs are restricted to Administrators only.)*
@@ -40,26 +40,29 @@ When a new player joins the league:
 
 ---
 
-## 3. Managing Rounds & Seasons (Annual Tasks)
+## 3. Managing Events & Seasons (Annual Tasks)
 
-The **Manage Rounds** tab is crucial for setting up events and handling the transition between different seasons or years.
+The **Manage Events** tab is crucial for setting up events and handling the transition between different seasons or years.
 
-### Creating a New Round
+### Creating a New Event
 To schedule a new league event:
-1. Navigate to the **Manage Rounds** tab.
-2. Under "Create New Round", enter a descriptive **Round Name** (e.g., "Summer League - Week 1").
+1. Navigate to the **Manage Events** tab.
+2. Under "Create New Event", enter a descriptive **Event Name** (e.g., "Summer League - Week 1").
 3. Select the **Date** of the event.
 4. Choose the **Location / Venue** from the dropdown list.
-5. Click **Create Round**.
+5. Choose the **Event Format** (Open, Cut Down, Match Play, Tour).
+   * Depending on the format, you may need to specify additional parameters like the **Cut Line** or **Number of Rounds**.
+   * Note that multi-round formats like "Cut Down" and "Tour" will automatically generate multiple individual round templates linked to the single parent Event when you specify the "Number of Rounds".
+6. Click **Create Event**.
 
-### Managing Existing Rounds
-In the rounds table, you can update the details of any round:
+### Managing Existing Events
+In the events table, you can update the details of any event round:
 * **Assign Season:** Type the name of the season (e.g., "Summer 2024" or "2024 Annual") into the input box and click outside the box to save. This groups rounds together for leaderboards.
-* **Change Status:** Use the dropdown to update the round's status:
-  * `Active`: The round is currently ongoing and open for scoring.
-  * `Completed`: The round is finished, and final scores are recorded.
-  * `Archived`: The round is closed and hidden from standard active views.
-* **Manage/Delete:** You can click **Manage** to view specific details or **Delete** to remove the round and all its associated scores.
+* **Change Status:** Use the dropdown to update the status:
+  * `Active`: The event round is currently ongoing and open for scoring.
+  * `Completed`: The event round is finished, and final scores are recorded. Changing status to completed will also automatically trigger cup point distribution unless it's an "Open" format event.
+  * `Archived`: The event round is closed and hidden from standard active views.
+* **Manage/Delete:** You can click **Manage** to view specific details or **Delete** to remove the event round and all its associated scores.
 
 ### Annual Rollover & Season Settings
 When a season ends and a new one begins, you need to update the global settings:
