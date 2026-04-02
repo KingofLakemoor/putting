@@ -294,7 +294,7 @@ export const getScores = async () => {
 };
 
 export const addScore = async (score) => {
-  const score_id = uuidv4();
+  const score_id = score.score_id || uuidv4();
   const newScore = {
     score_id,
     timestamp: new Date().toISOString(),
