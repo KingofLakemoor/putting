@@ -125,7 +125,7 @@ function Leaderboard() {
 
         return {
           ...player,
-          name: formatDisplayName(player.name),
+          name: formatDisplayName(player.name, players),
           totalScore,
           totalPar,
           relativeScore,

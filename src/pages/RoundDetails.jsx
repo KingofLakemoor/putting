@@ -81,7 +81,7 @@ function RoundDetails() {
 
     return {
       ...score,
-      playerName: formatDisplayName(player ? player.name : fallbackName),
+      playerName: formatDisplayName(player ? player.name : fallbackName, players),
     };
   }).sort((a, b) => {
     // Sort by score ascending (lower is better)
@@ -204,7 +204,7 @@ function RoundDetails() {
                       <option value="">-- Choose a player --</option>
                       {availablePlayers.map(player => (
                         <option key={player.player_id} value={player.player_id}>
-                          {formatDisplayName(player.name)}
+                          {formatDisplayName(player.name, players)}
                         </option>
                       ))}
                     </select>

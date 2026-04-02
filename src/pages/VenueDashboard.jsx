@@ -89,7 +89,7 @@ const VenueDashboard = () => {
 
       playersList.push({
         id: r.round_id + '_p1',
-        playerName: formatDisplayName(actualName),
+        playerName: formatDisplayName(actualName, players),
         eventName: r.event_round_name || 'Practice Round',
         currentScore,
         relativeScore,
@@ -114,7 +114,7 @@ const VenueDashboard = () => {
         }
 
         const opponent = playersMap.get(r.opponent_id);
-        const oppName = opponent ? formatDisplayName(opponent.name) : 'Unknown Opponent';
+        const oppName = opponent ? formatDisplayName(opponent.name, players) : 'Unknown Opponent';
         const oppRelativeScore = oppScore - oppParSum;
 
         playersList.push({

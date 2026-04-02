@@ -200,7 +200,7 @@ function AdminCoordinators() {
                 <option value="">-- Select a player --</option>
                 {players.filter(p => p.uid && !coordinators.some(c => c.uid === p.uid)).map(player => (
                   <option key={player.player_id} value={player.player_id}>
-                    {formatDisplayName(player.name)} ({player.email || 'No email'})
+                    {formatDisplayName(player.name, players)} ({player.email || 'No email'})
                   </option>
                 ))}
               </select>
@@ -346,7 +346,7 @@ function AdminPlayers() {
               <tbody className="divide-y divide-slate-800">
                 {players.map(player => (
                   <tr key={player.player_id} className="hover:bg-dark-surface/50 transition-colors">
-                    <td className="p-4 font-bold">{formatDisplayName(player.name)}</td>
+                    <td className="p-4 font-bold">{formatDisplayName(player.name, players)}</td>
                     <td className="p-4 text-slate-300">{player.email}</td>
                     <td className="p-4 text-slate-400 text-xs font-mono">{player.uid || 'N/A'}</td>
                     <td className="p-4 text-right">
@@ -932,11 +932,11 @@ function AdminScores() {
     if (!player && round_id) {
         const round = roundsMap.get(round_id);
         if (round && round.player_id === id && round.player_name) {
-             return formatDisplayName(round.player_name);
+             return formatDisplayName(round.player_name, players);
         }
     }
 
-    return player ? formatDisplayName(player.name) : 'Unknown Player';
+    return player ? formatDisplayName(player.name, players) : 'Unknown Player';
   };
 
   const getRoundDetails = (id) => {
@@ -1066,7 +1066,7 @@ function AdminScores() {
                    return aName.localeCompare(bName);
                 }).map(player => (
                   <option key={player.player_id} value={player.player_id}>
-                    {formatDisplayName(player.name)}
+                    {formatDisplayName(player.name, players)}
                   </option>
                 ))}
               </select>
