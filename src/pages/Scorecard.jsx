@@ -20,6 +20,7 @@ const ScorecardPage = () => {
   const { currentUser } = useAuth();
   const saveTimeoutRef = useRef(null);
   const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchRoundAndPlayers = async () => {
@@ -29,6 +30,12 @@ const ScorecardPage = () => {
 
         if (roundSnap.exists()) {
           const data = roundSnap.data();
+
+          if ((data.status || '').toLowerCase() === 'completed') {
+            navigate('/');
+            return;
+          }
+
           setRoundData(data);
           if (data.current_hole) {
             setCurrentHole(data.current_hole);
@@ -77,6 +84,8 @@ const ScorecardPage = () => {
   };
 
   const handleFinalize = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       if (currentUser && roundData) {
         await updateRoundStatus(roundId, 'completed');
@@ -97,6 +106,10 @@ const ScorecardPage = () => {
           const existingScores = await getScoresForRound(eventRoundId);
           if (existingScores.some(s => s.player_id === roundData.opponent_id)) {
             setError("Opponent was already scored and their previous score will not be overwritten.");
+            // Wait 3 seconds to let user read the error, then navigate away
+            setTimeout(() => {
+              navigate('/');
+            }, 3000);
             return;
           } else {
             await addScore({
@@ -112,6 +125,7 @@ const ScorecardPage = () => {
       }
     } catch (error) {
       console.error("Error finalizing round:", error);
+      setIsSubmitting(false);
     }
   };
 
@@ -213,6 +227,7 @@ const ScorecardPage = () => {
           onFinalize={handleFinalize}
           onDiscard={handleDiscard}
           isPB={isPB}
+          isSubmitting={isSubmitting}
         />
       </div>
     );

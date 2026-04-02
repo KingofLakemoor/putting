@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Share2, RotateCcw, Trophy, Target, X } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
 
-const RoundSummary = ({ roundData, onFinalize, onDiscard, isPB }) => {
+const RoundSummary = ({ roundData, onFinalize, onDiscard, isPB, isSubmitting }) => {
   const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
 
   // Calculate total and identifies highlights
@@ -101,9 +101,10 @@ const RoundSummary = ({ roundData, onFinalize, onDiscard, isPB }) => {
       <div className="mt-auto space-y-4">
         <button
           onClick={onFinalize}
-          className="w-full bg-kelly-green text-dark-bg py-5 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(76,187,23,0.2)]"
+          disabled={isSubmitting}
+          className={`w-full py-5 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(76,187,23,0.2)] transition-opacity ${isSubmitting ? 'bg-kelly-green/50 text-dark-bg/50 cursor-not-allowed' : 'bg-kelly-green text-dark-bg'}`}
         >
-          <Trophy size={20} /> SUBMIT TO LEADERBOARD
+          <Trophy size={20} /> {isSubmitting ? 'SUBMITTING...' : 'SUBMIT TO LEADERBOARD'}
         </button>
 
         <div className="grid grid-cols-2 gap-4">
