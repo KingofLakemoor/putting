@@ -20,6 +20,7 @@ const COURSES_KEY = 'putting_league_courses';
 const COORDINATORS_KEY = 'putting_league_coordinators';
 const SETTINGS_KEY = 'putting_league_settings';
 const CUP_POINTS_KEY = 'putting_league_cup_points';
+const MATCHUPS_KEY = 'putting_league_matchups';
 
 // --- Settings ---
 export const getSettings = async () => {
@@ -299,6 +300,40 @@ export const deleteRound = async (round_id) => {
   const querySnapshot = await getDocs(scoresQuery);
   const deletePromises = querySnapshot.docs.map(docSnapshot => deleteDoc(doc(db, SCORES_KEY, docSnapshot.id)));
   await Promise.all(deletePromises);
+};
+
+// --- Matchups ---
+export const getMatchupsForEvent = async (event_id) => {
+  const querySnapshot = await getDocs(query(collection(db, MATCHUPS_KEY), where("event_id", "==", event_id)));
+  return querySnapshot.docs.map(doc => doc.data());
+};
+
+export const getMatchupsForRound = async (event_round_id) => {
+  const querySnapshot = await getDocs(query(collection(db, MATCHUPS_KEY), where("event_round_id", "==", event_round_id)));
+  return querySnapshot.docs.map(doc => doc.data());
+};
+
+export const addMatchup = async (matchup) => {
+  const matchup_id = uuidv4();
+  const newMatchup = {
+    matchup_id,
+    timestamp: new Date().toISOString(),
+    ...matchup
+  };
+  await setDoc(doc(db, MATCHUPS_KEY, matchup_id), newMatchup);
+  return newMatchup;
+};
+
+export const saveMatchupsForRound = async (event_round_id, event_id, pairings) => {
+  const promises = pairings.map(p =>
+    addMatchup({
+      event_round_id,
+      event_id,
+      player1_id: p.player1_id,
+      player2_id: p.player2_id
+    })
+  );
+  await Promise.all(promises);
 };
 
 // --- Scores ---
