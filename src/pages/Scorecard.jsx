@@ -89,6 +89,15 @@ const ScorecardPage = () => {
     try {
       if (currentUser && roundData) {
         const eventRoundId = roundData.event_round_id || roundId;
+
+        // Ensure the round is still active
+        const eventRound = await getRound(eventRoundId);
+        if (eventRound && (eventRound.status || '').toLowerCase() !== 'active') {
+          setError('This round is no longer active. Scores cannot be submitted.');
+          setIsSubmitting(false);
+          return;
+        }
+
         const actualId = await getActualPlayerId(currentUser.uid);
 
         // Pre-flight validation for score limits

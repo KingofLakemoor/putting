@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, MapPin, Calendar, PlusCircle, Trophy, Medal } from 'lucide-react';
-import { getRound, getPlayers, getScoresForRound, addScore } from '../db';
+import { ChevronLeft, MapPin, Calendar, PlusCircle, Trophy, Medal, X, CheckCircle } from 'lucide-react';
+import { getRound, getPlayers, getScoresForRound, addScore, deleteScore, updateRoundStatus, recalculateCupPointsForEvent, getRounds } from '../db';
 import { formatDisplayName } from '../utils/format';
+import { useAuth } from '../contexts/AuthContext';
 
 function RoundDetails() {
+  const auth = useAuth();
+  const currentUser = auth?.currentUser;
+  const isAdminOrCoordinator = auth?.isAdmin || auth?.isCoordinator;
+
   const { id } = useParams();
   const [round, setRound] = useState(null);
   const [players, setPlayers] = useState([]);
   const [scores, setScores] = useState([]);
   const [error, setError] = useState(null);
+  const [advancingPlayerIds, setAdvancingPlayerIds] = useState(null);
 
   // Form State
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
@@ -26,6 +32,45 @@ function RoundDetails() {
       if (currentRound) {
         setPlayers(await getPlayers());
         setScores(await getScoresForRound(id));
+
+        // If this is a subsequent round in an event, figure out advancing players
+        if (currentRound.event_id) {
+          const match = currentRound.name?.match(/Round (\d+)/i);
+          if (match) {
+            const currentRoundNumber = parseInt(match[1], 10);
+            if (currentRoundNumber > 1) {
+              const allRounds = await getRounds();
+              // Find the previous round in the same event
+              const previousRoundNamePattern = new RegExp(`Round ${currentRoundNumber - 1}`, 'i');
+              const previousRound = allRounds.find(r =>
+                r.event_id === currentRound.event_id &&
+                r.date === currentRound.date &&
+                previousRoundNamePattern.test(r.name)
+              );
+
+              if (previousRound) {
+                const prevScores = await getScoresForRound(previousRound.round_id);
+                // Sort scores (lowest first)
+                prevScores.sort((a, b) => a.score - b.score);
+
+                let eligibleScores = prevScores;
+                if (previousRound.cut_line) {
+                   const cutLine = parseInt(previousRound.cut_line, 10);
+                   if (!isNaN(cutLine)) {
+                     // Get score at cut line to handle ties
+                     if (prevScores.length > cutLine) {
+                         const cutScore = prevScores[cutLine - 1].score;
+                         eligibleScores = prevScores.filter(s => s.score <= cutScore);
+                     }
+                   }
+                }
+
+                const eligibleIds = new Set(eligibleScores.map(s => s.player_id));
+                setAdvancingPlayerIds(eligibleIds);
+              }
+            }
+          }
+        }
       }
     };
     loadData();
@@ -34,6 +79,11 @@ function RoundDetails() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedPlayerId || roundScore === '') return;
+
+    if ((round.status || '').toLowerCase() !== 'active') {
+      setError('This round is no longer active. Scores cannot be submitted.');
+      return;
+    }
 
     // Check if player has reached the score limit for this round
     const limit = round.score_limit || 1;
@@ -57,6 +107,29 @@ function RoundDetails() {
     // Reset form
     setSelectedPlayerId('');
     setRoundScore('');
+  };
+
+  const handleWithdrawPlayer = async (scoreId) => {
+    if (window.confirm("Are you sure you want to withdraw this player? Their score will be deleted and they will receive a DNF.")) {
+      await deleteScore(scoreId);
+      setScores(scores.filter(s => s.score_id !== scoreId));
+    }
+  };
+
+  const handleEndRound = async () => {
+    if (window.confirm("Are you sure you want to end this round? No more scores can be entered.")) {
+      await updateRoundStatus(id, 'Completed');
+
+      // Update local state
+      setRound(prev => ({ ...prev, status: 'Completed' }));
+
+      // Calculate points when status is changed to completed, skip for Open formats
+      if (round.round_format !== 'Open' && round.event_id) {
+          // Note: recalculateCupPointsForEvent expects the event_round_id for scoring.
+          // Assuming `id` is the template round id that serves as event_round_id for players.
+          await recalculateCupPointsForEvent(id, round.is_signature);
+      }
+    }
   };
 
   if (!round) {
@@ -101,6 +174,10 @@ function RoundDetails() {
   });
 
   const availablePlayers = players.filter(p => {
+    // If advancing players is defined, ONLY include players who made the cut/finished previous round
+    if (advancingPlayerIds && !advancingPlayerIds.has(p.player_id)) {
+        return false;
+    }
     const count = Math.max(playerScoresCount[p.player_id] || 0, playerScoresCount[p.uid] || 0);
     return count < limit;
   });
@@ -144,9 +221,19 @@ function RoundDetails() {
         </div>
 
         {(round.status || '').toLowerCase() === 'active' && (
-          <Link to={`/rounds/${id}/scorecard`} className="w-full md:w-auto bg-kelly-green text-dark-bg py-3 px-6 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors flex items-center justify-center gap-2">
-            <PlusCircle size={18} /> Fill Scorecard
-          </Link>
+          <div className="flex gap-4 w-full md:w-auto flex-col sm:flex-row">
+            <Link to={`/rounds/${id}/scorecard`} className="w-full sm:w-auto bg-kelly-green text-dark-bg py-3 px-6 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors flex items-center justify-center gap-2">
+              <PlusCircle size={18} /> Fill Scorecard
+            </Link>
+            {isAdminOrCoordinator && (
+              <button
+                onClick={handleEndRound}
+                className="w-full sm:w-auto bg-red-500/20 text-red-500 py-3 px-6 rounded-xl font-bold uppercase tracking-wider hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-2"
+              >
+                <CheckCircle size={18} /> End Round
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -190,11 +277,22 @@ function RoundDetails() {
                       </p>
                     </div>
 
-                    <div className="text-right">
-                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Score</p>
-                      <p className={`text-2xl font-data font-black ${index === 0 ? 'text-kelly-green' : 'text-white'}`}>
-                        {score.score}
-                      </p>
+                    <div className="flex items-center gap-4 text-right">
+                      <div>
+                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Score</p>
+                        <p className={`text-2xl font-data font-black ${index === 0 ? 'text-kelly-green' : 'text-white'} ${score.status === 'DNF' ? 'text-red-500 text-xl' : ''}`}>
+                          {score.status === 'DNF' ? 'DNF' : score.score}
+                        </p>
+                      </div>
+                      {isAdminOrCoordinator && (round.status || '').toLowerCase() === 'active' && score.status !== 'DNF' && (
+                        <button
+                          onClick={() => handleWithdrawPlayer(score.score_id)}
+                          className="ml-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 p-2 rounded-full transition-colors"
+                          title="Withdraw Player (DNF)"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
                     </div>
                   </motion.div>
                 );
