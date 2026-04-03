@@ -94,12 +94,18 @@ function Leaderboard() {
         let totalScore = 0;
         let totalPar = 0;
         let totalHoles = 0;
+        let hasDNF = false;
 
         for (let i = 0; i < playerScores.length; i++) {
           const scoreObj = playerScores[i];
+
+          if (scoreObj.status === 'DNF') {
+            hasDNF = true;
+          }
+
           const parsedScore = parseInt(scoreObj.score);
 
-          if (!isNaN(parsedScore)) {
+          if (!isNaN(parsedScore) && scoreObj.status !== 'DNF') {
             totalScore += parsedScore;
 
             // Find round and course to determine par and holes
@@ -131,7 +137,8 @@ function Leaderboard() {
           relativeScore,
           totalHoles,
           avgScore,
-          roundsPlayed: playerScores.length
+          roundsPlayed: playerScores.length,
+          hasDNF
         };
       });
 
@@ -139,8 +146,10 @@ function Leaderboard() {
       // 0 scores automatically placing them at the top.
       const activePlayers = playerStats.filter(p => p.roundsPlayed > 0);
 
-      // Sort by score ascending (lower is better)
+      // Sort by score ascending (lower is better), push DNF to bottom
       activePlayers.sort((a, b) => {
+        if (a.hasDNF && !b.hasDNF) return 1;
+        if (!a.hasDNF && b.hasDNF) return -1;
         return a.relativeScore - b.relativeScore;
       });
 
@@ -302,11 +311,13 @@ function Leaderboard() {
                   <div className="text-center sm:border-l border-slate-800 sm:pl-8 min-w-[60px]">
                     <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Tot</p>
                     <p className={`text-3xl font-data font-black ${
+                      player.hasDNF ? 'text-red-500 text-xl' :
                       player.relativeScore > 0 ? 'text-red-500' :
                       player.relativeScore < 0 ? 'text-kelly-green' :
                       'text-slate-300'
                     }`}>
-                      {player.relativeScore > 0 ? `+${player.relativeScore}` :
+                      {player.hasDNF ? 'DNF' :
+                       player.relativeScore > 0 ? `+${player.relativeScore}` :
                        player.relativeScore === 0 ? 'E' :
                        player.relativeScore}
                     </p>
