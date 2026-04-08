@@ -19,6 +19,7 @@ const PuttingDashboard = () => {
   const [trendIcon, setTrendIcon] = useState(null);
   const [trendColor, setTrendColor] = useState('text-slate-500');
   const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
@@ -248,10 +249,13 @@ const PuttingDashboard = () => {
 
 
   const handleSelectEventRound = async (eventRound) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       if (activeRoundId) {
         setError("You already have an active round. Please complete or discard it before starting a new one.");
         setTimeout(() => setError(null), 5000);
+        setIsSubmitting(false);
         return;
       }
 
@@ -264,6 +268,7 @@ const PuttingDashboard = () => {
             setError(`You have reached the limit of ${eventRound.score_limit} score(s) for this event.`);
             // Clear error after a few seconds
             setTimeout(() => setError(null), 5000);
+            setIsSubmitting(false);
             return;
          }
       }
@@ -275,6 +280,8 @@ const PuttingDashboard = () => {
       navigate(`/scorecard/${newRound.round_id}`);
     } catch (error) {
       console.error("Error creating round from event:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -420,17 +427,22 @@ const PuttingDashboard = () => {
                             <button
                               key={round.round_id}
                               onClick={() => handleSelectEventRound(round)}
-                              className="w-full text-left p-4 bg-dark-bg/50 border border-slate-700 hover:border-kelly-green/50 hover:bg-slate-800/50 rounded-xl transition-all group flex justify-between items-center"
+                              disabled={isSubmitting}
+                              className={`w-full text-left p-4 bg-dark-bg/50 border border-slate-700 rounded-xl transition-all group flex justify-between items-center ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:border-kelly-green/50 hover:bg-slate-800/50'}`}
                             >
                               <div>
-                                <h3 className="font-bold text-lg group-hover:text-kelly-green transition-colors">
+                                <h3 className={`font-bold text-lg transition-colors ${!isSubmitting ? 'group-hover:text-kelly-green' : ''}`}>
                                   {round.name || 'Round'}
                                 </h3>
                                 <p className="text-xs text-slate-400">
                                   {dateStr ? `${dateStr} • ${round.location}` : round.location}
                                 </p>
                               </div>
-                              <PlusCircle className="text-slate-500 group-hover:text-kelly-green transition-colors" size={20} />
+                              {isSubmitting ? (
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Starting...</span>
+                              ) : (
+                                <PlusCircle className="text-slate-500 group-hover:text-kelly-green transition-colors" size={20} />
+                              )}
                             </button>
                           );
                         })
@@ -505,8 +517,12 @@ const PuttingDashboard = () => {
                         <p className="font-bold">{round.name ? round.name : 'Round'}</p>
                         <p className="text-xs text-slate-500">{dateStr ? `${dateStr} - ${round.location}` : round.location}</p>
                       </div>
-                      <button onClick={() => handleSelectEventRound(round)} className="bg-slate-800 px-4 py-2 rounded-lg text-xs font-bold hover:bg-kelly-green hover:text-dark-bg transition-colors">
-                        SCORE
+                      <button
+                        onClick={() => handleSelectEventRound(round)}
+                        disabled={isSubmitting}
+                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${isSubmitting ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-800 hover:bg-kelly-green hover:text-dark-bg'}`}
+                      >
+                        {isSubmitting ? 'STARTING...' : 'SCORE'}
                       </button>
                     </div>
                   );
