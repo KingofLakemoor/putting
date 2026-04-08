@@ -188,6 +188,8 @@ const ScorecardPage = () => {
     }
   };
 
+  const pendingUpdatesRef = useRef({});
+
   const handleScoreChange = (holeScore, opponentHoleScore) => {
     setRoundData(prev => {
       const hasOpponent = prev.opponent_id;
@@ -198,22 +200,25 @@ const ScorecardPage = () => {
       };
     });
 
+    // Accumulate pending updates in the ref instead of relying on a single hole closure
+    pendingUpdatesRef.current[`scores.${currentHole}`] = holeScore;
+    if (roundData?.opponent_id && opponentHoleScore !== undefined) {
+      pendingUpdatesRef.current[`opponent_scores.${currentHole}`] = opponentHoleScore;
+    }
+
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
     saveTimeoutRef.current = setTimeout(async () => {
       try {
-        const roundRef = doc(db, 'putting_league_rounds', roundId);
-        const updateData = {
-          [`scores.${currentHole}`]: holeScore,
-        };
+        const updates = { ...pendingUpdatesRef.current };
+        pendingUpdatesRef.current = {}; // Reset immediately
 
-        if (roundData?.opponent_id && opponentHoleScore !== undefined) {
-          updateData[`opponent_scores.${currentHole}`] = opponentHoleScore;
+        if (Object.keys(updates).length > 0) {
+          const roundRef = doc(db, 'putting_league_rounds', roundId);
+          await updateDoc(roundRef, updates);
         }
-
-        await updateDoc(roundRef, updateData);
       } catch (error) {
         console.error("Error saving score in background:", error);
       }

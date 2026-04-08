@@ -416,7 +416,7 @@ export const deleteCupPointsForEvent = async (event_round_id) => {
 
 export const recalculateCupPointsForEvent = async (event_round_id, isSignatureEvent = false) => {
   // Find all scores for this event to calculate positions
-  const scoresQuery = query(collection(db, SCORES_KEY), where("event_round_id", "==", event_round_id));
+  const scoresQuery = query(collection(db, SCORES_KEY), where("round_id", "==", event_round_id));
   const querySnapshot = await getDocs(scoresQuery);
   const eventScores = querySnapshot.docs.map(doc => doc.data());
 
