@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Trophy, Medal, MapPin, Calendar } from 'lucide-react';
 import { getPlayers, getScores, getRounds, getSettings, getCourses } from '../db';
 import { formatDisplayName } from '../utils/format';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -10,6 +11,7 @@ function Leaderboard() {
   const [seasons, setSeasons] = useState([]);
   const [dates, setDates] = useState([]);
   const [filter, setFilter] = useState('global');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -154,8 +156,10 @@ function Leaderboard() {
       });
 
       setLeaderboard(activePlayers);
+      setIsLoading(false);
     };
 
+    setIsLoading(true);
     fetchData();
   }, [filter]);
 
@@ -235,7 +239,11 @@ function Leaderboard() {
         </div>
       </div>
 
-      {leaderboard.length === 0 ? (
+      {isLoading ? (
+        <div className="space-y-3">
+          <SkeletonLoader count={5} />
+        </div>
+      ) : leaderboard.length === 0 ? (
         <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
           No data yet. Add players and scores to see the leaderboard!
         </div>
