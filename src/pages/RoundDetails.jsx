@@ -21,6 +21,7 @@ function RoundDetails() {
   // Form State
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
   const [roundScore, setRoundScore] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -79,34 +80,45 @@ function RoundDetails() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedPlayerId || roundScore === '') return;
+    if (isSubmitting) return;
 
-    if ((round.status || '').toLowerCase() !== 'active') {
-      setError('This round is no longer active. Scores cannot be submitted.');
-      return;
+    setIsSubmitting(true);
+    try {
+      if ((round.status || '').toLowerCase() !== 'active') {
+        setError('This round is no longer active. Scores cannot be submitted.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Check if player has reached the score limit for this round
+      const limit = round.score_limit || 1;
+      const existingScoresCount = scores.filter(s => s.player_id === selectedPlayerId).length;
+
+      if (existingScoresCount >= limit) {
+        setError(`This player already has reached the limit of ${limit} score(s) for this round.`);
+        setIsSubmitting(false);
+        return;
+      }
+      setError(null);
+
+      const newScore = {
+        player_id: selectedPlayerId,
+        round_id: id,
+        score: parseInt(roundScore)
+      };
+
+      const created = await addScore(newScore);
+      setScores([...scores, created]);
+
+      // Reset form
+      setSelectedPlayerId('');
+      setRoundScore('');
+    } catch (error) {
+      console.error("Error submitting score:", error);
+      setError('Failed to submit score.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Check if player has reached the score limit for this round
-    const limit = round.score_limit || 1;
-    const existingScoresCount = scores.filter(s => s.player_id === selectedPlayerId).length;
-
-    if (existingScoresCount >= limit) {
-      setError(`This player already has reached the limit of ${limit} score(s) for this round.`);
-      return;
-    }
-    setError(null);
-
-    const newScore = {
-      player_id: selectedPlayerId,
-      round_id: id,
-      score: parseInt(roundScore)
-    };
-
-    const created = await addScore(newScore);
-    setScores([...scores, created]);
-
-    // Reset form
-    setSelectedPlayerId('');
-    setRoundScore('');
   };
 
   const handleWithdrawPlayer = async (scoreId) => {
@@ -343,8 +355,8 @@ function RoundDetails() {
                     />
                   </div>
 
-                  <button type="submit" className="w-full bg-kelly-green text-dark-bg py-4 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors mt-2">
-                    Submit Score
+                  <button type="submit" disabled={isSubmitting} className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider transition-colors mt-2 ${isSubmitting ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-kelly-green text-dark-bg hover:bg-green-500'}`}>
+                    {isSubmitting ? 'Submitting...' : 'Submit Score'}
                   </button>
                 </form>
               )}

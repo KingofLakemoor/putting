@@ -116,8 +116,8 @@ function Leaderboard() {
             if (round && round.course_id) {
                const course = courseMap[round.course_id];
                if (course) {
-                  parForRound = course._computedTotalPar;
-                  holesForRound = course._computedTotalHoles;
+                  parForRound = course._computedTotalPar || 36;
+                  holesForRound = course._computedTotalHoles || 18;
                }
             }
 
