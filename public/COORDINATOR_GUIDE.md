@@ -53,11 +53,13 @@ To schedule a new league event:
 5. Choose the **Event Format** (Open, Cut Down, Match Play, Tour).
    * Depending on the format, you may need to specify additional parameters like the **Cut Line** or **Number of Rounds**.
    * Note that multi-round formats like "Cut Down" and "Tour" will automatically generate multiple individual round templates linked to the single parent Event when you specify the "Number of Rounds".
-6. Click **Create Event**.
+6. (Optional) Check the **Signature Event** box to mark this event as a Signature Event, which awards a 1.5x multiplier for 602 Cup Points.
+7. Click **Create Event**.
 
 ### Managing Existing Events
 In the events table, you can update the details of any event round:
 * **Assign Season:** Type the name of the season (e.g., "Summer 2024" or "2024 Annual") into the input box and click outside the box to save. This groups rounds together for leaderboards.
+* **Make Signature:** Toggle the "Make Signature" / "Signature Event (1.5x)" button in the Actions column to apply or remove the 1.5x points multiplier.
 * **Change Status:** Use the dropdown to update the status:
   * `Active`: The event round is currently ongoing and open for scoring.
   * `Completed`: The event round is finished, and final scores are recorded. Changing status to completed will also automatically trigger cup point distribution unless it's an "Open" format event.
@@ -67,7 +69,8 @@ In the events table, you can update the details of any event round:
 ### Annual Rollover & Season Settings
 When a season ends and a new one begins, you need to update the global settings:
 1. **Live Season:** Use the "Live Season" dropdown to select the current, active season. This setting determines which season's data is displayed by default on the main dashboard and leaderboards.
-2. **Archive Seasons:** When a season is completely finished (e.g., at the end of the year), locate it in the "Archive Seasons" list and click **Archive**.
+2. **602 Cup Finale Season:** Use the "602 Cup Finale Season" dropdown to designate a season as the finale. The system will automatically apply starting strokes (-4 to E) to players in this season based on their accumulated cup points.
+3. **Archive Seasons:** When a season is completely finished (e.g., at the end of the year), locate it in the "Archive Seasons" list and click **Archive**.
    * Archiving a season hides its individual rounds from public leaderboard dropdown filters, restricting users to viewing only the overall aggregated standings for that complete season.
    * You can view archived rounds in your admin table by clicking **View Archived Rounds**.
 
