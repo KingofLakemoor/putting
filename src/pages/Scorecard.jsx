@@ -91,6 +91,19 @@ const ScorecardPage = () => {
       if (currentUser && roundData) {
         const eventRoundId = roundData.event_round_id || roundId;
 
+        // Check personal round status first
+        const personalRoundRef = doc(db, 'putting_league_rounds', roundId);
+        const personalRoundSnap = await getDoc(personalRoundRef);
+        if (personalRoundSnap.exists()) {
+          const prData = personalRoundSnap.data();
+          if ((prData.status || '').toLowerCase() === 'completed') {
+            setError('This round has already been submitted.');
+            toast.error('This round has already been submitted.');
+            setIsSubmitting(false);
+            return;
+          }
+        }
+
         // Ensure the round is still active
         const eventRound = await getRound(eventRoundId);
         if (eventRound && (eventRound.status || '').toLowerCase() !== 'active') {
@@ -127,11 +140,13 @@ const ScorecardPage = () => {
 
         const currentTotal = Object.values(roundData.scores || {}).reduce((a, b) => a + b, 0);
 
+        const customScoreId = limit > 1 ? `score_${eventRoundId}_${actualId}_${userScoreCount}` : `score_${eventRoundId}_${actualId}`;
+
         await addScore({
           player_id: actualId,
           round_id: eventRoundId,
           score: currentTotal
-        });
+        }, customScoreId);
 
         let skipNavigation = false;
         if (roundData.opponent_id) {
@@ -142,12 +157,13 @@ const ScorecardPage = () => {
             skipNavigation = true;
             setTimeout(() => navigate('/'), 4000);
           } else {
+            const opponentCustomId = limit > 1 ? `score_${eventRoundId}_${roundData.opponent_id}_${opponentScoreCount}` : `score_${eventRoundId}_${roundData.opponent_id}`;
             const opponentTotal = Object.values(roundData.opponent_scores || {}).reduce((a, b) => a + b, 0);
             await addScore({
               player_id: roundData.opponent_id,
               round_id: eventRoundId,
               score: opponentTotal
-            });
+            }, opponentCustomId);
           }
         }
 

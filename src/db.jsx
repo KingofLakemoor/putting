@@ -342,8 +342,8 @@ export const getScores = async () => {
   return querySnapshot.docs.map(doc => doc.data());
 };
 
-export const addScore = async (score) => {
-  const score_id = uuidv4();
+export const addScore = async (score, customId = null) => {
+  const score_id = customId || uuidv4();
   const newScore = {
     score_id,
     timestamp: new Date().toISOString(),

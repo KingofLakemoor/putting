@@ -107,7 +107,9 @@ function RoundDetails() {
         score: parseInt(roundScore)
       };
 
-      const created = await addScore(newScore);
+      const customScoreId = limit > 1 ? `score_${id}_${selectedPlayerId}_${existingScoresCount}` : `score_${id}_${selectedPlayerId}`;
+
+      const created = await addScore(newScore, customScoreId);
       setScores([...scores, created]);
 
       // Reset form

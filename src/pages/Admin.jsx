@@ -945,11 +945,13 @@ function AdminScores() {
 
     setIsSubmittingScore(true);
     try {
+      const customScoreId = limit > 1 ? `score_${newRoundId}_${newPlayerId}_${existingScoresCount}` : `score_${newRoundId}_${newPlayerId}`;
+
       await addScore({
         player_id: newPlayerId,
         round_id: newRoundId,
         score: parseInt(newScoreValue, 10)
-      });
+      }, customScoreId);
 
       setNewRoundId('');
       setNewPlayerId('');
