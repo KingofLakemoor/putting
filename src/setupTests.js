@@ -7,3 +7,6 @@ import '@testing-library/jest-dom';
 // Polyfill mapping for Vitest
 import { vi } from 'vitest';
 global.jest = vi;
+
+// Provide fake env vars to prevent Firebase init crashes in tests
+vi.stubEnv('VITE_FIREBASE_API_KEY', 'fake_api_key');
