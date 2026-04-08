@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Share2, RotateCcw, Trophy, Target, X } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
+import { toast } from 'react-hot-toast';
 
 const RoundSummary = ({ roundData, onFinalize, onDiscard, isPB, isSubmitting }) => {
   const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
@@ -36,6 +37,19 @@ const RoundSummary = ({ roundData, onFinalize, onDiscard, isPB, isSubmitting }) 
 
   const locationStr = roundData.location ? roundData.location.toUpperCase() : "DOBSON RANCH";
   const roundName = roundData?.event_round_name || roundData?.name || "Casual Round";
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: 'Club 602 Round Summary',
+        text: `I just scored ${totalScore} with ${birdies} birdies at ${locationStr}! #Club602`
+      }).catch(err => {
+        console.error("Error sharing:", err);
+      });
+    } else {
+      toast.success("Sharing not supported on this browser");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-dark-bg text-white p-6 flex flex-col font-sans">
@@ -108,7 +122,10 @@ const RoundSummary = ({ roundData, onFinalize, onDiscard, isPB, isSubmitting }) 
         </button>
 
         <div className="grid grid-cols-2 gap-4">
-          <button className="flex items-center justify-center gap-2 py-4 rounded-xl font-bold bg-slate-800 text-slate-300 text-sm">
+          <button
+            onClick={handleShare}
+            className="flex items-center justify-center gap-2 py-4 rounded-xl font-bold bg-slate-800 text-slate-300 text-sm hover:bg-slate-700"
+          >
             <Share2 size={16} /> SHARE
           </button>
           <button

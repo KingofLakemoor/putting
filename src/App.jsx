@@ -12,6 +12,7 @@ import LeagueStandings from './components/LeagueStandings';
 import PuttingDashboard from './components/PuttingDashboard';
 import Navigation from './components/Navigation';
 import VenueDashboard from './pages/VenueDashboard';
+import { Toaster } from 'react-hot-toast';
 import './App.css';
 
 function App() {
@@ -26,6 +27,22 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-dark-bg text-white font-sans flex flex-col">
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            style: {
+              background: '#1B1B1B',
+              color: '#fff',
+              border: '1px solid #334155',
+            },
+            success: {
+              iconTheme: {
+                primary: '#4CBB17',
+                secondary: '#1B1B1B',
+              },
+            },
+          }}
+        />
         <Navigation />
 
         <main className="flex-1 w-full">

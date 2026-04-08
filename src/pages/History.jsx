@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Calendar, MapPin, Activity, History as HistoryIcon, Medal } from 'lucide-react';
+import { Trophy, Calendar, MapPin, Activity, History as HistoryIcon, Medal, Share2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getScoresForPlayer, getRounds, getCourses, getScores, getPlayers } from '../db';
+import { toast } from 'react-hot-toast';
 
 const History = () => {
   const { currentUser } = useAuth() || { currentUser: { uid: 'test-user-id' } }; // Fallback for TestApp if needed
@@ -150,6 +151,17 @@ const History = () => {
     });
   };
 
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: 'Club 602 Player Stats',
+        text: `Check out my stats! Total Rounds: ${historyData.stats.totalRounds}, Career Avg: ${historyData.stats.averageScore}. #Club602`
+      }).catch(err => console.error("Error sharing:", err));
+    } else {
+      toast.success("Sharing not supported on this browser");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-dark-bg text-white flex items-center justify-center">
@@ -168,6 +180,12 @@ const History = () => {
               </h2>
               <p className="font-data text-[10px] text-slate-500 uppercase tracking-[0.2em]">Career Stats</p>
             </div>
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-2 bg-dark-surface border border-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold uppercase hover:bg-slate-800 transition-colors"
+            >
+              <Share2 size={14} /> Share Stats
+            </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

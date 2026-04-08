@@ -6,6 +6,7 @@ import ScoreEntry from '../components/ScoreEntry';
 import RoundSummary from '../components/RoundSummary';
 import { getScoresForPlayer, updateRoundStatus, addScore, deleteRound, getPlayers, getScoresForRound, getCourse, getRound, getActualPlayerId, getActiveRoundForUser } from '../db';
 import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'react-hot-toast';
 
 const ScorecardPage = () => {
   const { roundId } = useParams();
@@ -94,6 +95,7 @@ const ScorecardPage = () => {
         const eventRound = await getRound(eventRoundId);
         if (eventRound && (eventRound.status || '').toLowerCase() !== 'active') {
           setError('This round is no longer active. Scores cannot be submitted.');
+          toast.error('This round is no longer active. Scores cannot be submitted.');
           setIsSubmitting(false);
           return;
         }
@@ -116,6 +118,7 @@ const ScorecardPage = () => {
         const userScoreCount = existingScores.filter(s => s.player_id === actualId).length;
         if (userScoreCount >= limit) {
           setError(`You have already reached the limit of ${limit} score(s) for this round.`);
+          toast.error(`You have already reached the limit of ${limit} score(s) for this round.`);
           setIsSubmitting(false);
           return;
         }
@@ -135,6 +138,7 @@ const ScorecardPage = () => {
           const opponentScoreCount = existingScores.filter(s => s.player_id === roundData.opponent_id).length;
           if (opponentScoreCount >= limit) {
             setError(`Opponent has already reached the limit of ${limit} score(s) for this round. Your score was saved.`);
+            toast.error(`Opponent has already reached the limit. Your score was saved.`);
             skipNavigation = true;
             setTimeout(() => navigate('/'), 4000);
           } else {
@@ -149,11 +153,13 @@ const ScorecardPage = () => {
 
         if (!skipNavigation) {
           setError(null);
+          toast.success('Round submitted successfully!');
           navigate('/');
         }
       }
     } catch (error) {
       console.error("Error finalizing round:", error);
+      toast.error("An error occurred while submitting.");
       setIsSubmitting(false);
     }
   };
@@ -163,6 +169,7 @@ const ScorecardPage = () => {
       const activeRound = await getActiveRoundForUser(opponentId);
       if (activeRound) {
         setError("This player already has an active round.");
+        toast.error("This player already has an active round.");
         setTimeout(() => setError(null), 5000);
         return;
       }
@@ -176,6 +183,7 @@ const ScorecardPage = () => {
     } catch (error) {
       console.error("Error selecting opponent:", error);
       setError("Failed to select opponent.");
+      toast.error("Failed to select opponent.");
       setTimeout(() => setError(null), 5000);
     }
   };
@@ -249,6 +257,7 @@ const ScorecardPage = () => {
 
         if (missingHoles.length > 0) {
           setError(`Cannot finish round. Missing scores on holes: ${missingHoles.join(', ')}`);
+          toast.error(`Missing scores on holes: ${missingHoles.join(', ')}`);
           setTimeout(() => setError(null), 5000);
           return;
         }
