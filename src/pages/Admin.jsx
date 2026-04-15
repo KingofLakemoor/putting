@@ -28,7 +28,8 @@ function Admin() {
 
   const tabs = [
     { id: 'players', label: 'Manage Players', icon: Users },
-    { id: 'rounds', label: 'Manage Events', icon: CalendarDays },
+    { id: 'rounds', label: 'Manage Rounds', icon: CalendarDays },
+    { id: 'events', label: 'Manage Events', icon: CalendarDays },
     { id: 'scores', label: 'Manage Scores', icon: ClipboardList },
   ];
   if (isAdmin) {
@@ -87,7 +88,8 @@ function Admin() {
 
       <div className="admin-content">
         {activeTab === 'players' && <AdminPlayers />}
-        {activeTab === 'rounds' && <AdminEvents />}
+        {activeTab === 'rounds' && <AdminRounds />}
+        {activeTab === 'events' && <AdminEventsList />}
         {activeTab === 'scores' && <AdminScores />}
         {activeTab === 'courses' && isAdmin && <AdminCourses />}
         {activeTab === 'coordinators' && isAdmin && <AdminCoordinators />}
@@ -480,7 +482,7 @@ function AdminPlayers() {
   );
 }
 
-function AdminEvents() {
+function AdminRounds() {
   const [rounds, setRounds] = useState([]);
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
@@ -689,7 +691,7 @@ function AdminEvents() {
         <div>
           <div className="flex justify-between items-center mb-6">
           <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 flex items-center gap-2">
-            <CalendarDays size={20} className="text-kelly-green" /> {showArchived ? 'Archived Events' : 'Events Management'}
+            <CalendarDays size={20} className="text-kelly-green" /> {showArchived ? 'Archived Rounds' : 'Round Management'}
           </h3>
           <button
             onClick={() => setShowArchived(!showArchived)}
@@ -701,7 +703,7 @@ function AdminEvents() {
 
         {filteredRounds.length === 0 ? (
           <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
-            {showArchived ? 'No archived events.' : 'No active or completed events added yet.'}
+            {showArchived ? 'No archived rounds.' : 'No active or completed rounds added yet.'}
           </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-slate-800">
@@ -1409,6 +1411,140 @@ function AdminCourses() {
             </div>
           </form>
         </div>
+      </div>
+    </div>
+  );
+}
+
+
+
+function AdminEventsList() {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = async () => {
+    setLoading(true);
+    const allRounds = await getRounds();
+
+    // Group rounds by event_id
+    const grouped = {};
+    allRounds.forEach(r => {
+      if (r.event_id) {
+        if (!grouped[r.event_id]) {
+          let baseName = r.name || 'Unnamed Event';
+          if (r.number_of_rounds > 1 && baseName.includes(' - Round ')) {
+            baseName = baseName.split(' - Round ')[0];
+          } else if (baseName.includes(' - Round ')) {
+             baseName = baseName.split(' - Round ')[0];
+          }
+          grouped[r.event_id] = {
+            event_id: r.event_id,
+            base_name: baseName,
+            date: r.date,
+            location: r.location,
+            season: r.season,
+            roundsCount: 1,
+            rounds: [r]
+          };
+        } else {
+          grouped[r.event_id].roundsCount += 1;
+          grouped[r.event_id].rounds.push(r);
+        }
+      }
+    });
+
+    // Convert to array and sort by date descending
+    const eventsArray = Object.values(grouped).sort((a, b) => {
+      const dateA = new Date(a.date || 0).getTime();
+      const dateB = new Date(b.date || 0).getTime();
+      if (dateA !== dateB) return dateB - dateA;
+      return a.base_name.localeCompare(b.base_name);
+    });
+
+    setEvents(eventsArray);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const handleRename = async (event) => {
+    const newName = window.prompt("Enter new event name:", event.base_name);
+    if (newName && newName.trim() !== "" && newName !== event.base_name) {
+      await updateEventName(event.event_id, newName.trim());
+      loadData();
+    }
+  };
+
+  const handleDelete = async (event_id) => {
+    if (window.confirm("Are you sure you want to delete this ENTIRE event? This will delete ALL associated rounds and scores.")) {
+      await deleteEvent(event_id);
+      loadData();
+    }
+  };
+
+  if (loading) return <div className="text-center p-8 text-slate-400">Loading events...</div>;
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
+          <CalendarDays size={20} className="text-kelly-green" /> Event Management
+        </h3>
+
+        {events.length === 0 ? (
+          <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
+            No events found.
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-slate-800">
+            <table className="w-full border-collapse text-left text-sm whitespace-nowrap">
+              <thead className="bg-slate-800 text-slate-400 uppercase tracking-wider text-xs">
+                <tr>
+                  <th className="p-4 font-bold">Event Name</th>
+                  <th className="p-4 font-bold">Date & Location</th>
+                  <th className="p-4 font-bold">Rounds</th>
+                  <th className="p-4 font-bold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {events.map(event => (
+                  <tr key={event.event_id} className="hover:bg-dark-surface/50 transition-colors">
+                    <td className="p-4 font-bold text-white">
+                      {event.base_name}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex flex-col">
+                        <span className="text-white">{event.date && !isNaN(new Date(event.date).getTime()) ? new Date(event.date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'No Date'}</span>
+                        <span className="text-xs text-slate-400">{event.location}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 text-slate-300">
+                      {event.roundsCount} {event.roundsCount === 1 ? 'Round' : 'Rounds'}
+                    </td>
+                    <td className="p-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => handleRename(event)}
+                          className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-[10px] uppercase"
+                        >
+                          <Edit size={12} /> Rename
+                        </button>
+                        <button
+                          onClick={() => handleDelete(event.event_id)}
+                          className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-[10px] uppercase"
+                        >
+                          <Trash2 size={12} /> Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

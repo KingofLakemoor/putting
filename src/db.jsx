@@ -517,3 +517,30 @@ export const recalculateCupPointsForEvent = async (event_round_id, isSignatureEv
   }));
   await Promise.all(promises);
 };
+
+
+export const updateEventName = async (event_id, newName) => {
+  const roundsQuery = query(collection(db, ROUNDS_KEY), where("event_id", "==", event_id));
+  const querySnapshot = await getDocs(roundsQuery);
+  const updatePromises = querySnapshot.docs.map(docSnapshot => {
+    const roundData = docSnapshot.data();
+    let updatedName = newName;
+    if (roundData.number_of_rounds > 1 && roundData.name && roundData.name.includes(' - Round ')) {
+      const roundNum = roundData.name.split(' - Round ')[1];
+      updatedName = `${newName} - Round ${roundNum}`;
+    } else if (roundData.name && roundData.name.includes(' - Round ')) {
+      // Fallback
+      const roundNum = roundData.name.split(' - Round ')[1];
+      updatedName = `${newName} - Round ${roundNum}`;
+    }
+    return updateDoc(doc(db, ROUNDS_KEY, docSnapshot.id), { name: updatedName });
+  });
+  await Promise.all(updatePromises);
+};
+
+export const deleteEvent = async (event_id) => {
+  const roundsQuery = query(collection(db, ROUNDS_KEY), where("event_id", "==", event_id));
+  const querySnapshot = await getDocs(roundsQuery);
+  const deletePromises = querySnapshot.docs.map(docSnapshot => deleteRound(docSnapshot.id));
+  await Promise.all(deletePromises);
+};

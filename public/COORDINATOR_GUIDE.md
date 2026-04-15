@@ -13,6 +13,7 @@ To access the administrative tools:
 2. Navigate to the Admin Dashboard (usually accessible via the navigation menu or the `/admin` route).
 3. If you are authorized, you will see a screen with the following tabs:
    * **Manage Players**
+   * **Manage Rounds**
    * **Manage Events**
    * **Manage Scores**
 
@@ -40,13 +41,13 @@ When a new player joins the league:
 
 ---
 
-## 3. Managing Events & Seasons (Annual Tasks)
+## 3. Managing Rounds, Events & Seasons (Annual Tasks)
 
-The **Manage Events** tab is crucial for setting up events and handling the transition between different seasons or years.
+The **Manage Rounds** and **Manage Events** tabs are crucial for setting up play sessions and handling the transition between different seasons or years.
 
-### Creating a New Event
-To schedule a new league event:
-1. Navigate to the **Manage Events** tab.
+### Creating a New Round or Event
+To schedule a new league play session:
+1. Navigate to the **Manage Rounds** tab.
 2. Under "Create New Event", enter a descriptive **Event Name** (e.g., "Summer League - Week 1").
 3. Select the **Date** of the event.
 4. Choose the **Location / Venue** from the dropdown list.
@@ -56,8 +57,8 @@ To schedule a new league event:
 6. (Optional) Check the **Signature Event** box to mark this event as a Signature Event, which awards a 1.5x multiplier for 602 Cup Points.
 7. Click **Create Event**.
 
-### Managing Existing Events
-In the events table, you can update the details of any event round:
+### Managing Existing Rounds
+In the rounds table, you can update the details of any specific round:
 * **Assign Season:** Type the name of the season (e.g., "Summer 2024" or "2024 Annual") into the input box and click outside the box to save. This groups rounds together for leaderboards.
 * **Make Signature:** Toggle the "Make Signature" / "Signature Event (1.5x)" button in the Actions column to apply or remove the 1.5x points multiplier.
 * **Change Status:** Use the dropdown to update the status:
@@ -66,8 +67,13 @@ In the events table, you can update the details of any event round:
   * `Archived`: The event round is closed and hidden from standard active views.
 * **Manage/Delete:** You can click **Manage** to view specific details or **Delete** to remove the event round and all its associated scores.
 
+### Managing Existing Events
+In the **Manage Events** tab, you can view all rounds grouped together by their parent Event. Here you can:
+* **Rename an Event:** Click **Rename** to apply a new base name to all rounds within that event simultaneously.
+* **Delete an Event:** Click **Delete** to remove the entire event and **ALL** its associated rounds and scores permanently.
+
 ### Annual Rollover & Season Settings
-When a season ends and a new one begins, you need to update the global settings:
+When a season ends and a new one begins, you need to update the global settings in the **Manage Rounds** tab:
 1. **Live Season:** Use the "Live Season" dropdown to select the current, active season. This setting determines which season's data is displayed by default on the main dashboard and leaderboards.
 2. **602 Cup Finale Season:** Use the "602 Cup Finale Season" dropdown to designate a season as the finale. The system will automatically apply starting strokes (-4 to E) to players in this season based on their accumulated cup points.
 3. **Archive Seasons:** When a season is completely finished (e.g., at the end of the year), locate it in the "Archive Seasons" list and click **Archive**.
