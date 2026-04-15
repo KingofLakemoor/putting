@@ -9,7 +9,7 @@ function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [rounds, setRounds] = useState([]);
   const [seasons, setSeasons] = useState([]);
-  const [dates, setEvents] = useState([]);
+  const [events, setEvents] = useState([]);
   const [filter, setFilter] = useState('global');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -40,16 +40,44 @@ function Leaderboard() {
       const uniqueSeasons = [...new Set(allRounds.map(r => r.season).filter(Boolean))];
       setSeasons(uniqueSeasons); // We keep all seasons for the "Seasons" dropdown
 
-      const uniqueEvents = [...new Set(visibleRounds.map(r => r.date).filter(Boolean))];
-      // Sort dates descending
-      uniqueEvents.sort((a, b) => new Date(b) - new Date(a));
-      setEvents(uniqueEvents);
+      const eventsList = [];
+      const seenEventIds = new Set();
+      const seenDates = new Set();
+
+      visibleRounds.forEach(r => {
+        if (r.event_id) {
+            if (!seenEventIds.has(r.event_id)) {
+                seenEventIds.add(r.event_id);
+                eventsList.push({
+                    filterValue: `event_${r.event_id}`,
+                    name: r.name ? r.name.replace(/\s*-?\s*Round\s*\d+.*$/i, '') : 'Unnamed Event',
+                    date: r.date
+                });
+            }
+        } else if (r.date) {
+            if (!seenDates.has(r.date)) {
+                seenDates.add(r.date);
+                eventsList.push({
+                    filterValue: `date_${r.date}`,
+                    name: new Date(r.date).toLocaleDateString('en-US', { timeZone: 'UTC' }),
+                    date: r.date
+                });
+            }
+        }
+      });
+
+      eventsList.sort((a, b) => new Date(b.date) - new Date(a.date));
+      setEvents(eventsList);
 
       if (filter !== 'global') {
         if (filter.startsWith('season_')) {
           const seasonName = filter.substring(7);
           const roundIdsInSeason = allRounds.filter(r => r.season === seasonName).map(r => r.round_id);
           scores = scores.filter(s => roundIdsInSeason.includes(s.round_id));
+        } else if (filter.startsWith('event_')) {
+          const filterEventId = filter.substring(6);
+          const roundIdsInEvent = visibleRounds.filter(r => String(r.event_id) === filterEventId).map(r => r.round_id);
+          scores = scores.filter(s => roundIdsInEvent.includes(s.round_id));
         } else if (filter.startsWith('date_')) {
           const filterDate = filter.substring(5);
           const roundIdsInDate = visibleRounds.filter(r => r.date === filterDate).map(r => r.round_id);
@@ -175,6 +203,10 @@ function Leaderboard() {
 
   const getHeaderTitle = () => {
     if (filter.startsWith('season_')) return `${filter.substring(7)} Rankings`;
+    if (filter.startsWith('event_')) {
+      const evt = events.find(d => d.filterValue === filter);
+      return evt ? `${evt.name} Rankings` : 'Event Rankings';
+    }
     if (filter.startsWith('date_')) {
       const d = new Date(filter.substring(5));
       return !isNaN(d.getTime()) ? `${d.toLocaleDateString('en-US', { timeZone: 'UTC' })} Rankings` : 'Event Rankings';
@@ -210,14 +242,12 @@ function Leaderboard() {
                 ))}
               </optgroup>
             )}
-            {dates.length > 0 && (
+            {events.length > 0 && (
               <optgroup label="Events">
-                {dates.map(date => {
-                  const d = new Date(date);
-                  const validDate = !isNaN(d.getTime());
+                {events.map(evt => {
                   return (
-                    <option key={`date_${date}`} value={`date_${date}`}>
-                      {validDate ? d.toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Unknown Date'}
+                    <option key={evt.filterValue} value={evt.filterValue}>
+                      {evt.name}
                     </option>
                   );
                 })}
