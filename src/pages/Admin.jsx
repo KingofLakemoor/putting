@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldAlert, Users, CalendarDays, ClipboardList, Map as MapIcon, UserCog, Edit, Trash2, Check, X, Settings, RefreshCw, BookOpen, Star } from 'lucide-react';
+import { ShieldAlert, Users, CalendarDays, ClipboardList, Map as MapIcon, UserCog, Edit, Trash2, Check, X, Settings, RefreshCw, BookOpen, Star, Trophy } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, addRound, updateRoundStatus, updateRoundSeason, deleteRound, getScores, addScore, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse, getCoordinators, addCoordinator, removeCoordinator, getSettings, updateLiveSeason, updateCupFinaleSeason, addArchivedSeason, removeArchivedSeason, recalculateCupPointsForEvent } from '../db';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -231,6 +231,7 @@ function AdminPlayers() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [uid, setUid] = useState('');
+  const [level, setLevel] = useState('fun');
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState(null);
 
@@ -248,7 +249,7 @@ function AdminPlayers() {
 
     const formattedName = `${firstName.trim()} ${lastName.trim().charAt(0).toUpperCase()}.`;
 
-    const playerData = { name: formattedName, email };
+    const playerData = { name: formattedName, email, level };
     if (uid.trim()) {
       playerData.uid = uid.trim();
     }
@@ -264,6 +265,7 @@ function AdminPlayers() {
     setLastName('');
     setEmail('');
     setUid('');
+    setLevel('fun');
     loadPlayers();
   };
 
@@ -287,6 +289,7 @@ function AdminPlayers() {
 
     setEmail(player.email || '');
     setUid(player.uid || '');
+    setLevel(player.level || 'fun');
   };
 
   const handleDelete = async (id) => {
@@ -302,6 +305,7 @@ function AdminPlayers() {
     setLastName('');
     setEmail('');
     setUid('');
+    setLevel('fun');
   };
 
   const handleGenerateMissingUids = async () => {
@@ -356,7 +360,11 @@ function AdminPlayers() {
               <tbody className="divide-y divide-slate-800">
                 {players.map(player => (
                   <tr key={player.player_id} className="hover:bg-dark-surface/50 transition-colors">
-                    <td className="p-4 font-bold">{formatDisplayName(player.name, players)}</td>
+                    <td className="p-4 font-bold flex items-center gap-2">
+                      {formatDisplayName(player.name, players)}
+                      {player.level === 'cup' && <Trophy size={14} className="text-yellow-500" />}
+                      {player.level === 'competitive' && <Star size={14} className="text-yellow-400 fill-current" />}
+                    </td>
                     <td className="p-4 text-slate-300">{player.email}</td>
                     <td className="p-4 text-slate-400 text-xs font-mono">{player.uid || 'N/A'}</td>
                     <td className="p-4 text-right">
@@ -439,6 +447,20 @@ function AdminPlayers() {
                   <RefreshCw size={14} />
                 </button>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="playerLevel">Player Level</label>
+              <select
+                id="playerLevel"
+                className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
+                value={level}
+                onChange={(e) => setLevel(e.target.value)}
+              >
+                <option value="fun">Fun</option>
+                <option value="competitive">Competitive</option>
+                <option value="cup">Tour (602 Cup)</option>
+              </select>
             </div>
 
             <div className="mt-2 flex flex-col gap-3">
