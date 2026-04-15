@@ -17,6 +17,7 @@ function RoundDetails() {
   const [scores, setScores] = useState([]);
   const [error, setError] = useState(null);
   const [advancingPlayerIds, setAdvancingPlayerIds] = useState(null);
+  const [eventScores, setEventScores] = useState([]);
 
   // Form State
   const [selectedPlayerId, setSelectedPlayerId] = useState('');
@@ -32,7 +33,21 @@ function RoundDetails() {
       // Load players and scores
       if (currentRound) {
         setPlayers(await getPlayers());
-        setScores(await getScoresForRound(id));
+        const roundScores = await getScoresForRound(id);
+        setScores(roundScores);
+
+        if (currentRound.event_id) {
+            const allRounds = await getRounds();
+            const relatedRounds = allRounds.filter(r => r.event_id === currentRound.event_id);
+            let allScoresForEvent = [];
+            for (const r of relatedRounds) {
+                const s = await getScoresForRound(r.round_id);
+                allScoresForEvent = allScoresForEvent.concat(s);
+            }
+            setEventScores(allScoresForEvent);
+        } else {
+            setEventScores(roundScores);
+        }
 
         // If this is a subsequent round in an event, figure out advancing players
         if (currentRound.event_id) {
@@ -201,11 +216,21 @@ function RoundDetails() {
   const dateObj = new Date(round.date);
   const dateStr = !isNaN(dateObj.getTime()) ? dateObj.toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Unknown Date';
 
-  const uniqueCompetitors = new Set(
-    scoredPlayers
-      .filter(sp => sp.level === 'cup' || sp.level === 'competitive')
-      .map(sp => sp.playerId)
-  );
+  const uniqueCompetitors = new Set();
+  const scoresToCheck = eventScores.length > 0 ? eventScores : scores;
+
+  scoresToCheck.forEach(s => {
+    let player = playersMap.get(s.player_id);
+    if (!player && round && round.player_id === s.player_id && round.player_name) {
+       player = playersByNameMap.get(round.player_name.toLowerCase());
+    }
+    const level = player ? player.level : 'fun';
+    const playerId = player ? player.player_id : s.player_id;
+    if (level === 'cup' || level === 'competitive') {
+      uniqueCompetitors.add(playerId);
+    }
+  });
+
   const payout = 0.60 * (uniqueCompetitors.size * 10);
 
   return (
