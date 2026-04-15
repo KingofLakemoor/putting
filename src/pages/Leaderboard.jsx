@@ -9,7 +9,7 @@ function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [rounds, setRounds] = useState([]);
   const [seasons, setSeasons] = useState([]);
-  const [dates, setDates] = useState([]);
+  const [dates, setEvents] = useState([]);
   const [filter, setFilter] = useState('global');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -40,10 +40,10 @@ function Leaderboard() {
       const uniqueSeasons = [...new Set(allRounds.map(r => r.season).filter(Boolean))];
       setSeasons(uniqueSeasons); // We keep all seasons for the "Seasons" dropdown
 
-      const uniqueDates = [...new Set(visibleRounds.map(r => r.date).filter(Boolean))];
+      const uniqueEvents = [...new Set(visibleRounds.map(r => r.date).filter(Boolean))];
       // Sort dates descending
-      uniqueDates.sort((a, b) => new Date(b) - new Date(a));
-      setDates(uniqueDates);
+      uniqueEvents.sort((a, b) => new Date(b) - new Date(a));
+      setEvents(uniqueEvents);
 
       if (filter !== 'global') {
         if (filter.startsWith('season_')) {
@@ -177,7 +177,7 @@ function Leaderboard() {
     if (filter.startsWith('season_')) return `${filter.substring(7)} Rankings`;
     if (filter.startsWith('date_')) {
       const d = new Date(filter.substring(5));
-      return !isNaN(d.getTime()) ? `${d.toLocaleDateString('en-US', { timeZone: 'UTC' })} Rankings` : 'Date Rankings';
+      return !isNaN(d.getTime()) ? `${d.toLocaleDateString('en-US', { timeZone: 'UTC' })} Rankings` : 'Event Rankings';
     }
     if (filter === 'global') return 'Global Rankings';
     return 'Event Leaderboard';
@@ -211,7 +211,7 @@ function Leaderboard() {
               </optgroup>
             )}
             {dates.length > 0 && (
-              <optgroup label="Dates">
+              <optgroup label="Events">
                 {dates.map(date => {
                   const d = new Date(date);
                   const validDate = !isNaN(d.getTime());
@@ -223,7 +223,7 @@ function Leaderboard() {
                 })}
               </optgroup>
             )}
-            <optgroup label="Events / Rounds">
+            <optgroup label="Rounds">
               {rounds.map(round => {
                 const d = new Date(round.date);
                 const dateStr = !isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Unknown Date';
