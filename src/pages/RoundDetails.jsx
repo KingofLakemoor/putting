@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, MapPin, Calendar, PlusCircle, Trophy, Medal, X, CheckCircle } from 'lucide-react';
+import { ChevronLeft, MapPin, Calendar, PlusCircle, Trophy, Medal, X, CheckCircle, Star, DollarSign } from 'lucide-react';
 import { getRound, getPlayers, getScoresForRound, addScore, deleteScore, updateRoundStatus, recalculateCupPointsForEvent, getRounds } from '../db';
 import { formatDisplayName } from '../utils/format';
 import { useAuth } from '../contexts/AuthContext';
@@ -172,6 +172,8 @@ function RoundDetails() {
     return {
       ...score,
       playerName: formatDisplayName(player ? player.name : fallbackName, players),
+      level: player ? player.level : 'fun',
+      playerId: player ? player.player_id : score.player_id
     };
   }).sort((a, b) => {
     // Sort by score ascending (lower is better)
@@ -198,6 +200,13 @@ function RoundDetails() {
 
   const dateObj = new Date(round.date);
   const dateStr = !isNaN(dateObj.getTime()) ? dateObj.toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Unknown Date';
+
+  const uniqueCompetitors = new Set(
+    scoredPlayers
+      .filter(sp => sp.level === 'cup' || sp.level === 'competitive')
+      .map(sp => sp.playerId)
+  );
+  const payout = 0.60 * (uniqueCompetitors.size * 5);
 
   return (
     <div className="min-h-screen bg-dark-bg text-white p-4 md:p-8 font-sans">
@@ -253,9 +262,18 @@ function RoundDetails() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
-            <Trophy size={20} className="text-kelly-green" /> Round Leaderboard
-          </h3>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+            <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 flex items-center gap-2">
+              <Trophy size={20} className="text-kelly-green" /> Round Leaderboard
+            </h3>
+            {isAdminOrCoordinator && (
+              <div className="flex items-center gap-2 bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-700">
+                <DollarSign size={16} className="text-kelly-green" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Est. Payout:</span>
+                <span className="font-data font-bold text-white">${payout.toFixed(2)}</span>
+              </div>
+            )}
+          </div>
 
           {scoredPlayers.length === 0 ? (
             <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
@@ -286,8 +304,10 @@ function RoundDetails() {
                           <Medal size={14} className="absolute -top-2 -right-2 text-kelly-green animate-pulse" />
                         )}
                       </div>
-                      <p className={`font-bold text-lg uppercase tracking-tight ${index === 0 ? 'text-kelly-green' : 'text-white'}`}>
+                      <p className={`font-bold text-lg uppercase tracking-tight flex items-center gap-2 ${index === 0 ? 'text-kelly-green' : 'text-white'}`}>
                         {score.playerName}
+                        {score.level === 'cup' && <Trophy size={14} className="text-yellow-500" />}
+                        {score.level === 'competitive' && <Star size={14} className="text-yellow-400 fill-current" />}
                       </p>
                     </div>
 

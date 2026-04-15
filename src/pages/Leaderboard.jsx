@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Medal, MapPin, Calendar } from 'lucide-react';
+import { Trophy, Medal, MapPin, Calendar, Star } from 'lucide-react';
 import { getPlayers, getScores, getRounds, getSettings, getCourses } from '../db';
 import { formatDisplayName } from '../utils/format';
 import SkeletonLoader from '../components/SkeletonLoader';
@@ -291,8 +291,10 @@ function Leaderboard() {
                   </div>
 
                   <div>
-                    <p className={`font-bold text-lg uppercase tracking-tight ${index === 0 ? 'text-kelly-green' : 'text-white'}`}>
+                    <p className={`font-bold text-lg uppercase tracking-tight flex items-center gap-2 ${index === 0 ? 'text-kelly-green' : 'text-white'}`}>
                       {player.name}
+                      {player.level === 'cup' && <Trophy size={14} className="text-yellow-500" />}
+                      {player.level === 'competitive' && <Star size={14} className="text-yellow-400 fill-current" />}
                     </p>
                     <p className="text-[10px] text-slate-500 font-data uppercase flex items-center gap-1">
                       <Calendar size={10} /> Rounds Played: {player.roundsPlayed}
