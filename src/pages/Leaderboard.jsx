@@ -1,16 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Trophy, Medal, MapPin, Calendar, Star } from 'lucide-react';
-import { getPlayers, getScores, getRounds, getSettings, getCourses } from '../db';
-import { formatDisplayName } from '../utils/format';
-import SkeletonLoader from '../components/SkeletonLoader';
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Trophy, Medal, MapPin, Calendar, Star } from "lucide-react";
+import {
+  getPlayers,
+  getScores,
+  getRounds,
+  getSettings,
+  getCourses,
+} from "../db";
+import { formatDisplayName } from "../utils/format";
+import SkeletonLoader from "../components/SkeletonLoader";
 
 function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [rounds, setRounds] = useState([]);
   const [seasons, setSeasons] = useState([]);
   const [events, setEvents] = useState([]);
-  const [filter, setFilter] = useState('global');
+  const [filter, setFilter] = useState("global");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -22,82 +28,98 @@ function Leaderboard() {
       const courses = await getCourses();
 
       const courseMap = {};
-      courses.forEach(c => {
+      courses.forEach((c) => {
         courseMap[c.course_id] = {
-            ...c,
-            _computedTotalPar: Array.isArray(c.holes) ? c.holes.reduce((sum, h) => sum + (h.par || 2), 0) : 36,
-            _computedTotalHoles: Array.isArray(c.holes) ? c.holes.length : 18
+          ...c,
+          _computedTotalPar: Array.isArray(c.holes)
+            ? c.holes.reduce((sum, h) => sum + (h.par || 2), 0)
+            : 36,
+          _computedTotalHoles: Array.isArray(c.holes) ? c.holes.length : 18,
         };
       });
 
       const archivedSeasons = settings.archived_seasons || [];
 
       // Filter out rounds that belong to archived seasons
-      const visibleRounds = allRounds.filter(r => !archivedSeasons.includes(r.season));
+      const visibleRounds = allRounds.filter(
+        (r) => !archivedSeasons.includes(r.season),
+      );
 
       setRounds(visibleRounds);
 
-      const uniqueSeasons = [...new Set(allRounds.map(r => r.season).filter(Boolean))];
+      const uniqueSeasons = [
+        ...new Set(allRounds.map((r) => r.season).filter(Boolean)),
+      ];
       setSeasons(uniqueSeasons); // We keep all seasons for the "Seasons" dropdown
 
       const eventsList = [];
       const seenEventIds = new Set();
       const seenDates = new Set();
 
-      visibleRounds.forEach(r => {
+      visibleRounds.forEach((r) => {
         if (r.event_id) {
-            if (!seenEventIds.has(r.event_id)) {
-                seenEventIds.add(r.event_id);
-                eventsList.push({
-                    filterValue: `event_${r.event_id}`,
-                    name: r.name ? r.name.replace(/\s*-?\s*Round\s*\d+.*$/i, '') : 'Unnamed Event',
-                    date: r.date
-                });
-            }
+          if (!seenEventIds.has(r.event_id)) {
+            seenEventIds.add(r.event_id);
+            eventsList.push({
+              filterValue: `event_${r.event_id}`,
+              name: r.name
+                ? r.name.replace(/\s*-?\s*Round\s*\d+.*$/i, "")
+                : "Unnamed Event",
+              date: r.date,
+            });
+          }
         } else if (r.date) {
-            if (!seenDates.has(r.date)) {
-                seenDates.add(r.date);
-                eventsList.push({
-                    filterValue: `date_${r.date}`,
-                    name: new Date(r.date).toLocaleDateString('en-US', { timeZone: 'UTC' }),
-                    date: r.date
-                });
-            }
+          if (!seenDates.has(r.date)) {
+            seenDates.add(r.date);
+            eventsList.push({
+              filterValue: `date_${r.date}`,
+              name: new Date(r.date).toLocaleDateString("en-US", {
+                timeZone: "UTC",
+              }),
+              date: r.date,
+            });
+          }
         }
       });
 
       eventsList.sort((a, b) => new Date(b.date) - new Date(a.date));
       setEvents(eventsList);
 
-      if (filter !== 'global') {
-        if (filter.startsWith('season_')) {
+      if (filter !== "global") {
+        if (filter.startsWith("season_")) {
           const seasonName = filter.substring(7);
-          const roundIdsInSeason = allRounds.filter(r => r.season === seasonName).map(r => r.round_id);
-          scores = scores.filter(s => roundIdsInSeason.includes(s.round_id));
-        } else if (filter.startsWith('event_')) {
+          const roundIdsInSeason = allRounds
+            .filter((r) => r.season === seasonName)
+            .map((r) => r.round_id);
+          scores = scores.filter((s) => roundIdsInSeason.includes(s.round_id));
+        } else if (filter.startsWith("event_")) {
           const filterEventId = filter.substring(6);
-          const roundIdsInEvent = visibleRounds.filter(r => String(r.event_id) === filterEventId).map(r => r.round_id);
-          scores = scores.filter(s => roundIdsInEvent.includes(s.round_id));
-        } else if (filter.startsWith('date_')) {
+          const roundIdsInEvent = visibleRounds
+            .filter((r) => String(r.event_id) === filterEventId)
+            .map((r) => r.round_id);
+          scores = scores.filter((s) => roundIdsInEvent.includes(s.round_id));
+        } else if (filter.startsWith("date_")) {
           const filterDate = filter.substring(5);
-          const roundIdsInDate = visibleRounds.filter(r => r.date === filterDate).map(r => r.round_id);
-          scores = scores.filter(s => roundIdsInDate.includes(s.round_id));
+          const roundIdsInDate = visibleRounds
+            .filter((r) => r.date === filterDate)
+            .map((r) => r.round_id);
+          scores = scores.filter((s) => roundIdsInDate.includes(s.round_id));
         } else {
-          scores = scores.filter(s => String(s.round_id) === String(filter));
+          scores = scores.filter((s) => String(s.round_id) === String(filter));
         }
       } else {
-         // Global filter - still exclude archived seasons rounds
-         const visibleRoundIds = visibleRounds.map(r => r.round_id);
-         scores = scores.filter(s => visibleRoundIds.includes(s.round_id));
+        // Global filter - still exclude archived seasons rounds
+        const visibleRoundIds = visibleRounds.map((r) => r.round_id);
+        scores = scores.filter((s) => visibleRoundIds.includes(s.round_id));
       }
 
       const roundsMap = {};
-      allRounds.forEach(r => {
+      allRounds.forEach((r) => {
         roundsMap[r.round_id] = r;
       });
 
       const playersMap = new Map();
-      players.forEach(p => {
+      players.forEach((p) => {
         if (p.uid) playersMap.set(p.uid, p);
         if (p.player_id) playersMap.set(p.player_id, p);
       });
@@ -118,7 +140,7 @@ function Leaderboard() {
       }
 
       // Calculate aggregated score
-      const playerStats = players.map(player => {
+      const playerStats = players.map((player) => {
         const playerScores = scoresByPlayerId[player.player_id] || [];
 
         let totalScore = 0;
@@ -129,13 +151,13 @@ function Leaderboard() {
         for (let i = 0; i < playerScores.length; i++) {
           const scoreObj = playerScores[i];
 
-          if (scoreObj.status === 'DNF') {
+          if (scoreObj.status === "DNF") {
             hasDNF = true;
           }
 
           const parsedScore = parseInt(scoreObj.score);
 
-          if (!isNaN(parsedScore) && scoreObj.status !== 'DNF') {
+          if (!isNaN(parsedScore) && scoreObj.status !== "DNF") {
             totalScore += parsedScore;
 
             // Find round and course to determine par and holes
@@ -144,11 +166,11 @@ function Leaderboard() {
             let holesForRound = 18;
 
             if (round && round.course_id) {
-               const course = courseMap[round.course_id];
-               if (course) {
-                  parForRound = course._computedTotalPar || 36;
-                  holesForRound = course._computedTotalHoles || 18;
-               }
+              const course = courseMap[round.course_id];
+              if (course) {
+                parForRound = course._computedTotalPar || 36;
+                holesForRound = course._computedTotalHoles || 18;
+              }
             }
 
             totalPar += parForRound;
@@ -157,7 +179,8 @@ function Leaderboard() {
         }
 
         const relativeScore = totalScore - totalPar;
-        const avgScore = totalHoles > 0 ? ((totalScore / totalHoles) * 18).toFixed(1) : 0;
+        const avgScore =
+          totalHoles > 0 ? ((totalScore / totalHoles) * 18).toFixed(1) : 0;
 
         return {
           ...player,
@@ -168,13 +191,13 @@ function Leaderboard() {
           totalHoles,
           avgScore,
           roundsPlayed: playerScores.length,
-          hasDNF
+          hasDNF,
         };
       });
 
       // Filter out players who haven't played any rounds yet to avoid
       // 0 scores automatically placing them at the top.
-      const activePlayers = playerStats.filter(p => p.roundsPlayed > 0);
+      const activePlayers = playerStats.filter((p) => p.roundsPlayed > 0);
 
       // Sort by score ascending (lower is better), push DNF to bottom
       activePlayers.sort((a, b) => {
@@ -192,8 +215,12 @@ function Leaderboard() {
   }, [filter]);
 
   const getActiveRound = () => {
-    if (!filter.startsWith('season_') && !filter.startsWith('date_') && filter !== 'global') {
-      return rounds.find(r => r.round_id === filter);
+    if (
+      !filter.startsWith("season_") &&
+      !filter.startsWith("date_") &&
+      filter !== "global"
+    ) {
+      return rounds.find((r) => r.round_id === filter);
     }
     return null;
   };
@@ -202,17 +229,19 @@ function Leaderboard() {
   const cutLine = activeRound?.cut_line;
 
   const getHeaderTitle = () => {
-    if (filter.startsWith('season_')) return `${filter.substring(7)} Rankings`;
-    if (filter.startsWith('event_')) {
-      const evt = events.find(d => d.filterValue === filter);
-      return evt ? `${evt.name} Rankings` : 'Event Rankings';
+    if (filter.startsWith("season_")) return `${filter.substring(7)} Rankings`;
+    if (filter.startsWith("event_")) {
+      const evt = events.find((d) => d.filterValue === filter);
+      return evt ? `${evt.name} Rankings` : "Event Rankings";
     }
-    if (filter.startsWith('date_')) {
+    if (filter.startsWith("date_")) {
       const d = new Date(filter.substring(5));
-      return !isNaN(d.getTime()) ? `${d.toLocaleDateString('en-US', { timeZone: 'UTC' })} Rankings` : 'Event Rankings';
+      return !isNaN(d.getTime())
+        ? `${d.toLocaleDateString("en-US", { timeZone: "UTC" })} Rankings`
+        : "Event Rankings";
     }
-    if (filter === 'global') return 'Global Rankings';
-    return 'Event Leaderboard';
+    if (filter === "global") return "Global Rankings";
+    return "Event Leaderboard";
   };
 
   return (
@@ -223,7 +252,9 @@ function Leaderboard() {
             <Trophy className="text-kelly-green" size={32} />
             {getHeaderTitle()}
           </h2>
-          <p className="font-data text-[10px] text-slate-500 uppercase tracking-[0.2em]">Live Standings</p>
+          <p className="font-data text-[10px] text-slate-500 uppercase tracking-[0.2em]">
+            Live Standings
+          </p>
         </div>
 
         <div className="w-full md:w-auto">
@@ -235,7 +266,7 @@ function Leaderboard() {
             <option value="global">Global Rankings</option>
             {seasons.length > 0 && (
               <optgroup label="Seasons">
-                {seasons.map(season => (
+                {seasons.map((season) => (
                   <option key={`season_${season}`} value={`season_${season}`}>
                     {season} Rankings
                   </option>
@@ -244,7 +275,7 @@ function Leaderboard() {
             )}
             {events.length > 0 && (
               <optgroup label="Events">
-                {events.map(evt => {
+                {events.map((evt) => {
                   return (
                     <option key={evt.filterValue} value={evt.filterValue}>
                       {evt.name}
@@ -254,10 +285,14 @@ function Leaderboard() {
               </optgroup>
             )}
             <optgroup label="Rounds">
-              {rounds.map(round => {
+              {rounds.map((round) => {
                 const d = new Date(round.date);
-                const dateStr = !isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Unknown Date';
-                const displayStr = round.name ? `${round.name} - ${dateStr} - ${round.location}` : `${dateStr} - ${round.location}`;
+                const dateStr = !isNaN(d.getTime())
+                  ? d.toLocaleDateString("en-US", { timeZone: "UTC" })
+                  : "Unknown Date";
+                const displayStr = round.name
+                  ? `${round.name} - ${dateStr} - ${round.location}`
+                  : `${dateStr} - ${round.location}`;
                 return (
                   <option key={round.round_id} value={round.round_id}>
                     {displayStr}
@@ -297,78 +332,108 @@ function Leaderboard() {
                     </div>
                   </div>
                 )}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className={`relative group flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border transition-all duration-300 gap-4 sm:gap-0
-                  ${index < 3
-                    ? 'bg-dark-surface border-slate-700 shadow-[0_0_15px_rgba(76,187,23,0.1)] border-l-4 border-l-kelly-green'
-                    : isBelowCut
-                      ? 'bg-transparent border-slate-800 opacity-50'
-                      : 'bg-transparent border-slate-800 opacity-90 hover:opacity-100 hover:bg-dark-surface/50'
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className={`relative group flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border transition-all duration-300 gap-4 sm:gap-0
+                  ${
+                    index < 3
+                      ? "bg-dark-surface border-slate-700 shadow-[0_0_15px_rgba(76,187,23,0.1)] border-l-4 border-l-kelly-green"
+                      : isBelowCut
+                        ? "bg-transparent border-slate-800 opacity-50"
+                        : "bg-transparent border-slate-800 opacity-90 hover:opacity-100 hover:bg-dark-surface/50"
                   }`}
-              >
-                {/* Rank and Name */}
-                <div className="flex items-center gap-5">
-                  <div className="relative">
-                    <span className={`font-sports text-3xl sm:text-4xl italic tracking-tighter ${index < 3 ? 'text-white' : 'text-slate-600'}`}>
-                      {rank < 10 ? `0${rank}` : rank}
-                    </span>
-                    {index === 0 && (
-                      <Medal size={16} className="absolute -top-2 -right-3 text-kelly-green animate-pulse" />
-                    )}
+                >
+                  {/* Rank and Name */}
+                  <div className="flex items-center gap-5">
+                    <div className="relative">
+                      <span
+                        className={`font-sports text-3xl sm:text-4xl italic tracking-tighter ${index < 3 ? "text-white" : "text-slate-600"}`}
+                      >
+                        {rank < 10 ? `0${rank}` : rank}
+                      </span>
+                      {index === 0 && (
+                        <Medal
+                          size={16}
+                          className="absolute -top-2 -right-3 text-kelly-green animate-pulse"
+                        />
+                      )}
+                    </div>
+
+                    <div>
+                      <p
+                        className={`font-bold text-lg uppercase tracking-tight flex items-center gap-2 ${index === 0 ? "text-kelly-green" : "text-white"}`}
+                      >
+                        {player.name}
+                        {player.level === "cup" && (
+                          <Trophy size={14} className="text-yellow-500" />
+                        )}
+                        {player.level === "competitive" && (
+                          <Star
+                            size={14}
+                            className="text-yellow-400 fill-current"
+                          />
+                        )}
+                      </p>
+                      <p className="text-[10px] text-slate-500 font-data uppercase flex items-center gap-1">
+                        <Calendar size={10} /> Rounds Played:{" "}
+                        {player.roundsPlayed}
+                      </p>
+                    </div>
                   </div>
 
-                  <div>
-                    <p className={`font-bold text-lg uppercase tracking-tight flex items-center gap-2 ${index === 0 ? 'text-kelly-green' : 'text-white'}`}>
-                      {player.name}
-                      {player.level === 'cup' && <Trophy size={14} className="text-yellow-500" />}
-                      {player.level === 'competitive' && <Star size={14} className="text-yellow-400 fill-current" />}
-                    </p>
-                    <p className="text-[10px] text-slate-500 font-data uppercase flex items-center gap-1">
-                      <Calendar size={10} /> Rounds Played: {player.roundsPlayed}
-                    </p>
-                  </div>
-                </div>
+                  {/* Stats Block */}
+                  <div className="flex flex-1 sm:flex-none justify-between sm:justify-end items-center gap-4 sm:gap-8 mt-2 sm:mt-0">
+                    <div className="text-center">
+                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">
+                        Avg
+                      </p>
+                      <p className="text-xl font-data font-bold text-slate-300">
+                        {player.avgScore}
+                      </p>
+                    </div>
 
-                {/* Stats Block */}
-                <div className="flex flex-1 sm:flex-none justify-between sm:justify-end items-center gap-4 sm:gap-8 mt-2 sm:mt-0">
-                  <div className="text-center">
-                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Avg</p>
-                    <p className="text-xl font-data font-bold text-slate-300">
-                      {player.avgScore}
-                    </p>
+                    <div className="text-center sm:border-l border-slate-800 sm:pl-8">
+                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">
+                        Thru
+                      </p>
+                      <p className="text-xl font-data font-bold text-slate-300">
+                        {player.totalHoles}
+                      </p>
+                    </div>
+
+                    <div className="text-center sm:border-l border-slate-800 sm:pl-8 min-w-[60px]">
+                      <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">
+                        Tot
+                      </p>
+                      <p
+                        className={`text-3xl font-data font-black ${
+                          player.hasDNF
+                            ? "text-red-500 text-xl"
+                            : player.relativeScore > 0
+                              ? "text-red-500"
+                              : player.relativeScore < 0
+                                ? "text-kelly-green"
+                                : "text-slate-300"
+                        }`}
+                      >
+                        {player.hasDNF
+                          ? "DNF"
+                          : player.relativeScore > 0
+                            ? `+${player.relativeScore}`
+                            : player.relativeScore === 0
+                              ? "E"
+                              : player.relativeScore}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="text-center sm:border-l border-slate-800 sm:pl-8">
-                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Thru</p>
-                    <p className="text-xl font-data font-bold text-slate-300">
-                      {player.totalHoles}
-                    </p>
-                  </div>
-
-                  <div className="text-center sm:border-l border-slate-800 sm:pl-8 min-w-[60px]">
-                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Tot</p>
-                    <p className={`text-3xl font-data font-black ${
-                      player.hasDNF ? 'text-red-500 text-xl' :
-                      player.relativeScore > 0 ? 'text-red-500' :
-                      player.relativeScore < 0 ? 'text-kelly-green' :
-                      'text-slate-300'
-                    }`}>
-                      {player.hasDNF ? 'DNF' :
-                       player.relativeScore > 0 ? `+${player.relativeScore}` :
-                       player.relativeScore === 0 ? 'E' :
-                       player.relativeScore}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Subtle Glow Effect for Top Rank */}
-                {index === 0 && (
-                  <div className="absolute inset-0 bg-kelly-green/5 rounded-xl pointer-events-none blur-xl -z-10" />
-                )}
-              </motion.div>
+                  {/* Subtle Glow Effect for Top Rank */}
+                  {index === 0 && (
+                    <div className="absolute inset-0 bg-kelly-green/5 rounded-xl pointer-events-none blur-xl -z-10" />
+                  )}
+                </motion.div>
               </React.Fragment>
             );
           })}

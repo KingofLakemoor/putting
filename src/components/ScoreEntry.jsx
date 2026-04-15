@@ -1,19 +1,59 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Dialog } from '@headlessui/react';
-import { Minus, Plus, Check, X, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
-import { formatDisplayName } from '../utils/format';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Dialog } from "@headlessui/react";
+import {
+  Minus,
+  Plus,
+  Check,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+} from "lucide-react";
+import { formatDisplayName } from "../utils/format";
 
-const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCancel, onDiscard, onPrev, onNext, totalHoles = 9, scoreValue, opponentScoreValue, allScores = {}, allOpponentScores = {}, holesData = [], onGoToHole, players = [], opponentId, onSelectOpponent, roundName, error, playerName, userStrokes, userRelative, opponentStrokes, opponentRelative }) => {
-  const [score, setScore] = useState(scoreValue !== undefined ? scoreValue : null);
-  const [opponentScore, setOpponentScore] = useState(opponentScoreValue !== undefined ? opponentScoreValue : null);
+const ScoreEntry = ({
+  holeNumber = 1,
+  par = 3,
+  onScoreChange,
+  onAdvance,
+  onCancel,
+  onDiscard,
+  onPrev,
+  onNext,
+  totalHoles = 9,
+  scoreValue,
+  opponentScoreValue,
+  allScores = {},
+  allOpponentScores = {},
+  holesData = [],
+  onGoToHole,
+  players = [],
+  opponentId,
+  onSelectOpponent,
+  roundName,
+  error,
+  playerName,
+  userStrokes,
+  userRelative,
+  opponentStrokes,
+  opponentRelative,
+}) => {
+  const [score, setScore] = useState(
+    scoreValue !== undefined ? scoreValue : null,
+  );
+  const [opponentScore, setOpponentScore] = useState(
+    opponentScoreValue !== undefined ? opponentScoreValue : null,
+  );
   const [prevHole, setPrevHole] = useState(holeNumber);
   const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
 
   if (holeNumber !== prevHole) {
     setPrevHole(holeNumber);
     setScore(scoreValue !== undefined ? scoreValue : null);
-    setOpponentScore(opponentScoreValue !== undefined ? opponentScoreValue : null);
+    setOpponentScore(
+      opponentScoreValue !== undefined ? opponentScoreValue : null,
+    );
   }
 
   const handleScoreUpdate = (newVal) => {
@@ -27,26 +67,28 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
   };
 
   const formatRelativeScore = (relative) => {
-    if (relative === 0) return 'E';
+    if (relative === 0) return "E";
     return relative > 0 ? `+${relative}` : `${relative}`;
   };
 
   // Quick Win: Visual feedback based on score vs par
   const getScoreColor = (s) => {
-    if (s === null) return 'text-white border-slate-700 bg-slate-800/50';
-    if (s < par) return 'text-kelly-green border-kelly-green bg-kelly-green/10';
-    if (s > par) return 'text-red-500 border-red-500 bg-red-500/10';
-    return 'text-white border-slate-700 bg-slate-800/50';
+    if (s === null) return "text-white border-slate-700 bg-slate-800/50";
+    if (s < par) return "text-kelly-green border-kelly-green bg-kelly-green/10";
+    if (s > par) return "text-red-500 border-red-500 bg-red-500/10";
+    return "text-white border-slate-700 bg-slate-800/50";
   };
 
   const renderScoreWithSymbol = (score, holePar) => {
-    if (score === null || score === undefined) return '-';
+    if (score === null || score === undefined) return "-";
     const diff = score - holePar;
 
-    let containerClass = "flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 font-data font-bold text-xs sm:text-sm mx-auto transition-colors";
+    let containerClass =
+      "flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 font-data font-bold text-xs sm:text-sm mx-auto transition-colors";
 
     if (diff === -1) {
-      containerClass += " rounded-full border border-kelly-green text-kelly-green";
+      containerClass +=
+        " rounded-full border border-kelly-green text-kelly-green";
     } else if (diff <= -2) {
       containerClass += " rounded-full bg-kelly-green text-dark-bg";
     } else if (diff === 1) {
@@ -57,11 +99,7 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
       containerClass += " text-white";
     }
 
-    return (
-      <div className={containerClass}>
-        {score}
-      </div>
-    );
+    return <div className={containerClass}>{score}</div>;
   };
 
   return (
@@ -88,9 +126,13 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
             className="w-full bg-dark-surface border border-slate-700 rounded-xl px-4 py-2 text-white focus:border-kelly-green focus:outline-none transition-colors text-sm"
             value={opponentId || ""}
           >
-            <option value="" disabled>Select an opponent (optional)</option>
-            {players.map(p => (
-              <option key={p.player_id} value={p.player_id}>{formatDisplayName(p.name, players)}</option>
+            <option value="" disabled>
+              Select an opponent (optional)
+            </option>
+            {players.map((p) => (
+              <option key={p.player_id} value={p.player_id}>
+                {formatDisplayName(p.name, players)}
+              </option>
             ))}
           </select>
         </div>
@@ -106,8 +148,12 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
           <ChevronLeft size={24} />
         </button>
         <div className="text-center">
-          <h2 className="font-sports text-3xl uppercase tracking-widest">Hole {holeNumber}</h2>
-          <p className="font-data text-xs text-slate-500 uppercase">Par {par}</p>
+          <h2 className="font-sports text-3xl uppercase tracking-widest">
+            Hole {holeNumber}
+          </h2>
+          <p className="font-data text-xs text-slate-500 uppercase">
+            Par {par}
+          </p>
         </div>
         <button
           onClick={onNext}
@@ -120,11 +166,11 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
 
       {/* Main Stepper: Massive touch targets */}
       <div className="flex-1 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 overflow-hidden">
-
         {/* User Stepper */}
         <div className="flex flex-col items-center gap-4">
           <div className="text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
-            {formatDisplayName(playerName, players)} ({formatRelativeScore(userRelative)}) {userStrokes}
+            {formatDisplayName(playerName, players)} (
+            {formatRelativeScore(userRelative)}) {userStrokes}
           </div>
           <AnimatePresence mode="wait">
             <motion.div
@@ -144,7 +190,7 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
                   className="text-6xl md:text-7xl font-data font-black"
                 >
-                  {score === null ? '-' : score}
+                  {score === null ? "-" : score}
                 </motion.span>
               </AnimatePresence>
             </motion.div>
@@ -152,7 +198,9 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
 
           <div className="flex items-center gap-4 md:gap-6">
             <button
-              onClick={() => handleScoreUpdate(score === null ? 1 : Math.max(1, score - 1))}
+              onClick={() =>
+                handleScoreUpdate(score === null ? 1 : Math.max(1, score - 1))
+              }
               className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-dark-surface border border-slate-700 flex items-center justify-center active:bg-slate-800 active:scale-95 transition-all"
             >
               <Minus size={24} />
@@ -176,7 +224,7 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
                 for (const p of players) {
                   if (p.player_id) playersMap.set(p.player_id, p);
                 }
-                const oppName = playersMap.get(opponentId)?.name || 'Opponent';
+                const oppName = playersMap.get(opponentId)?.name || "Opponent";
                 return `${formatDisplayName(oppName, players)} (${formatRelativeScore(opponentRelative)}) ${opponentStrokes}`;
               })()}
             </div>
@@ -198,7 +246,7 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     className="text-6xl md:text-7xl font-data font-black"
                   >
-                    {opponentScore === null ? '-' : opponentScore}
+                    {opponentScore === null ? "-" : opponentScore}
                   </motion.span>
                 </AnimatePresence>
               </motion.div>
@@ -206,14 +254,22 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
 
             <div className="flex items-center gap-4 md:gap-6">
               <button
-                onClick={() => handleOpponentScoreUpdate(opponentScore === null ? 1 : Math.max(1, opponentScore - 1))}
+                onClick={() =>
+                  handleOpponentScoreUpdate(
+                    opponentScore === null ? 1 : Math.max(1, opponentScore - 1),
+                  )
+                }
                 className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-dark-surface border border-slate-700 flex items-center justify-center active:bg-slate-800 active:scale-95 transition-all"
               >
                 <Minus size={24} />
               </button>
 
               <button
-                onClick={() => handleOpponentScoreUpdate(opponentScore === null ? 1 : opponentScore + 1)}
+                onClick={() =>
+                  handleOpponentScoreUpdate(
+                    opponentScore === null ? 1 : opponentScore + 1,
+                  )
+                }
                 className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-kelly-green text-dark-bg flex items-center justify-center active:scale-95 transition-all"
               >
                 <Plus size={24} />
@@ -221,7 +277,6 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
             </div>
           </div>
         )}
-
       </div>
 
       {/* Detailed Scorecard Grid */}
@@ -229,58 +284,60 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
         <div className="overflow-x-auto w-full pb-2">
           <div className="min-w-max border border-slate-800 rounded-xl overflow-hidden bg-dark-surface">
             {/* Hole Row */}
-          <div className="flex border-b border-slate-800">
-            <div className="w-16 sm:w-20 shrink-0 bg-slate-900/50 p-2 flex items-center justify-center border-r border-slate-800 text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-              Hole
-            </div>
-            {holesData.map((h) => (
-              <div
-                key={`hole-${h.hole}`}
-                onClick={() => onGoToHole && onGoToHole(h.hole)}
-                className={`w-10 sm:w-12 shrink-0 p-2 flex items-center justify-center font-sports text-sm sm:text-base border-r border-slate-800 cursor-pointer transition-colors
-                  ${h.hole === holeNumber ? 'bg-kelly-green/20 text-kelly-green' : 'text-slate-300 hover:bg-slate-800/50'}
-                `}
-              >
-                {h.hole}
+            <div className="flex border-b border-slate-800">
+              <div className="w-16 sm:w-20 shrink-0 bg-slate-900/50 p-2 flex items-center justify-center border-r border-slate-800 text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                Hole
               </div>
-            ))}
-          </div>
+              {holesData.map((h) => (
+                <div
+                  key={`hole-${h.hole}`}
+                  onClick={() => onGoToHole && onGoToHole(h.hole)}
+                  className={`w-10 sm:w-12 shrink-0 p-2 flex items-center justify-center font-sports text-sm sm:text-base border-r border-slate-800 cursor-pointer transition-colors
+                  ${h.hole === holeNumber ? "bg-kelly-green/20 text-kelly-green" : "text-slate-300 hover:bg-slate-800/50"}
+                `}
+                >
+                  {h.hole}
+                </div>
+              ))}
+            </div>
 
-          {/* Par Row */}
-          <div className="flex border-b border-slate-800">
-            <div className="w-16 sm:w-20 shrink-0 bg-slate-900/50 p-2 flex items-center justify-center border-r border-slate-800 text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-              Par
-            </div>
-            {holesData.map((h) => (
-              <div
-                key={`par-${h.hole}`}
-                onClick={() => onGoToHole && onGoToHole(h.hole)}
-                className={`w-10 sm:w-12 shrink-0 p-2 flex items-center justify-center font-data text-xs sm:text-sm border-r border-slate-800 cursor-pointer transition-colors text-slate-500
-                  ${h.hole === holeNumber ? 'bg-kelly-green/10' : 'hover:bg-slate-800/50'}
-                `}
-              >
-                {h.par}
+            {/* Par Row */}
+            <div className="flex border-b border-slate-800">
+              <div className="w-16 sm:w-20 shrink-0 bg-slate-900/50 p-2 flex items-center justify-center border-r border-slate-800 text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                Par
               </div>
-            ))}
-          </div>
+              {holesData.map((h) => (
+                <div
+                  key={`par-${h.hole}`}
+                  onClick={() => onGoToHole && onGoToHole(h.hole)}
+                  className={`w-10 sm:w-12 shrink-0 p-2 flex items-center justify-center font-data text-xs sm:text-sm border-r border-slate-800 cursor-pointer transition-colors text-slate-500
+                  ${h.hole === holeNumber ? "bg-kelly-green/10" : "hover:bg-slate-800/50"}
+                `}
+                >
+                  {h.par}
+                </div>
+              ))}
+            </div>
 
-          {/* Player Score Row */}
-          <div className={`flex ${opponentId ? 'border-b border-slate-800' : ''}`}>
-            <div className="w-16 sm:w-20 shrink-0 bg-slate-900/50 p-2 flex items-center justify-center border-r border-slate-800 text-[9px] sm:text-[10px] font-bold text-white uppercase tracking-widest truncate">
-              {formatDisplayName(playerName, players).split(' ')[0]}
-            </div>
-            {holesData.map((h) => (
-              <div
-                key={`score-${h.hole}`}
-                onClick={() => onGoToHole && onGoToHole(h.hole)}
-                className={`w-10 sm:w-12 shrink-0 p-1 flex items-center justify-center border-r border-slate-800 cursor-pointer transition-colors
-                  ${h.hole === holeNumber ? 'bg-kelly-green/10' : 'hover:bg-slate-800/50'}
-                `}
-              >
-                {renderScoreWithSymbol(allScores[h.hole], h.par)}
+            {/* Player Score Row */}
+            <div
+              className={`flex ${opponentId ? "border-b border-slate-800" : ""}`}
+            >
+              <div className="w-16 sm:w-20 shrink-0 bg-slate-900/50 p-2 flex items-center justify-center border-r border-slate-800 text-[9px] sm:text-[10px] font-bold text-white uppercase tracking-widest truncate">
+                {formatDisplayName(playerName, players).split(" ")[0]}
               </div>
-            ))}
-          </div>
+              {holesData.map((h) => (
+                <div
+                  key={`score-${h.hole}`}
+                  onClick={() => onGoToHole && onGoToHole(h.hole)}
+                  className={`w-10 sm:w-12 shrink-0 p-1 flex items-center justify-center border-r border-slate-800 cursor-pointer transition-colors
+                  ${h.hole === holeNumber ? "bg-kelly-green/10" : "hover:bg-slate-800/50"}
+                `}
+                >
+                  {renderScoreWithSymbol(allScores[h.hole], h.par)}
+                </div>
+              ))}
+            </div>
 
             {/* Opponent Score Row */}
             {opponentId && (
@@ -291,8 +348,8 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
                     for (const p of players) {
                       if (p.player_id) playersMap.set(p.player_id, p);
                     }
-                    const oppName = playersMap.get(opponentId)?.name || 'Opp';
-                    return formatDisplayName(oppName, players).split(' ')[0];
+                    const oppName = playersMap.get(opponentId)?.name || "Opp";
+                    return formatDisplayName(oppName, players).split(" ")[0];
                   })()}
                 </div>
                 {holesData.map((h) => (
@@ -300,7 +357,7 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
                     key={`opp-score-${h.hole}`}
                     onClick={() => onGoToHole && onGoToHole(h.hole)}
                     className={`w-10 sm:w-12 shrink-0 p-1 flex items-center justify-center border-r border-slate-800 cursor-pointer transition-colors
-                      ${h.hole === holeNumber ? 'bg-kelly-green/10' : 'hover:bg-slate-800/50'}
+                      ${h.hole === holeNumber ? "bg-kelly-green/10" : "hover:bg-slate-800/50"}
                     `}
                   >
                     {renderScoreWithSymbol(allOpponentScores[h.hole], h.par)}
@@ -314,10 +371,16 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
         {/* Actions */}
         <div className="grid grid-cols-2 gap-4 mt-8">
           <div className="grid grid-cols-2 gap-2">
-            <button onClick={onCancel} className="flex items-center justify-center gap-2 py-4 rounded-xl font-bold bg-slate-800 text-slate-400 text-xs">
+            <button
+              onClick={onCancel}
+              className="flex items-center justify-center gap-2 py-4 rounded-xl font-bold bg-slate-800 text-slate-400 text-xs"
+            >
               <X size={16} /> CANCEL
             </button>
-            <button onClick={() => setIsDiscardModalOpen(true)} className="flex items-center justify-center gap-2 py-4 rounded-xl font-bold border border-red-900/30 text-red-500/70 text-xs hover:bg-red-950/20">
+            <button
+              onClick={() => setIsDiscardModalOpen(true)}
+              className="flex items-center justify-center gap-2 py-4 rounded-xl font-bold border border-red-900/30 text-red-500/70 text-xs hover:bg-red-950/20"
+            >
               <RotateCcw size={16} /> DISCARD
             </button>
           </div>
@@ -326,7 +389,8 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
             disabled={score === null || (opponentId && opponentScore === null)}
             className="flex items-center justify-center gap-2 py-4 rounded-xl font-bold bg-kelly-green text-dark-bg shadow-[0_0_20px_rgba(76,187,23,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Check size={18} /> {holeNumber >= totalHoles ? "FINISH ROUND" : "NEXT HOLE"}
+            <Check size={18} />{" "}
+            {holeNumber >= totalHoles ? "FINISH ROUND" : "NEXT HOLE"}
           </button>
         </div>
       </div>
@@ -366,7 +430,8 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
                     Discard Round?
                   </Dialog.Title>
                   <Dialog.Description className="text-slate-400 text-sm mb-8">
-                    Are you sure you want to discard this round? This action cannot be undone and your progress will be lost.
+                    Are you sure you want to discard this round? This action
+                    cannot be undone and your progress will be lost.
                   </Dialog.Description>
 
                   <div className="flex gap-4">
@@ -392,7 +457,7 @@ const ScoreEntry = ({ holeNumber = 1, par = 3, onScoreChange, onAdvance, onCance
           </Dialog>
         )}
       </AnimatePresence>
-</div>
+    </div>
   );
 };
 

@@ -1,15 +1,58 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { ShieldAlert, Users, CalendarDays, ClipboardList, Map as MapIcon, UserCog, Edit, Trash2, Check, X, Settings, RefreshCw, BookOpen, Star, Trophy } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
-import { getPlayers, addPlayer, updatePlayer, deletePlayer, getRounds, addRound, updateRoundStatus, updateRoundSeason, deleteRound, getScores, addScore, updateScore, deleteScore, getCourses, addCourse, updateCourse, deleteCourse, getCoordinators, addCoordinator, removeCoordinator, getSettings, updateLiveSeason, updateCupFinaleSeason, addArchivedSeason, removeArchivedSeason, recalculateCupPointsForEvent } from '../db';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
-import { useAuth } from '../contexts/AuthContext';
-import { formatDisplayName } from '../utils/format';
+import React, { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
+import {
+  ShieldAlert,
+  Users,
+  CalendarDays,
+  ClipboardList,
+  Map as MapIcon,
+  UserCog,
+  Edit,
+  Trash2,
+  Check,
+  X,
+  Settings,
+  RefreshCw,
+  BookOpen,
+  Star,
+  Trophy,
+} from "lucide-react";
+import { v4 as uuidv4 } from "uuid";
+import {
+  getPlayers,
+  addPlayer,
+  updatePlayer,
+  deletePlayer,
+  getRounds,
+  addRound,
+  updateRoundStatus,
+  updateRoundSeason,
+  deleteRound,
+  getScores,
+  addScore,
+  updateScore,
+  deleteScore,
+  getCourses,
+  addCourse,
+  updateCourse,
+  deleteCourse,
+  getCoordinators,
+  addCoordinator,
+  removeCoordinator,
+  getSettings,
+  updateLiveSeason,
+  updateCupFinaleSeason,
+  addArchivedSeason,
+  removeArchivedSeason,
+  recalculateCupPointsForEvent,
+} from "../db";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "../firebase";
+import { useAuth } from "../contexts/AuthContext";
+import { formatDisplayName } from "../utils/format";
 
 function Admin() {
-  const [activeTab, setActiveTab] = useState('players');
+  const [activeTab, setActiveTab] = useState("players");
   const auth = useAuth();
   const currentUser = auth.currentUser;
   const isAdmin = auth.isAdmin;
@@ -20,21 +63,30 @@ function Admin() {
     return (
       <div className="min-h-screen bg-dark-bg text-white p-6 flex flex-col items-center justify-center font-sans">
         <ShieldAlert size={64} className="text-red-500 mb-6" />
-        <h2 className="font-sports text-4xl uppercase tracking-widest text-white mb-4">Unauthorized Access</h2>
-        <p className="text-slate-400 text-center max-w-md">You do not have permission to access the admin dashboard. Contact the administrator if you believe this is a mistake.</p>
+        <h2 className="font-sports text-4xl uppercase tracking-widest text-white mb-4">
+          Unauthorized Access
+        </h2>
+        <p className="text-slate-400 text-center max-w-md">
+          You do not have permission to access the admin dashboard. Contact the
+          administrator if you believe this is a mistake.
+        </p>
       </div>
     );
   }
 
   const tabs = [
-    { id: 'players', label: 'Manage Players', icon: Users },
-    { id: 'rounds', label: 'Manage Rounds', icon: CalendarDays },
-    { id: 'events', label: 'Manage Events', icon: CalendarDays },
-    { id: 'scores', label: 'Manage Scores', icon: ClipboardList },
+    { id: "players", label: "Manage Players", icon: Users },
+    { id: "rounds", label: "Manage Rounds", icon: CalendarDays },
+    { id: "events", label: "Manage Events", icon: CalendarDays },
+    { id: "scores", label: "Manage Scores", icon: ClipboardList },
   ];
   if (isAdmin) {
-    tabs.push({ id: 'courses', label: 'Manage Courses', icon: MapIcon });
-    tabs.push({ id: 'coordinators', label: 'Manage Coordinators', icon: UserCog });
+    tabs.push({ id: "courses", label: "Manage Courses", icon: MapIcon });
+    tabs.push({
+      id: "coordinators",
+      label: "Manage Coordinators",
+      icon: UserCog,
+    });
   }
 
   return (
@@ -42,9 +94,12 @@ function Admin() {
       <div className="mb-8 border-b border-slate-800 pb-4 flex justify-between items-start md:items-center flex-col md:flex-row gap-4 md:gap-0">
         <div>
           <h2 className="font-sports text-4xl uppercase tracking-tighter text-white flex items-center gap-3">
-            <ShieldAlert className="text-kelly-green" size={32} /> Admin Dashboard
+            <ShieldAlert className="text-kelly-green" size={32} /> Admin
+            Dashboard
           </h2>
-          <p className="font-data text-[10px] text-slate-500 uppercase tracking-[0.2em]">System Management</p>
+          <p className="font-data text-[10px] text-slate-500 uppercase tracking-[0.2em]">
+            System Management
+          </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
           <a
@@ -61,13 +116,14 @@ function Admin() {
             rel="noopener noreferrer"
             className="flex items-center gap-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white px-4 py-2 rounded-xl transition-all border border-slate-800 hover:border-slate-600 text-xs font-bold uppercase tracking-wider"
           >
-            <BookOpen size={16} className="text-kelly-green" /> Coordinator Guide
+            <BookOpen size={16} className="text-kelly-green" /> Coordinator
+            Guide
           </a>
         </div>
       </div>
 
       <div className="flex overflow-x-auto mb-8 bg-slate-800/50 p-1 rounded-xl w-full sm:w-auto sm:inline-flex no-scrollbar">
-        {tabs.map(tab => {
+        {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
@@ -76,8 +132,8 @@ function Admin() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
                 isActive
-                  ? 'bg-kelly-green text-dark-bg'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  ? "bg-kelly-green text-dark-bg"
+                  : "text-slate-400 hover:text-white hover:bg-slate-700/50"
               }`}
             >
               <Icon size={16} /> {tab.label}
@@ -87,12 +143,12 @@ function Admin() {
       </div>
 
       <div className="admin-content">
-        {activeTab === 'players' && <AdminPlayers />}
-        {activeTab === 'rounds' && <AdminRounds />}
-        {activeTab === 'events' && <AdminEventsList />}
-        {activeTab === 'scores' && <AdminScores />}
-        {activeTab === 'courses' && isAdmin && <AdminCourses />}
-        {activeTab === 'coordinators' && isAdmin && <AdminCoordinators />}
+        {activeTab === "players" && <AdminPlayers />}
+        {activeTab === "rounds" && <AdminRounds />}
+        {activeTab === "events" && <AdminEventsList />}
+        {activeTab === "scores" && <AdminScores />}
+        {activeTab === "courses" && isAdmin && <AdminCourses />}
+        {activeTab === "coordinators" && isAdmin && <AdminCoordinators />}
       </div>
     </div>
   );
@@ -101,8 +157,8 @@ function Admin() {
 function AdminCoordinators() {
   const [coordinators, setCoordinators] = useState([]);
   const [players, setPlayers] = useState([]);
-  const [selectedPlayerId, setSelectedPlayerId] = useState('');
-  const [error, setError] = useState('');
+  const [selectedPlayerId, setSelectedPlayerId] = useState("");
+  const [error, setError] = useState("");
 
   const loadData = async () => {
     setCoordinators(await getCoordinators());
@@ -115,18 +171,20 @@ function AdminCoordinators() {
 
   const handleAddCoordinator = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     if (!selectedPlayerId) return;
 
-    const player = players.find(p => p.player_id === selectedPlayerId);
+    const player = players.find((p) => p.player_id === selectedPlayerId);
     if (!player || !player.uid) {
-      setError("This player does not have an associated user account (UID) and cannot be made a coordinator.");
+      setError(
+        "This player does not have an associated user account (UID) and cannot be made a coordinator.",
+      );
       return;
     }
 
     try {
       await addCoordinator(player.uid, player.email || null, player.name);
-      setSelectedPlayerId('');
+      setSelectedPlayerId("");
       loadData();
     } catch (error) {
       console.error("Error adding coordinator:", error);
@@ -135,7 +193,7 @@ function AdminCoordinators() {
   };
 
   const handleRemoveCoordinator = async (uid) => {
-    setError('');
+    setError("");
     if (window.confirm("Are you sure you want to remove this coordinator?")) {
       try {
         await removeCoordinator(uid);
@@ -174,12 +232,18 @@ function AdminCoordinators() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
-                {coordinators.map(coord => (
-                  <tr key={coord.uid} className="hover:bg-dark-surface/50 transition-colors">
+                {coordinators.map((coord) => (
+                  <tr
+                    key={coord.uid}
+                    className="hover:bg-dark-surface/50 transition-colors"
+                  >
                     <td className="p-4 font-bold">{coord.name}</td>
                     <td className="p-4 text-slate-300">{coord.email}</td>
                     <td className="p-4 text-right">
-                      <button onClick={() => handleRemoveCoordinator(coord.uid)} className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-xs uppercase">
+                      <button
+                        onClick={() => handleRemoveCoordinator(coord.uid)}
+                        className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-xs uppercase"
+                      >
                         <Trash2 size={14} /> Remove
                       </button>
                     </td>
@@ -198,26 +262,39 @@ function AdminCoordinators() {
         <div className="bg-dark-surface border border-slate-800 rounded-2xl p-6 shadow-xl">
           <form onSubmit={handleAddCoordinator} className="flex flex-col gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="coordinatorSelect">Select Player</label>
+              <label
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                htmlFor="coordinatorSelect"
+              >
+                Select Player
+              </label>
               <select
                 id="coordinatorSelect"
                 value={selectedPlayerId}
                 onChange={(e) => {
                   setSelectedPlayerId(e.target.value);
-                  setError('');
+                  setError("");
                 }}
                 required
                 className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
               >
                 <option value="">-- Select a player --</option>
-                {players.filter(p => p.uid && !coordinators.some(c => c.uid === p.uid)).map(player => (
-                  <option key={player.player_id} value={player.player_id}>
-                    {formatDisplayName(player.name, players)} ({player.email || 'No email'})
-                  </option>
-                ))}
+                {players
+                  .filter(
+                    (p) => p.uid && !coordinators.some((c) => c.uid === p.uid),
+                  )
+                  .map((player) => (
+                    <option key={player.player_id} value={player.player_id}>
+                      {formatDisplayName(player.name, players)} (
+                      {player.email || "No email"})
+                    </option>
+                  ))}
               </select>
             </div>
-            <button type="submit" className="w-full bg-kelly-green text-dark-bg py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors mt-2">
+            <button
+              type="submit"
+              className="w-full bg-kelly-green text-dark-bg py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors mt-2"
+            >
               Add Coordinator
             </button>
           </form>
@@ -229,11 +306,11 @@ function AdminCoordinators() {
 
 function AdminPlayers() {
   const [players, setPlayers] = useState([]);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [uid, setUid] = useState('');
-  const [level, setLevel] = useState('fun');
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [uid, setUid] = useState("");
+  const [level, setLevel] = useState("fun");
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState(null);
 
@@ -263,11 +340,11 @@ function AdminPlayers() {
       await addPlayer(playerData);
     }
 
-    setFirstName('');
-    setLastName('');
-    setEmail('');
-    setUid('');
-    setLevel('fun');
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setUid("");
+    setLevel("fun");
     loadPlayers();
   };
 
@@ -275,27 +352,31 @@ function AdminPlayers() {
     setEditingId(player.player_id);
 
     // Attempt to split the name. "First Last Initial." or "First Last"
-    const nameParts = player.name ? player.name.split(' ') : [];
+    const nameParts = player.name ? player.name.split(" ") : [];
     if (nameParts.length >= 2) {
-      setFirstName(nameParts.slice(0, -1).join(' '));
+      setFirstName(nameParts.slice(0, -1).join(" "));
       // Remove trailing period if present
       let lName = nameParts[nameParts.length - 1];
-      if (lName.endsWith('.')) {
-          lName = lName.slice(0, -1);
+      if (lName.endsWith(".")) {
+        lName = lName.slice(0, -1);
       }
       setLastName(lName);
     } else {
-      setFirstName(player.name || '');
-      setLastName('');
+      setFirstName(player.name || "");
+      setLastName("");
     }
 
-    setEmail(player.email || '');
-    setUid(player.uid || '');
-    setLevel(player.level || 'fun');
+    setEmail(player.email || "");
+    setUid(player.uid || "");
+    setLevel(player.level || "fun");
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this player? This will also delete their scores.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this player? This will also delete their scores.",
+      )
+    ) {
       await deletePlayer(id);
       loadPlayers();
     }
@@ -303,22 +384,26 @@ function AdminPlayers() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setFirstName('');
-    setLastName('');
-    setEmail('');
-    setUid('');
-    setLevel('fun');
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setUid("");
+    setLevel("fun");
   };
 
   const handleGenerateMissingUids = async () => {
-    const playersMissingUid = players.filter(p => !p.uid);
+    const playersMissingUid = players.filter((p) => !p.uid);
     if (playersMissingUid.length === 0) {
       setError("All players already have a UID.");
       setTimeout(() => setError(null), 3000);
       return;
     }
 
-    if (window.confirm(`Are you sure you want to generate UIDs for ${playersMissingUid.length} players?`)) {
+    if (
+      window.confirm(
+        `Are you sure you want to generate UIDs for ${playersMissingUid.length} players?`,
+      )
+    ) {
       for (const player of playersMissingUid) {
         await updatePlayer(player.player_id, { uid: uuidv4() });
       }
@@ -334,11 +419,15 @@ function AdminPlayers() {
             <Users size={20} className="text-kelly-green" /> Players List
           </h3>
           <div className="flex items-center gap-2">
-            {error && <div className="bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider">{error}</div>}
+            {error && (
+              <div className="bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider">
+                {error}
+              </div>
+            )}
             <button
-            onClick={handleGenerateMissingUids}
-            className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase"
-          >
+              onClick={handleGenerateMissingUids}
+              className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase"
+            >
               <RefreshCw size={14} /> Generate Missing UIDs
             </button>
           </div>
@@ -360,21 +449,39 @@ function AdminPlayers() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
-                {players.map(player => (
-                  <tr key={player.player_id} className="hover:bg-dark-surface/50 transition-colors">
+                {players.map((player) => (
+                  <tr
+                    key={player.player_id}
+                    className="hover:bg-dark-surface/50 transition-colors"
+                  >
                     <td className="p-4 font-bold flex items-center gap-2">
                       {formatDisplayName(player.name, players)}
-                      {player.level === 'cup' && <Trophy size={14} className="text-yellow-500" />}
-                      {player.level === 'competitive' && <Star size={14} className="text-yellow-400 fill-current" />}
+                      {player.level === "cup" && (
+                        <Trophy size={14} className="text-yellow-500" />
+                      )}
+                      {player.level === "competitive" && (
+                        <Star
+                          size={14}
+                          className="text-yellow-400 fill-current"
+                        />
+                      )}
                     </td>
                     <td className="p-4 text-slate-300">{player.email}</td>
-                    <td className="p-4 text-slate-400 text-xs font-mono">{player.uid || 'N/A'}</td>
+                    <td className="p-4 text-slate-400 text-xs font-mono">
+                      {player.uid || "N/A"}
+                    </td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <button onClick={() => handleEdit(player)} className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase">
+                        <button
+                          onClick={() => handleEdit(player)}
+                          className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase"
+                        >
                           <Edit size={14} /> Edit
                         </button>
-                        <button onClick={() => handleDelete(player.player_id)} className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-xs uppercase">
+                        <button
+                          onClick={() => handleDelete(player.player_id)}
+                          className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-xs uppercase"
+                        >
                           <Trash2 size={14} /> Delete
                         </button>
                       </div>
@@ -389,13 +496,19 @@ function AdminPlayers() {
 
       <div>
         <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
-          <Edit size={20} className="text-kelly-green" /> {editingId ? 'Edit Player' : 'Add New Player'}
+          <Edit size={20} className="text-kelly-green" />{" "}
+          {editingId ? "Edit Player" : "Add New Player"}
         </h3>
 
         <div className="bg-dark-surface border border-slate-800 rounded-2xl p-6 shadow-xl">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="playerFirstName">First Name *</label>
+              <label
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                htmlFor="playerFirstName"
+              >
+                First Name *
+              </label>
               <input
                 type="text"
                 id="playerFirstName"
@@ -407,7 +520,12 @@ function AdminPlayers() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="playerLastName">Last Name *</label>
+              <label
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                htmlFor="playerLastName"
+              >
+                Last Name *
+              </label>
               <input
                 type="text"
                 id="playerLastName"
@@ -419,7 +537,12 @@ function AdminPlayers() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="playerEmail">Email</label>
+              <label
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                htmlFor="playerEmail"
+              >
+                Email
+              </label>
               <input
                 type="email"
                 id="playerEmail"
@@ -430,7 +553,12 @@ function AdminPlayers() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="playerUid">Firebase UID</label>
+              <label
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                htmlFor="playerUid"
+              >
+                Firebase UID
+              </label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -452,7 +580,12 @@ function AdminPlayers() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="playerLevel">Player Level</label>
+              <label
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                htmlFor="playerLevel"
+              >
+                Player Level
+              </label>
               <select
                 id="playerLevel"
                 className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
@@ -466,11 +599,18 @@ function AdminPlayers() {
             </div>
 
             <div className="mt-2 flex flex-col gap-3">
-              <button type="submit" className="w-full bg-kelly-green text-dark-bg py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors flex items-center justify-center gap-2">
-                <Check size={16} /> {editingId ? 'Update Player' : 'Add Player'}
+              <button
+                type="submit"
+                className="w-full bg-kelly-green text-dark-bg py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors flex items-center justify-center gap-2"
+              >
+                <Check size={16} /> {editingId ? "Update Player" : "Add Player"}
               </button>
               {editingId && (
-                <button type="button" onClick={cancelEdit} className="w-full bg-slate-700 text-white py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-slate-600 transition-colors flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="w-full bg-slate-700 text-white py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-slate-600 transition-colors flex items-center justify-center gap-2"
+                >
                   <X size={16} /> Cancel Edit
                 </button>
               )}
@@ -484,19 +624,19 @@ function AdminPlayers() {
 
 function AdminRounds() {
   const [rounds, setRounds] = useState([]);
-  const [name, setName] = useState('');
-  const [date, setDate] = useState('');
-  const [courseId, setCourseId] = useState('');
+  const [name, setName] = useState("");
+  const [date, setDate] = useState("");
+  const [courseId, setCourseId] = useState("");
   const [isSignature, setIsSignature] = useState(false);
-  const [scoreLimit, setScoreLimit] = useState('');
-  const [roundFormat, setRoundFormat] = useState('Open');
-  const [cutLine, setCutLine] = useState('');
-  const [numberOfRounds, setNumberOfRounds] = useState('');
+  const [scoreLimit, setScoreLimit] = useState("");
+  const [roundFormat, setRoundFormat] = useState("Open");
+  const [cutLine, setCutLine] = useState("");
+  const [numberOfRounds, setNumberOfRounds] = useState("");
   const [courses, setCourses] = useState([]);
   const [showArchived, setShowArchived] = useState(false);
   const [seasons, setSeasons] = useState([]);
-  const [liveSeason, setLiveSeason] = useState('');
-  const [cupFinaleSeason, setCupFinaleSeason] = useState('');
+  const [liveSeason, setLiveSeason] = useState("");
+  const [cupFinaleSeason, setCupFinaleSeason] = useState("");
   const [archivedSeasons, setArchivedSeasons] = useState([]);
 
   const loadData = async () => {
@@ -505,11 +645,13 @@ function AdminRounds() {
     setCourses(await getCourses());
 
     const settings = await getSettings();
-    setLiveSeason(settings.live_season || '');
-    setCupFinaleSeason(settings.cup_finale_season || '');
+    setLiveSeason(settings.live_season || "");
+    setCupFinaleSeason(settings.cup_finale_season || "");
     setArchivedSeasons(settings.archived_seasons || []);
 
-    const uniqueSeasons = [...new Set(allRounds.map(r => r.season).filter(Boolean))];
+    const uniqueSeasons = [
+      ...new Set(allRounds.map((r) => r.season).filter(Boolean)),
+    ];
     setSeasons(uniqueSeasons);
   };
 
@@ -521,58 +663,68 @@ function AdminRounds() {
     e.preventDefault();
     if (!date || !courseId) return;
 
-    const selectedCourse = courses.find(c => c.course_id === courseId);
+    const selectedCourse = courses.find((c) => c.course_id === courseId);
 
     // Grouping event ID
     const event_id = uuidv4();
 
     const baseRound = {
       date,
-      location: selectedCourse ? selectedCourse.name : 'Unknown Location',
+      location: selectedCourse ? selectedCourse.name : "Unknown Location",
       course_id: courseId,
       is_signature: isSignature,
-      score_limit: ['Tour', 'Match Play', 'Cut Down'].includes(roundFormat) ? 1 : (scoreLimit ? parseInt(scoreLimit, 10) : null),
+      score_limit: ["Tour", "Match Play", "Cut Down"].includes(roundFormat)
+        ? 1
+        : scoreLimit
+          ? parseInt(scoreLimit, 10)
+          : null,
       round_format: roundFormat,
       event_id: event_id,
-      ...(roundFormat === 'Cut Down' && cutLine && { cut_line: parseInt(cutLine, 10) }),
-      ...((roundFormat === 'Cut Down' || roundFormat === 'Tour') && numberOfRounds && { number_of_rounds: parseInt(numberOfRounds, 10) })
+      ...(roundFormat === "Cut Down" &&
+        cutLine && { cut_line: parseInt(cutLine, 10) }),
+      ...((roundFormat === "Cut Down" || roundFormat === "Tour") &&
+        numberOfRounds && { number_of_rounds: parseInt(numberOfRounds, 10) }),
     };
 
     const numRounds = parseInt(numberOfRounds, 10);
 
-    if (!isNaN(numRounds) && numRounds > 1 && (roundFormat === 'Cut Down' || roundFormat === 'Tour')) {
+    if (
+      !isNaN(numRounds) &&
+      numRounds > 1 &&
+      (roundFormat === "Cut Down" || roundFormat === "Tour")
+    ) {
       for (let i = 1; i <= numRounds; i++) {
         await addRound({
           ...baseRound,
-          name: `${name} - Round ${i}`
+          name: `${name} - Round ${i}`,
         });
       }
     } else {
       await addRound({
         ...baseRound,
-        name
+        name,
       });
     }
 
     // Reset form
-    setName('');
-    setDate('');
-    setCourseId('');
+    setName("");
+    setDate("");
+    setCourseId("");
     setIsSignature(false);
-    setScoreLimit('');
-    setRoundFormat('Open');
-    setCutLine('');
-    setNumberOfRounds('');
+    setScoreLimit("");
+    setRoundFormat("Open");
+    setCutLine("");
+    setNumberOfRounds("");
     loadData();
   };
 
   const handleStatusChange = async (id, newStatus, round) => {
     await updateRoundStatus(id, newStatus);
-    if (newStatus.toLowerCase() === 'completed') {
-        // Calculate points when status is changed to completed, skip for Open formats
-        if (round.round_format !== 'Open') {
-          await recalculateCupPointsForEvent(id, round.is_signature);
-        }
+    if (newStatus.toLowerCase() === "completed") {
+      // Calculate points when status is changed to completed, skip for Open formats
+      if (round.round_format !== "Open") {
+        await recalculateCupPointsForEvent(id, round.is_signature);
+      }
     }
     loadData();
   };
@@ -583,7 +735,11 @@ function AdminRounds() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this round? This will also delete all associated scores.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this round? This will also delete all associated scores.",
+      )
+    ) {
       await deleteRound(id);
       loadData();
     }
@@ -602,7 +758,7 @@ function AdminRounds() {
   };
 
   const toggleSignatureStatus = async (round_id, currentStatus) => {
-    const roundRef = doc(db, 'putting_league_rounds', round_id);
+    const roundRef = doc(db, "putting_league_rounds", round_id);
     await updateDoc(roundRef, { is_signature: !currentStatus });
     loadData();
   };
@@ -616,8 +772,10 @@ function AdminRounds() {
     loadData();
   };
 
-  const filteredRounds = rounds.filter(round =>
-    showArchived ? (round.status || '').toLowerCase() === 'archived' : (round.status || '').toLowerCase() !== 'archived'
+  const filteredRounds = rounds.filter((round) =>
+    showArchived
+      ? (round.status || "").toLowerCase() === "archived"
+      : (round.status || "").toLowerCase() !== "archived",
   );
 
   return (
@@ -629,7 +787,12 @@ function AdminRounds() {
           </h3>
           <div className="bg-dark-surface border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row gap-8">
             <div className="flex-1">
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="liveSeason">Live Season</label>
+              <label
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                htmlFor="liveSeason"
+              >
+                Live Season
+              </label>
               <select
                 id="liveSeason"
                 value={liveSeason}
@@ -637,15 +800,25 @@ function AdminRounds() {
                 className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
               >
                 <option value="">-- Select Live Season --</option>
-                {seasons.map(season => (
-                  <option key={`live_${season}`} value={season}>{season}</option>
+                {seasons.map((season) => (
+                  <option key={`live_${season}`} value={season}>
+                    {season}
+                  </option>
                 ))}
               </select>
-              <p className="text-[10px] text-slate-500 mt-2">Sets the default season shown on the dashboard when no active rounds exist.</p>
+              <p className="text-[10px] text-slate-500 mt-2">
+                Sets the default season shown on the dashboard when no active
+                rounds exist.
+              </p>
             </div>
 
             <div className="flex-1 border-l border-slate-700 pl-8">
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="cupFinaleSeason">602 Cup Finale Season</label>
+              <label
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                htmlFor="cupFinaleSeason"
+              >
+                602 Cup Finale Season
+              </label>
               <select
                 id="cupFinaleSeason"
                 value={cupFinaleSeason}
@@ -653,31 +826,47 @@ function AdminRounds() {
                 className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
               >
                 <option value="">-- Select Finale Season --</option>
-                {seasons.map(season => (
-                  <option key={`finale_${season}`} value={season}>{season}</option>
+                {seasons.map((season) => (
+                  <option key={`finale_${season}`} value={season}>
+                    {season}
+                  </option>
                 ))}
               </select>
-              <p className="text-[10px] text-slate-500 mt-2">Starting strokes (-4 to E) will be automatically applied to this season.</p>
+              <p className="text-[10px] text-slate-500 mt-2">
+                Starting strokes (-4 to E) will be automatically applied to this
+                season.
+              </p>
             </div>
 
             <div className="flex-1 border-l border-slate-700 pl-8">
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Archive Seasons</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Archive Seasons
+              </label>
               {seasons.length === 0 ? (
                 <p className="text-slate-500 text-sm">No seasons available.</p>
               ) : (
                 <div className="flex flex-col gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-                  {seasons.map(season => {
+                  {seasons.map((season) => {
                     const isArchived = archivedSeasons.includes(season);
                     return (
-                      <div key={`archive_${season}`} className="flex items-center justify-between bg-dark-bg border border-slate-800 rounded p-2">
-                        <span className={`text-sm ${isArchived ? 'text-slate-500 line-through' : 'text-white'}`}>{season}</span>
+                      <div
+                        key={`archive_${season}`}
+                        className="flex items-center justify-between bg-dark-bg border border-slate-800 rounded p-2"
+                      >
+                        <span
+                          className={`text-sm ${isArchived ? "text-slate-500 line-through" : "text-white"}`}
+                        >
+                          {season}
+                        </span>
                         <button
                           onClick={() => handleToggleArchiveSeason(season)}
                           className={`text-[10px] uppercase font-bold px-2 py-1 rounded transition-colors ${
-                            isArchived ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white'
+                            isArchived
+                              ? "bg-slate-700 text-white hover:bg-slate-600"
+                              : "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white"
                           }`}
                         >
-                          {isArchived ? 'Unarchive' : 'Archive'}
+                          {isArchived ? "Unarchive" : "Archive"}
                         </button>
                       </div>
                     );
@@ -690,95 +879,144 @@ function AdminRounds() {
 
         <div>
           <div className="flex justify-between items-center mb-6">
-          <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 flex items-center gap-2">
-            <CalendarDays size={20} className="text-kelly-green" /> {showArchived ? 'Archived Rounds' : 'Round Management'}
-          </h3>
-          <button
-            onClick={() => setShowArchived(!showArchived)}
-            className="text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-colors"
-          >
-            {showArchived ? 'View Active & Completed' : 'View Archived Events'}
-          </button>
-        </div>
+            <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 flex items-center gap-2">
+              <CalendarDays size={20} className="text-kelly-green" />{" "}
+              {showArchived ? "Archived Rounds" : "Round Management"}
+            </h3>
+            <button
+              onClick={() => setShowArchived(!showArchived)}
+              className="text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-colors"
+            >
+              {showArchived
+                ? "View Active & Completed"
+                : "View Archived Events"}
+            </button>
+          </div>
 
-        {filteredRounds.length === 0 ? (
-          <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
-            {showArchived ? 'No archived rounds.' : 'No active or completed rounds added yet.'}
-          </div>
-        ) : (
-          <div className="overflow-x-auto rounded-xl border border-slate-800">
-            <table className="w-full border-collapse text-left text-sm whitespace-nowrap">
-              <thead className="bg-slate-800 text-slate-400 uppercase tracking-wider text-xs">
-                <tr>
-                  <th className="p-4 font-bold">Name</th>
-                  <th className="p-4 font-bold">Date & Location</th>
-                  <th className="p-4 font-bold">Season & Status</th>
-                  <th className="p-4 font-bold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800">
-                {filteredRounds.map(round => (
-                  <tr key={round.round_id} className="hover:bg-dark-surface/50 transition-colors">
-                    <td className="p-4 font-bold">
-                       {round.name || '-'}
-                       {round.is_signature && <Star size={12} className="inline ml-2 text-yellow-500 mb-1" />}
-                    </td>
-                    <td className="p-4">
-                      <div className="flex flex-col">
-                        <span className="text-white">{round.date && !isNaN(new Date(round.date).getTime()) ? new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'No Date'}</span>
-                        <span className="text-xs text-slate-400">{round.location}</span>
-                        {round.score_limit && (
-                          <span className="text-[10px] text-kelly-green uppercase font-bold mt-1">Limit: {round.score_limit} Scores</span>
-                        )}
-                        {round.round_format && round.round_format !== 'Open' && (
-                          <span className="text-[10px] text-yellow-500 uppercase font-bold mt-1">Format: {round.round_format}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex flex-col gap-2">
-                        <input
-                          type="text"
-                          defaultValue={round.season || ''}
-                          onBlur={(e) => handleSeasonChange(round.round_id, e.target.value)}
-                          placeholder="Season..."
-                          className="w-full max-w-[120px] bg-dark-bg border border-slate-700 rounded px-2 py-1 text-xs text-white focus:border-kelly-green focus:outline-none"
-                        />
-                        <select
-                          value={round.status}
-                          onChange={(e) => handleStatusChange(round.round_id, e.target.value, round)}
-                          className="w-full max-w-[120px] bg-dark-bg border border-slate-700 rounded px-2 py-1 text-xs text-white focus:border-kelly-green focus:outline-none appearance-none"
-                        >
-                          <option value="Active">Active</option>
-                          <option value="Completed">Completed</option>
-                          <option value="Archived">Archived</option>
-                        </select>
-                      </div>
-                    </td>
-                    <td className="p-4 text-right align-top">
-                      <div className="flex justify-end gap-2 flex-col items-end">
-                        <Link to={`/rounds/${round.round_id}`} className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-[10px] uppercase w-full justify-center">
-                          <Edit size={12} /> Manage
-                        </Link>
-                        <button onClick={() => handleDelete(round.round_id)} className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-[10px] uppercase w-full justify-center">
-                          <Trash2 size={12} /> Delete
-                        </button>
-                      </div>
-                      <div className="mt-2 text-right">
-                        <button
-                          onClick={() => toggleSignatureStatus(round.round_id, round.is_signature)}
-                          className={`text-[10px] uppercase font-bold px-2 py-1 rounded transition-colors ${round.is_signature ? 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}`}
-                        >
-                          {round.is_signature ? 'Signature Event (1.5x)' : 'Make Signature'}
-                        </button>
-                      </div>
-                    </td>
+          {filteredRounds.length === 0 ? (
+            <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
+              {showArchived
+                ? "No archived rounds."
+                : "No active or completed rounds added yet."}
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-slate-800">
+              <table className="w-full border-collapse text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-800 text-slate-400 uppercase tracking-wider text-xs">
+                  <tr>
+                    <th className="p-4 font-bold">Name</th>
+                    <th className="p-4 font-bold">Date & Location</th>
+                    <th className="p-4 font-bold">Season & Status</th>
+                    <th className="p-4 font-bold text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  {filteredRounds.map((round) => (
+                    <tr
+                      key={round.round_id}
+                      className="hover:bg-dark-surface/50 transition-colors"
+                    >
+                      <td className="p-4 font-bold">
+                        {round.name || "-"}
+                        {round.is_signature && (
+                          <Star
+                            size={12}
+                            className="inline ml-2 text-yellow-500 mb-1"
+                          />
+                        )}
+                      </td>
+                      <td className="p-4">
+                        <div className="flex flex-col">
+                          <span className="text-white">
+                            {round.date &&
+                            !isNaN(new Date(round.date).getTime())
+                              ? new Date(round.date).toLocaleDateString(
+                                  "en-US",
+                                  { timeZone: "UTC" },
+                                )
+                              : "No Date"}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            {round.location}
+                          </span>
+                          {round.score_limit && (
+                            <span className="text-[10px] text-kelly-green uppercase font-bold mt-1">
+                              Limit: {round.score_limit} Scores
+                            </span>
+                          )}
+                          {round.round_format &&
+                            round.round_format !== "Open" && (
+                              <span className="text-[10px] text-yellow-500 uppercase font-bold mt-1">
+                                Format: {round.round_format}
+                              </span>
+                            )}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex flex-col gap-2">
+                          <input
+                            type="text"
+                            defaultValue={round.season || ""}
+                            onBlur={(e) =>
+                              handleSeasonChange(round.round_id, e.target.value)
+                            }
+                            placeholder="Season..."
+                            className="w-full max-w-[120px] bg-dark-bg border border-slate-700 rounded px-2 py-1 text-xs text-white focus:border-kelly-green focus:outline-none"
+                          />
+                          <select
+                            value={round.status}
+                            onChange={(e) =>
+                              handleStatusChange(
+                                round.round_id,
+                                e.target.value,
+                                round,
+                              )
+                            }
+                            className="w-full max-w-[120px] bg-dark-bg border border-slate-700 rounded px-2 py-1 text-xs text-white focus:border-kelly-green focus:outline-none appearance-none"
+                          >
+                            <option value="Active">Active</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Archived">Archived</option>
+                          </select>
+                        </div>
+                      </td>
+                      <td className="p-4 text-right align-top">
+                        <div className="flex justify-end gap-2 flex-col items-end">
+                          <Link
+                            to={`/rounds/${round.round_id}`}
+                            className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-[10px] uppercase w-full justify-center"
+                          >
+                            <Edit size={12} /> Manage
+                          </Link>
+                          <button
+                            onClick={() => handleDelete(round.round_id)}
+                            className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-[10px] uppercase w-full justify-center"
+                          >
+                            <Trash2 size={12} /> Delete
+                          </button>
+                        </div>
+                        <div className="mt-2 text-right">
+                          <button
+                            onClick={() =>
+                              toggleSignatureStatus(
+                                round.round_id,
+                                round.is_signature,
+                              )
+                            }
+                            className={`text-[10px] uppercase font-bold px-2 py-1 rounded transition-colors ${round.is_signature ? "bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30" : "bg-slate-700 text-slate-400 hover:bg-slate-600"}`}
+                          >
+                            {round.is_signature
+                              ? "Signature Event (1.5x)"
+                              : "Make Signature"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 
@@ -789,7 +1027,12 @@ function AdminRounds() {
         <div className="bg-dark-surface border border-slate-800 rounded-2xl p-6 shadow-xl">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="name">Event Name</label>
+              <label
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                htmlFor="name"
+              >
+                Event Name
+              </label>
               <input
                 type="text"
                 id="name"
@@ -801,7 +1044,12 @@ function AdminRounds() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="date">Date *</label>
+              <label
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                htmlFor="date"
+              >
+                Date *
+              </label>
               <input
                 type="date"
                 id="date"
@@ -813,7 +1061,12 @@ function AdminRounds() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="course">Location / Venue *</label>
+              <label
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                htmlFor="course"
+              >
+                Location / Venue *
+              </label>
               <select
                 id="course"
                 value={courseId}
@@ -822,7 +1075,7 @@ function AdminRounds() {
                 className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
               >
                 <option value="">-- Select Course --</option>
-                {courses.map(course => (
+                {courses.map((course) => (
                   <option key={course.course_id} value={course.course_id}>
                     {course.name}
                   </option>
@@ -830,9 +1083,13 @@ function AdminRounds() {
               </select>
             </div>
 
-
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="roundFormat">Event Format</label>
+              <label
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                htmlFor="roundFormat"
+              >
+                Event Format
+              </label>
               <select
                 id="roundFormat"
                 value={roundFormat}
@@ -846,9 +1103,14 @@ function AdminRounds() {
               </select>
             </div>
 
-            {roundFormat === 'Cut Down' && (
+            {roundFormat === "Cut Down" && (
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="cutLine">Cut Line</label>
+                <label
+                  className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                  htmlFor="cutLine"
+                >
+                  Cut Line
+                </label>
                 <input
                   type="number"
                   id="cutLine"
@@ -862,9 +1124,14 @@ function AdminRounds() {
               </div>
             )}
 
-            {(roundFormat === 'Cut Down' || roundFormat === 'Tour') && (
+            {(roundFormat === "Cut Down" || roundFormat === "Tour") && (
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="numberOfRounds">Number of Rounds</label>
+                <label
+                  className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                  htmlFor="numberOfRounds"
+                >
+                  Number of Rounds
+                </label>
                 <input
                   type="number"
                   id="numberOfRounds"
@@ -878,9 +1145,14 @@ function AdminRounds() {
               </div>
             )}
 
-            {!['Tour', 'Match Play', 'Cut Down'].includes(roundFormat) && (
+            {!["Tour", "Match Play", "Cut Down"].includes(roundFormat) && (
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="scoreLimit">Score Submission Limit</label>
+                <label
+                  className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                  htmlFor="scoreLimit"
+                >
+                  Score Submission Limit
+                </label>
                 <input
                   type="number"
                   id="scoreLimit"
@@ -890,21 +1162,36 @@ function AdminRounds() {
                   placeholder="Leave blank for unlimited"
                   min="1"
                 />
-                <p className="text-[10px] text-slate-500 mt-2">Maximum number of scores a single player can submit for this round.</p>
+                <p className="text-[10px] text-slate-500 mt-2">
+                  Maximum number of scores a single player can submit for this
+                  round.
+                </p>
               </div>
             )}
 
-            <div className="flex items-center gap-3 p-4 bg-dark-bg border border-slate-700 rounded-xl cursor-pointer" onClick={() => setIsSignature(!isSignature)}>
-              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSignature ? 'bg-yellow-500 border-yellow-500' : 'border-slate-500'}`}>
-                 {isSignature && <Check size={14} className="text-dark-bg" />}
+            <div
+              className="flex items-center gap-3 p-4 bg-dark-bg border border-slate-700 rounded-xl cursor-pointer"
+              onClick={() => setIsSignature(!isSignature)}
+            >
+              <div
+                className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSignature ? "bg-yellow-500 border-yellow-500" : "border-slate-500"}`}
+              >
+                {isSignature && <Check size={14} className="text-dark-bg" />}
               </div>
               <div>
-                <p className="font-bold text-sm uppercase text-white">Signature Event</p>
-                <p className="text-[10px] text-slate-400 uppercase">1.5x Multiplier for 602 Cup Points</p>
+                <p className="font-bold text-sm uppercase text-white">
+                  Signature Event
+                </p>
+                <p className="text-[10px] text-slate-400 uppercase">
+                  1.5x Multiplier for 602 Cup Points
+                </p>
               </div>
             </div>
 
-            <button type="submit" className="w-full bg-kelly-green text-dark-bg py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors mt-2 flex items-center justify-center gap-2">
+            <button
+              type="submit"
+              className="w-full bg-kelly-green text-dark-bg py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors mt-2 flex items-center justify-center gap-2"
+            >
               <Check size={16} /> Create Event
             </button>
           </form>
@@ -919,12 +1206,12 @@ function AdminScores() {
   const [rounds, setRounds] = useState([]);
   const [players, setPlayers] = useState([]);
   const [editingId, setEditingId] = useState(null);
-  const [scoreValue, setScoreValue] = useState('');
+  const [scoreValue, setScoreValue] = useState("");
 
   // New Score Form State
-  const [newRoundId, setNewRoundId] = useState('');
-  const [newPlayerId, setNewPlayerId] = useState('');
-  const [newScoreValue, setNewScoreValue] = useState('');
+  const [newRoundId, setNewRoundId] = useState("");
+  const [newPlayerId, setNewPlayerId] = useState("");
+  const [newScoreValue, setNewScoreValue] = useState("");
   const [isSubmittingScore, setIsSubmittingScore] = useState(false);
   const [scoreError, setScoreError] = useState(null);
 
@@ -947,43 +1234,51 @@ function AdminScores() {
     e.preventDefault();
     setScoreError(null);
 
-    if (!newRoundId || !newPlayerId || newScoreValue === '') {
-      setScoreError('Please fill in all fields.');
+    if (!newRoundId || !newPlayerId || newScoreValue === "") {
+      setScoreError("Please fill in all fields.");
       return;
     }
 
     if (isSubmittingScore) return;
 
     // Check for score limit for this round
-    const round = rounds.find(r => r.round_id === newRoundId);
-    const limit = (round && round.score_limit) ? round.score_limit : 1;
+    const round = rounds.find((r) => r.round_id === newRoundId);
+    const limit = round && round.score_limit ? round.score_limit : 1;
 
     const existingScoresCount = scores.filter(
-      s => s.round_id === newRoundId && s.player_id === newPlayerId
+      (s) => s.round_id === newRoundId && s.player_id === newPlayerId,
     ).length;
 
     if (existingScoresCount >= limit) {
-      setScoreError(`This player already has reached the limit of ${limit} score(s) for this round.`);
+      setScoreError(
+        `This player already has reached the limit of ${limit} score(s) for this round.`,
+      );
       return;
     }
 
     setIsSubmittingScore(true);
     try {
-      const customScoreId = limit > 1 ? `score_${newRoundId}_${newPlayerId}_${existingScoresCount}` : `score_${newRoundId}_${newPlayerId}`;
+      const customScoreId =
+        limit > 1
+          ? `score_${newRoundId}_${newPlayerId}_${existingScoresCount}`
+          : `score_${newRoundId}_${newPlayerId}`;
 
-      await addScore({
-        player_id: newPlayerId,
-        round_id: newRoundId,
-        score: parseInt(newScoreValue, 10)
-      }, customScoreId);
+      await addScore(
+        {
+          player_id: newPlayerId,
+          round_id: newRoundId,
+          score: parseInt(newScoreValue, 10),
+        },
+        customScoreId,
+      );
 
-      setNewRoundId('');
-      setNewPlayerId('');
-      setNewScoreValue('');
+      setNewRoundId("");
+      setNewPlayerId("");
+      setNewScoreValue("");
       loadData();
     } catch (error) {
       console.error("Error adding score:", error);
-      setScoreError('Failed to add score.');
+      setScoreError("Failed to add score.");
     } finally {
       setIsSubmittingScore(false);
     }
@@ -1000,7 +1295,7 @@ function AdminScores() {
 
   const handleCancel = () => {
     setEditingId(null);
-    setScoreValue('');
+    setScoreValue("");
   };
 
   const handleDelete = async (id) => {
@@ -1012,7 +1307,7 @@ function AdminScores() {
 
   const playersMap = useMemo(() => {
     const map = new Map();
-    players.forEach(p => {
+    players.forEach((p) => {
       if (!p) return;
       if (p.player_id) map.set(p.player_id, p);
       if (p.uid) map.set(p.uid, p);
@@ -1022,7 +1317,7 @@ function AdminScores() {
 
   const playersByName = useMemo(() => {
     const map = new Map();
-    players.forEach(p => {
+    players.forEach((p) => {
       if (!p) return;
       if (p.name) map.set(p.name.toLowerCase(), p);
     });
@@ -1031,7 +1326,7 @@ function AdminScores() {
 
   const roundsMap = useMemo(() => {
     const map = new Map();
-    rounds.forEach(r => {
+    rounds.forEach((r) => {
       if (!r) return;
       if (r.round_id) map.set(r.round_id, r);
     });
@@ -1041,36 +1336,46 @@ function AdminScores() {
   const getPlayerName = (id, round_id) => {
     let player = playersMap.get(id);
     if (!player && round_id) {
-       const round = roundsMap.get(round_id);
-       if (round && round.player_id === id && typeof round.player_name === 'string') {
-           player = playersByName.get(round.player_name.toLowerCase());
-       }
+      const round = roundsMap.get(round_id);
+      if (
+        round &&
+        round.player_id === id &&
+        typeof round.player_name === "string"
+      ) {
+        player = playersByName.get(round.player_name.toLowerCase());
+      }
     }
 
     // Fallback if player document STILL not found, just show the name from the round so it's not "Unknown"
     if (!player && round_id) {
-        const round = roundsMap.get(round_id);
-        if (round && round.player_id === id && round.player_name) {
-             return formatDisplayName(round.player_name, players);
-        }
+      const round = roundsMap.get(round_id);
+      if (round && round.player_id === id && round.player_name) {
+        return formatDisplayName(round.player_name, players);
+      }
     }
 
-    return player ? formatDisplayName(player.name, players) : 'Unknown Player';
+    return player ? formatDisplayName(player.name, players) : "Unknown Player";
   };
 
   const getRoundDetails = (id) => {
     const round = roundsMap.get(id);
-    if (!round) return 'Unknown Round';
+    if (!round) return "Unknown Round";
 
-    const dateStr = round.date && !isNaN(new Date(round.date).getTime()) ? new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'No Date';
-    return round.name ? `${round.name} - ${dateStr} - ${round.location}` : `${dateStr} - ${round.location}`;
+    const dateStr =
+      round.date && !isNaN(new Date(round.date).getTime())
+        ? new Date(round.date).toLocaleDateString("en-US", { timeZone: "UTC" })
+        : "No Date";
+    return round.name
+      ? `${round.name} - ${dateStr} - ${round.location}`
+      : `${dateStr} - ${round.location}`;
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2">
         <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
-          <ClipboardList size={20} className="text-kelly-green" /> Scores Management
+          <ClipboardList size={20} className="text-kelly-green" /> Scores
+          Management
         </h3>
         {scores.length === 0 ? (
           <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
@@ -1088,10 +1393,17 @@ function AdminScores() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
-                {scores.map(score => (
-                  <tr key={score.score_id} className="hover:bg-dark-surface/50 transition-colors">
-                    <td className="p-4 text-slate-300">{getRoundDetails(score.round_id)}</td>
-                    <td className="p-4 font-bold">{getPlayerName(score.player_id, score.round_id)}</td>
+                {scores.map((score) => (
+                  <tr
+                    key={score.score_id}
+                    className="hover:bg-dark-surface/50 transition-colors"
+                  >
+                    <td className="p-4 text-slate-300">
+                      {getRoundDetails(score.round_id)}
+                    </td>
+                    <td className="p-4 font-bold">
+                      {getPlayerName(score.player_id, score.round_id)}
+                    </td>
                     <td className="p-4">
                       {editingId === score.score_id ? (
                         <input
@@ -1101,25 +1413,39 @@ function AdminScores() {
                           onChange={(e) => setScoreValue(e.target.value)}
                         />
                       ) : (
-                        <span className="font-data font-bold text-kelly-green">{score.score}</span>
+                        <span className="font-data font-bold text-kelly-green">
+                          {score.score}
+                        </span>
                       )}
                     </td>
                     <td className="p-4 text-right">
                       {editingId === score.score_id ? (
                         <div className="flex justify-end gap-2">
-                          <button onClick={() => handleSave(score.score_id)} className="inline-flex items-center gap-1 bg-kelly-green text-dark-bg px-3 py-1.5 rounded-lg font-bold hover:bg-green-500 transition-colors text-xs uppercase">
+                          <button
+                            onClick={() => handleSave(score.score_id)}
+                            className="inline-flex items-center gap-1 bg-kelly-green text-dark-bg px-3 py-1.5 rounded-lg font-bold hover:bg-green-500 transition-colors text-xs uppercase"
+                          >
                             <Check size={14} /> Save
                           </button>
-                          <button onClick={handleCancel} className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase">
+                          <button
+                            onClick={handleCancel}
+                            className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase"
+                          >
                             <X size={14} /> Cancel
                           </button>
                         </div>
                       ) : (
                         <div className="flex justify-end gap-2">
-                          <button onClick={() => handleEdit(score)} className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase">
+                          <button
+                            onClick={() => handleEdit(score)}
+                            className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase"
+                          >
                             <Edit size={14} /> Edit
                           </button>
-                          <button onClick={() => handleDelete(score.score_id)} className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-xs uppercase">
+                          <button
+                            onClick={() => handleDelete(score.score_id)}
+                            className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-xs uppercase"
+                          >
                             <Trash2 size={14} /> Delete
                           </button>
                         </div>
@@ -1146,7 +1472,12 @@ function AdminScores() {
           )}
           <form onSubmit={handleAddScore} className="flex flex-col gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="scoreRound">Select Round *</label>
+              <label
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                htmlFor="scoreRound"
+              >
+                Select Round *
+              </label>
               <select
                 id="scoreRound"
                 value={newRoundId}
@@ -1158,16 +1489,26 @@ function AdminScores() {
                 className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
               >
                 <option value="">-- Choose a round --</option>
-                {rounds.map(round => (
+                {rounds.map((round) => (
                   <option key={round.round_id} value={round.round_id}>
-                    {round.name || 'Unnamed Round'} - {round.date ? new Date(round.date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'No Date'}
+                    {round.name || "Unnamed Round"} -{" "}
+                    {round.date
+                      ? new Date(round.date).toLocaleDateString("en-US", {
+                          timeZone: "UTC",
+                        })
+                      : "No Date"}
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="scorePlayer">Select Player *</label>
+              <label
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                htmlFor="scorePlayer"
+              >
+                Select Player *
+              </label>
               <select
                 id="scorePlayer"
                 value={newPlayerId}
@@ -1179,20 +1520,28 @@ function AdminScores() {
                 className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
               >
                 <option value="">-- Choose a player --</option>
-                {players.slice().sort((a, b) => {
-                   const aName = a.name ? a.name.toLowerCase() : '';
-                   const bName = b.name ? b.name.toLowerCase() : '';
-                   return aName.localeCompare(bName);
-                }).map(player => (
-                  <option key={player.player_id} value={player.player_id}>
-                    {formatDisplayName(player.name, players)}
-                  </option>
-                ))}
+                {players
+                  .slice()
+                  .sort((a, b) => {
+                    const aName = a.name ? a.name.toLowerCase() : "";
+                    const bName = b.name ? b.name.toLowerCase() : "";
+                    return aName.localeCompare(bName);
+                  })
+                  .map((player) => (
+                    <option key={player.player_id} value={player.player_id}>
+                      {formatDisplayName(player.name, players)}
+                    </option>
+                  ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="scoreValue">Total Score *</label>
+              <label
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                htmlFor="scoreValue"
+              >
+                Total Score *
+              </label>
               <input
                 type="number"
                 id="scoreValue"
@@ -1212,11 +1561,11 @@ function AdminScores() {
               disabled={isSubmittingScore}
               className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider transition-colors mt-2 flex items-center justify-center gap-2 ${
                 isSubmittingScore
-                  ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                  : 'bg-kelly-green text-dark-bg hover:bg-green-500'
+                  ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                  : "bg-kelly-green text-dark-bg hover:bg-green-500"
               }`}
             >
-              {isSubmittingScore ? 'Submitting...' : 'Submit Score'}
+              {isSubmittingScore ? "Submitting..." : "Submit Score"}
             </button>
           </form>
         </div>
@@ -1232,9 +1581,11 @@ function AdminCourses() {
   const [editingId, setEditingId] = useState(null);
 
   // Form State
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
   const [courseSize, setCourseSize] = useState(18);
-  const [holes, setHoles] = useState(Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 })));
+  const [holes, setHoles] = useState(
+    Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 })),
+  );
 
   const loadCourses = async () => {
     setCourses(await getCourses());
@@ -1254,9 +1605,9 @@ function AdminCourses() {
     const size = parseInt(e.target.value, 10);
     setCourseSize(size);
     // When size changes, we generate a new holes array but try to preserve existing pars if possible
-    setHoles(prevHoles => {
+    setHoles((prevHoles) => {
       return Array.from({ length: size }, (_, i) => {
-        const existingHole = prevHoles.find(h => h.hole === i + 1);
+        const existingHole = prevHoles.find((h) => h.hole === i + 1);
         return existingHole ? existingHole : { hole: i + 1, par: 2 };
       });
     });
@@ -1273,7 +1624,7 @@ function AdminCourses() {
       await addCourse({ name, holes });
     }
 
-    setName('');
+    setName("");
     setCourseSize(18);
     setHoles(Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 })));
     loadCourses();
@@ -1282,7 +1633,9 @@ function AdminCourses() {
   const handleEdit = (course) => {
     setEditingId(course.course_id);
     setName(course.name);
-    const loadedHoles = course.holes || Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 }));
+    const loadedHoles =
+      course.holes ||
+      Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 }));
     setHoles(loadedHoles);
     setCourseSize(loadedHoles.length);
   };
@@ -1296,7 +1649,7 @@ function AdminCourses() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setName('');
+    setName("");
     setCourseSize(18);
     setHoles(Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 2 })));
   };
@@ -1323,18 +1676,29 @@ function AdminCourses() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
-                {courses.map(course => (
-                  <tr key={course.course_id} className="hover:bg-dark-surface/50 transition-colors">
+                {courses.map((course) => (
+                  <tr
+                    key={course.course_id}
+                    className="hover:bg-dark-surface/50 transition-colors"
+                  >
                     <td className="p-4 font-bold">{course.name}</td>
                     <td className="p-4 text-center font-data font-bold text-kelly-green">
-                      {course.holes ? course.holes.reduce((sum, h) => sum + h.par, 0) : 'N/A'}
+                      {course.holes
+                        ? course.holes.reduce((sum, h) => sum + h.par, 0)
+                        : "N/A"}
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <button onClick={() => handleEdit(course)} className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase">
+                        <button
+                          onClick={() => handleEdit(course)}
+                          className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-xs uppercase"
+                        >
                           <Edit size={14} /> Edit
                         </button>
-                        <button onClick={() => handleDelete(course.course_id)} className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-xs uppercase">
+                        <button
+                          onClick={() => handleDelete(course.course_id)}
+                          className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors text-xs uppercase"
+                        >
                           <Trash2 size={14} /> Delete
                         </button>
                       </div>
@@ -1349,13 +1713,19 @@ function AdminCourses() {
 
       <div>
         <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
-          <Edit size={20} className="text-kelly-green" /> {editingId ? 'Edit Course' : 'Add New Course'}
+          <Edit size={20} className="text-kelly-green" />{" "}
+          {editingId ? "Edit Course" : "Add New Course"}
         </h3>
 
         <div className="bg-dark-surface border border-slate-800 rounded-2xl p-6 shadow-xl">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="courseName">Course Name *</label>
+              <label
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                htmlFor="courseName"
+              >
+                Course Name *
+              </label>
               <input
                 type="text"
                 id="courseName"
@@ -1367,7 +1737,12 @@ function AdminCourses() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="courseSize">Number of Holes</label>
+              <label
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                htmlFor="courseSize"
+              >
+                Number of Holes
+              </label>
               <select
                 id="courseSize"
                 value={courseSize}
@@ -1380,18 +1755,27 @@ function AdminCourses() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Hole Pars</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Hole Pars
+              </label>
               <div className="grid grid-cols-3 gap-3 bg-dark-bg p-3 rounded-xl border border-slate-800 max-h-60 overflow-y-auto no-scrollbar">
                 {holes.map((holeObj, index) => (
                   <div key={index} className="flex flex-col items-center">
-                    <label htmlFor={`hole-${holeObj.hole}`} className="text-[10px] text-slate-500 font-bold mb-1">H{holeObj.hole}</label>
+                    <label
+                      htmlFor={`hole-${holeObj.hole}`}
+                      className="text-[10px] text-slate-500 font-bold mb-1"
+                    >
+                      H{holeObj.hole}
+                    </label>
                     <input
                       type="number"
                       id={`hole-${holeObj.hole}`}
                       min="1"
                       className="w-full bg-dark-surface border border-slate-700 rounded-lg px-2 py-2 text-white focus:border-kelly-green focus:outline-none transition-colors text-center font-data"
                       value={holeObj.par}
-                      onChange={(e) => handleHoleParChange(index, e.target.value)}
+                      onChange={(e) =>
+                        handleHoleParChange(index, e.target.value)
+                      }
                       required
                     />
                   </div>
@@ -1400,11 +1784,18 @@ function AdminCourses() {
             </div>
 
             <div className="mt-2 flex flex-col gap-3">
-              <button type="submit" className="w-full bg-kelly-green text-dark-bg py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors flex items-center justify-center gap-2">
-                <Check size={16} /> {editingId ? 'Update Course' : 'Add Course'}
+              <button
+                type="submit"
+                className="w-full bg-kelly-green text-dark-bg py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors flex items-center justify-center gap-2"
+              >
+                <Check size={16} /> {editingId ? "Update Course" : "Add Course"}
               </button>
               {editingId && (
-                <button type="button" onClick={cancelEdit} className="w-full bg-slate-700 text-white py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-slate-600 transition-colors flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="w-full bg-slate-700 text-white py-3 rounded-xl font-bold uppercase tracking-wider hover:bg-slate-600 transition-colors flex items-center justify-center gap-2"
+                >
                   <X size={16} /> Cancel Edit
                 </button>
               )}
@@ -1416,8 +1807,6 @@ function AdminCourses() {
   );
 }
 
-
-
 function AdminEventsList() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1428,14 +1817,14 @@ function AdminEventsList() {
 
     // Group rounds by event_id
     const grouped = {};
-    allRounds.forEach(r => {
+    allRounds.forEach((r) => {
       if (r.event_id) {
         if (!grouped[r.event_id]) {
-          let baseName = r.name || 'Unnamed Event';
-          if (r.number_of_rounds > 1 && baseName.includes(' - Round ')) {
-            baseName = baseName.split(' - Round ')[0];
-          } else if (baseName.includes(' - Round ')) {
-             baseName = baseName.split(' - Round ')[0];
+          let baseName = r.name || "Unnamed Event";
+          if (r.number_of_rounds > 1 && baseName.includes(" - Round ")) {
+            baseName = baseName.split(" - Round ")[0];
+          } else if (baseName.includes(" - Round ")) {
+            baseName = baseName.split(" - Round ")[0];
           }
           grouped[r.event_id] = {
             event_id: r.event_id,
@@ -1444,7 +1833,7 @@ function AdminEventsList() {
             location: r.location,
             season: r.season,
             roundsCount: 1,
-            rounds: [r]
+            rounds: [r],
           };
         } else {
           grouped[r.event_id].roundsCount += 1;
@@ -1478,19 +1867,27 @@ function AdminEventsList() {
   };
 
   const handleDelete = async (event_id) => {
-    if (window.confirm("Are you sure you want to delete this ENTIRE event? This will delete ALL associated rounds and scores.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this ENTIRE event? This will delete ALL associated rounds and scores.",
+      )
+    ) {
       await deleteEvent(event_id);
       loadData();
     }
   };
 
-  if (loading) return <div className="text-center p-8 text-slate-400">Loading events...</div>;
+  if (loading)
+    return (
+      <div className="text-center p-8 text-slate-400">Loading events...</div>
+    );
 
   return (
     <div className="space-y-8">
       <div>
         <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
-          <CalendarDays size={20} className="text-kelly-green" /> Event Management
+          <CalendarDays size={20} className="text-kelly-green" /> Event
+          Management
         </h3>
 
         {events.length === 0 ? (
@@ -1509,19 +1906,31 @@ function AdminEventsList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
-                {events.map(event => (
-                  <tr key={event.event_id} className="hover:bg-dark-surface/50 transition-colors">
+                {events.map((event) => (
+                  <tr
+                    key={event.event_id}
+                    className="hover:bg-dark-surface/50 transition-colors"
+                  >
                     <td className="p-4 font-bold text-white">
                       {event.base_name}
                     </td>
                     <td className="p-4">
                       <div className="flex flex-col">
-                        <span className="text-white">{event.date && !isNaN(new Date(event.date).getTime()) ? new Date(event.date).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'No Date'}</span>
-                        <span className="text-xs text-slate-400">{event.location}</span>
+                        <span className="text-white">
+                          {event.date && !isNaN(new Date(event.date).getTime())
+                            ? new Date(event.date).toLocaleDateString("en-US", {
+                                timeZone: "UTC",
+                              })
+                            : "No Date"}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          {event.location}
+                        </span>
                       </div>
                     </td>
                     <td className="p-4 text-slate-300">
-                      {event.roundsCount} {event.roundsCount === 1 ? 'Round' : 'Rounds'}
+                      {event.roundsCount}{" "}
+                      {event.roundsCount === 1 ? "Round" : "Rounds"}
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2">
