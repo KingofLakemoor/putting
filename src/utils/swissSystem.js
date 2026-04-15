@@ -65,7 +65,7 @@ export function generateSwissPairings(players, previousMatchups = []) {
 
       const pairing = {
         player1_id: p1.id !== null ? p1.id : p2.id,
-        player2_id: p1.id !== null ? p2.id : null // Ensure null is always player2_id
+        player2_id: p1.id !== null ? p2.id : null, // Ensure null is always player2_id
       };
 
       pairings.push(pairing);
@@ -86,7 +86,9 @@ export function generateSwissPairings(players, previousMatchups = []) {
   const success = backtrack(0);
 
   if (!success) {
-    throw new Error("Could not generate valid Swiss pairings (perhaps too many rounds for the number of players).");
+    throw new Error(
+      "Could not generate valid Swiss pairings (perhaps too many rounds for the number of players).",
+    );
   }
 
   return pairings;

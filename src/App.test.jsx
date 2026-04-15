@@ -1,13 +1,13 @@
-import { render, screen, act } from '@testing-library/react';
-import App from './App';
-import { AuthProvider } from './contexts/AuthContext';
+import { render, screen, act } from "@testing-library/react";
+import App from "./App";
+import { AuthProvider } from "./contexts/AuthContext";
 
-test('renders sign in initially', async () => {
+test("renders sign in initially", async () => {
   await act(async () => {
     render(
       <AuthProvider>
         <App />
-      </AuthProvider>
+      </AuthProvider>,
     );
   });
 

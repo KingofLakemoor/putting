@@ -2,11 +2,11 @@
 // allows you to do things like:
 // expect(element).toHaveTextContent(/react/i)
 // learn more: https://github.com/testing-library/jest-dom
-import '@testing-library/jest-dom';
+import "@testing-library/jest-dom";
 
 // Polyfill mapping for Vitest
-import { vi } from 'vitest';
+import { vi } from "vitest";
 global.jest = vi;
 
 // Provide fake env vars to prevent Firebase init crashes in tests
-vi.stubEnv('VITE_FIREBASE_API_KEY', 'fake_api_key');
+vi.stubEnv("VITE_FIREBASE_API_KEY", "fake_api_key");

@@ -1,10 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ChevronLeft, MapPin, Calendar, PlusCircle, Trophy, Medal, X, CheckCircle, Star, DollarSign } from 'lucide-react';
-import { getRound, getPlayers, getScoresForRound, addScore, deleteScore, updateRoundStatus, recalculateCupPointsForEvent, getRounds } from '../db';
-import { formatDisplayName } from '../utils/format';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  ChevronLeft,
+  MapPin,
+  Calendar,
+  PlusCircle,
+  Trophy,
+  Medal,
+  X,
+  CheckCircle,
+  Star,
+  DollarSign,
+} from "lucide-react";
+import {
+  getRound,
+  getPlayers,
+  getScoresForRound,
+  addScore,
+  deleteScore,
+  updateScore,
+  updateRoundStatus,
+  recalculateCupPointsForEvent,
+  getRounds,
+} from "../db";
+import { formatDisplayName } from "../utils/format";
+import { useAuth } from "../contexts/AuthContext";
 
 function RoundDetails() {
   const auth = useAuth();
@@ -20,8 +41,8 @@ function RoundDetails() {
   const [eventScores, setEventScores] = useState([]);
 
   // Form State
-  const [selectedPlayerId, setSelectedPlayerId] = useState('');
-  const [roundScore, setRoundScore] = useState('');
+  const [selectedPlayerId, setSelectedPlayerId] = useState("");
+  const [roundScore, setRoundScore] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -37,16 +58,18 @@ function RoundDetails() {
         setScores(roundScores);
 
         if (currentRound.event_id) {
-            const allRounds = await getRounds();
-            const relatedRounds = allRounds.filter(r => r.event_id === currentRound.event_id);
-            let allScoresForEvent = [];
-            for (const r of relatedRounds) {
-                const s = await getScoresForRound(r.round_id);
-                allScoresForEvent = allScoresForEvent.concat(s);
-            }
-            setEventScores(allScoresForEvent);
+          const allRounds = await getRounds();
+          const relatedRounds = allRounds.filter(
+            (r) => r.event_id === currentRound.event_id,
+          );
+          let allScoresForEvent = [];
+          for (const r of relatedRounds) {
+            const s = await getScoresForRound(r.round_id);
+            allScoresForEvent = allScoresForEvent.concat(s);
+          }
+          setEventScores(allScoresForEvent);
         } else {
-            setEventScores(roundScores);
+          setEventScores(roundScores);
         }
 
         // If this is a subsequent round in an event, figure out advancing players
@@ -57,31 +80,41 @@ function RoundDetails() {
             if (currentRoundNumber > 1) {
               const allRounds = await getRounds();
               // Find the previous round in the same event
-              const previousRoundNamePattern = new RegExp(`Round ${currentRoundNumber - 1}`, 'i');
-              const previousRound = allRounds.find(r =>
-                r.event_id === currentRound.event_id &&
-                r.date === currentRound.date &&
-                previousRoundNamePattern.test(r.name)
+              const previousRoundNamePattern = new RegExp(
+                `Round ${currentRoundNumber - 1}`,
+                "i",
+              );
+              const previousRound = allRounds.find(
+                (r) =>
+                  r.event_id === currentRound.event_id &&
+                  r.date === currentRound.date &&
+                  previousRoundNamePattern.test(r.name),
               );
 
               if (previousRound) {
-                const prevScores = await getScoresForRound(previousRound.round_id);
+                const prevScores = await getScoresForRound(
+                  previousRound.round_id,
+                );
                 // Sort scores (lowest first)
                 prevScores.sort((a, b) => a.score - b.score);
 
                 let eligibleScores = prevScores;
                 if (previousRound.cut_line) {
-                   const cutLine = parseInt(previousRound.cut_line, 10);
-                   if (!isNaN(cutLine)) {
-                     // Get score at cut line to handle ties
-                     if (prevScores.length > cutLine) {
-                         const cutScore = prevScores[cutLine - 1].score;
-                         eligibleScores = prevScores.filter(s => s.score <= cutScore);
-                     }
-                   }
+                  const cutLine = parseInt(previousRound.cut_line, 10);
+                  if (!isNaN(cutLine)) {
+                    // Get score at cut line to handle ties
+                    if (prevScores.length > cutLine) {
+                      const cutScore = prevScores[cutLine - 1].score;
+                      eligibleScores = prevScores.filter(
+                        (s) => s.score <= cutScore,
+                      );
+                    }
+                  }
                 }
 
-                const eligibleIds = new Set(eligibleScores.map(s => s.player_id));
+                const eligibleIds = new Set(
+                  eligibleScores.map((s) => s.player_id),
+                );
                 setAdvancingPlayerIds(eligibleIds);
               }
             }
@@ -94,23 +127,27 @@ function RoundDetails() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedPlayerId || roundScore === '') return;
+    if (!selectedPlayerId || roundScore === "") return;
     if (isSubmitting) return;
 
     setIsSubmitting(true);
     try {
-      if ((round.status || '').toLowerCase() !== 'active') {
-        setError('This round is no longer active. Scores cannot be submitted.');
+      if ((round.status || "").toLowerCase() !== "active") {
+        setError("This round is no longer active. Scores cannot be submitted.");
         setIsSubmitting(false);
         return;
       }
 
       // Check if player has reached the score limit for this round
       const limit = round.score_limit || 1;
-      const existingScoresCount = scores.filter(s => s.player_id === selectedPlayerId).length;
+      const existingScoresCount = scores.filter(
+        (s) => s.player_id === selectedPlayerId,
+      ).length;
 
       if (existingScoresCount >= limit) {
-        setError(`This player already has reached the limit of ${limit} score(s) for this round.`);
+        setError(
+          `This player already has reached the limit of ${limit} score(s) for this round.`,
+        );
         setIsSubmitting(false);
         return;
       }
@@ -119,44 +156,55 @@ function RoundDetails() {
       const newScore = {
         player_id: selectedPlayerId,
         round_id: id,
-        score: parseInt(roundScore)
+        score: parseInt(roundScore),
       };
 
-      const customScoreId = limit > 1 ? `score_${id}_${selectedPlayerId}_${existingScoresCount}` : `score_${id}_${selectedPlayerId}`;
+      const customScoreId =
+        limit > 1
+          ? `score_${id}_${selectedPlayerId}_${existingScoresCount}`
+          : `score_${id}_${selectedPlayerId}`;
 
       const created = await addScore(newScore, customScoreId);
       setScores([...scores, created]);
 
       // Reset form
-      setSelectedPlayerId('');
-      setRoundScore('');
+      setSelectedPlayerId("");
+      setRoundScore("");
     } catch (error) {
       console.error("Error submitting score:", error);
-      setError('Failed to submit score.');
+      setError("Failed to submit score.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleWithdrawPlayer = async (scoreId) => {
-    if (window.confirm("Are you sure you want to withdraw this player? Their score will be deleted and they will receive a DNF.")) {
-      await deleteScore(scoreId);
-      setScores(scores.filter(s => s.score_id !== scoreId));
+    if (
+      window.confirm(
+        "Are you sure you want to withdraw this player? Their score will be updated to a DNF status.",
+      )
+    ) {
+      await updateScore(scoreId, "DNF");
+      setScores(scores.map((s) => s.score_id === scoreId ? { ...s, status: "DNF" } : s));
     }
   };
 
   const handleEndRound = async () => {
-    if (window.confirm("Are you sure you want to end this round? No more scores can be entered.")) {
-      await updateRoundStatus(id, 'Completed');
+    if (
+      window.confirm(
+        "Are you sure you want to end this round? No more scores can be entered.",
+      )
+    ) {
+      await updateRoundStatus(id, "Completed");
 
       // Update local state
-      setRound(prev => ({ ...prev, status: 'Completed' }));
+      setRound((prev) => ({ ...prev, status: "Completed" }));
 
       // Calculate points when status is changed to completed, skip for Open formats
-      if (round.round_format !== 'Open' && round.event_id) {
-          // Note: recalculateCupPointsForEvent expects the event_round_id for scoring.
-          // Assuming `id` is the template round id that serves as event_round_id for players.
-          await recalculateCupPointsForEvent(id, round.is_signature);
+      if (round.round_format !== "Open" && round.event_id) {
+        // Note: recalculateCupPointsForEvent expects the event_round_id for scoring.
+        // Assuming `id` is the template round id that serves as event_round_id for players.
+        await recalculateCupPointsForEvent(id, round.is_signature);
       }
     }
   };
@@ -167,90 +215,118 @@ function RoundDetails() {
 
   const playersMap = new Map();
   const playersByNameMap = new Map();
-  players.forEach(p => {
-      if (p.uid) playersMap.set(p.uid, p);
-      if (p.player_id) playersMap.set(p.player_id, p);
-      if (p.name) playersByNameMap.set(p.name.toLowerCase(), p);
+  players.forEach((p) => {
+    if (p.uid) playersMap.set(p.uid, p);
+    if (p.player_id) playersMap.set(p.player_id, p);
+    if (p.name) playersByNameMap.set(p.name.toLowerCase(), p);
   });
 
   // Map player info to scores for display
-  const scoredPlayers = scores.map(score => {
-    let player = playersMap.get(score.player_id);
+  const scoredPlayers = scores
+    .map((score) => {
+      let player = playersMap.get(score.player_id);
 
-    // Fallback: Link by player_name if the score belongs to the round's creator
-    if (!player && round.player_id === score.player_id && round.player_name) {
-       player = playersByNameMap.get(round.player_name.toLowerCase());
-    }
+      // Fallback: Link by player_name if the score belongs to the round's creator
+      if (!player && round.player_id === score.player_id && round.player_name) {
+        player = playersByNameMap.get(round.player_name.toLowerCase());
+      }
 
-    const fallbackName = (round.player_id === score.player_id && round.player_name) ? round.player_name : 'Unknown Player';
+      const fallbackName =
+        round.player_id === score.player_id && round.player_name
+          ? round.player_name
+          : "Unknown Player";
 
-    return {
-      ...score,
-      playerName: formatDisplayName(player ? player.name : fallbackName, players),
-      level: player ? player.level : 'fun',
-      playerId: player ? player.player_id : score.player_id
-    };
-  }).sort((a, b) => {
-    // Sort by score ascending (lower is better)
-    return a.score - b.score;
-  });
+      return {
+        ...score,
+        playerName: formatDisplayName(
+          player ? player.name : fallbackName,
+          players,
+        ),
+        level: player ? player.level : "fun",
+        playerId: player ? player.player_id : score.player_id,
+      };
+    })
+    .sort((a, b) => {
+      // Sort by score ascending (lower is better)
+      return a.score - b.score;
+    });
 
   // Filter available players based on score limit
   const limit = round.score_limit || 1;
   const playerScoresCount = {};
-  scores.forEach(s => {
+  scores.forEach((s) => {
     if (s.player_id) {
-      playerScoresCount[s.player_id] = (playerScoresCount[s.player_id] || 0) + 1;
+      playerScoresCount[s.player_id] =
+        (playerScoresCount[s.player_id] || 0) + 1;
     }
   });
 
-  const availablePlayers = players.filter(p => {
+  const availablePlayers = players.filter((p) => {
     // If advancing players is defined, ONLY include players who made the cut/finished previous round
     if (advancingPlayerIds && !advancingPlayerIds.has(p.player_id)) {
-        return false;
+      return false;
     }
-    const count = Math.max(playerScoresCount[p.player_id] || 0, playerScoresCount[p.uid] || 0);
+    const count = Math.max(
+      playerScoresCount[p.player_id] || 0,
+      playerScoresCount[p.uid] || 0,
+    );
     return count < limit;
   });
 
   const dateObj = new Date(round.date);
-  const dateStr = !isNaN(dateObj.getTime()) ? dateObj.toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'Unknown Date';
+  const dateStr = !isNaN(dateObj.getTime())
+    ? dateObj.toLocaleDateString("en-US", { timeZone: "UTC" })
+    : "Unknown Date";
 
   const uniqueCompetitors = new Set();
   const scoresToCheck = eventScores.length > 0 ? eventScores : scores;
 
-  scoresToCheck.forEach(s => {
+  scoresToCheck.forEach((s) => {
     let player = playersMap.get(s.player_id);
-    if (!player && round && round.player_id === s.player_id && round.player_name) {
-       player = playersByNameMap.get(round.player_name.toLowerCase());
+    if (
+      !player &&
+      round &&
+      round.player_id === s.player_id &&
+      round.player_name
+    ) {
+      player = playersByNameMap.get(round.player_name.toLowerCase());
     }
-    const level = player ? player.level : 'fun';
+    const level = player ? player.level : "fun";
     const playerId = player ? player.player_id : s.player_id;
-    if (level === 'cup' || level === 'competitive') {
+    if (level === "cup" || level === "competitive") {
       uniqueCompetitors.add(playerId);
     }
   });
 
-  const payout = 0.60 * (uniqueCompetitors.size * 10);
+  const payout = 0.6 * (uniqueCompetitors.size * 10);
 
   return (
     <div className="min-h-screen bg-dark-bg text-white p-4 md:p-8 font-sans">
-      <Link to="/leaderboard" className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6 text-sm font-bold uppercase tracking-wider">
+      <Link
+        to="/leaderboard"
+        className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6 text-sm font-bold uppercase tracking-wider"
+      >
         <ChevronLeft size={16} /> Back to Leaderboard
       </Link>
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 border-b border-slate-800 pb-6 gap-6">
         <div>
           <h2 className="font-sports text-4xl sm:text-5xl uppercase tracking-tighter text-white mb-2">
-            {round.name || 'Round Details'}
+            {round.name || "Round Details"}
           </h2>
           <div className="flex flex-wrap items-center gap-4 text-slate-400 font-data text-xs uppercase tracking-widest">
-            <span className="flex items-center gap-1"><Calendar size={14} className="text-kelly-green" /> {dateStr}</span>
-            <span className="flex items-center gap-1"><MapPin size={14} className="text-kelly-green" /> {round.location}</span>
-            <span className={`px-2 py-1 rounded font-bold text-[10px] ${(round.status || '').toLowerCase() === 'active' ? 'bg-kelly-green/20 text-kelly-green' : 'bg-slate-800 text-slate-300'}`}>
+            <span className="flex items-center gap-1">
+              <Calendar size={14} className="text-kelly-green" /> {dateStr}
+            </span>
+            <span className="flex items-center gap-1">
+              <MapPin size={14} className="text-kelly-green" /> {round.location}
+            </span>
+            <span
+              className={`px-2 py-1 rounded font-bold text-[10px] ${(round.status || "").toLowerCase() === "active" ? "bg-kelly-green/20 text-kelly-green" : "bg-slate-800 text-slate-300"}`}
+            >
               {round.status}
             </span>
-            {round.round_format && round.round_format !== 'Open' && (
+            {round.round_format && round.round_format !== "Open" && (
               <span className="px-2 py-1 rounded font-bold text-[10px] bg-yellow-500/20 text-yellow-500">
                 Format: {round.round_format}
               </span>
@@ -268,9 +344,12 @@ function RoundDetails() {
           </div>
         </div>
 
-        {(round.status || '').toLowerCase() === 'active' && (
+        {(round.status || "").toLowerCase() === "active" && (
           <div className="flex gap-4 w-full md:w-auto flex-col sm:flex-row">
-            <Link to={`/rounds/${id}/scorecard`} className="w-full sm:w-auto bg-kelly-green text-dark-bg py-3 px-6 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors flex items-center justify-center gap-2">
+            <Link
+              to={`/rounds/${id}/scorecard`}
+              className="w-full sm:w-auto bg-kelly-green text-dark-bg py-3 px-6 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors flex items-center justify-center gap-2"
+            >
               <PlusCircle size={18} /> Fill Scorecard
             </Link>
             {isAdminOrCoordinator && (
@@ -289,13 +368,18 @@ function RoundDetails() {
         <div className="lg:col-span-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
             <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 flex items-center gap-2">
-              <Trophy size={20} className="text-kelly-green" /> Round Leaderboard
+              <Trophy size={20} className="text-kelly-green" /> Round
+              Leaderboard
             </h3>
             {isAdminOrCoordinator && (
               <div className="flex items-center gap-2 bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-700">
                 <DollarSign size={16} className="text-kelly-green" />
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Est. Payout:</span>
-                <span className="font-data font-bold text-white">${payout.toFixed(2)}</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Est. Payout:
+                </span>
+                <span className="font-data font-bold text-white">
+                  ${payout.toFixed(2)}
+                </span>
               </div>
             )}
           </div>
@@ -315,43 +399,64 @@ function RoundDetails() {
                     transition={{ delay: index * 0.05 }}
                     key={score.score_id}
                     className={`relative group flex items-center justify-between p-4 rounded-xl border transition-all duration-300
-                      ${index === 0
-                        ? 'bg-dark-surface border-slate-700 shadow-[0_0_15px_rgba(76,187,23,0.1)] border-l-4 border-l-kelly-green'
-                        : 'bg-transparent border-slate-800 opacity-90 hover:opacity-100 hover:bg-dark-surface/50'
+                      ${
+                        index === 0
+                          ? "bg-dark-surface border-slate-700 shadow-[0_0_15px_rgba(76,187,23,0.1)] border-l-4 border-l-kelly-green"
+                          : "bg-transparent border-slate-800 opacity-90 hover:opacity-100 hover:bg-dark-surface/50"
                       }`}
                   >
                     <div className="flex items-center gap-5">
                       <div className="relative">
-                        <span className={`font-sports text-3xl italic tracking-tighter ${index === 0 ? 'text-white' : 'text-slate-600'}`}>
+                        <span
+                          className={`font-sports text-3xl italic tracking-tighter ${index === 0 ? "text-white" : "text-slate-600"}`}
+                        >
                           {rank < 10 ? `0${rank}` : rank}
                         </span>
                         {index === 0 && (
-                          <Medal size={14} className="absolute -top-2 -right-2 text-kelly-green animate-pulse" />
+                          <Medal
+                            size={14}
+                            className="absolute -top-2 -right-2 text-kelly-green animate-pulse"
+                          />
                         )}
                       </div>
-                      <p className={`font-bold text-lg uppercase tracking-tight flex items-center gap-2 ${index === 0 ? 'text-kelly-green' : 'text-white'}`}>
+                      <p
+                        className={`font-bold text-lg uppercase tracking-tight flex items-center gap-2 ${index === 0 ? "text-kelly-green" : "text-white"}`}
+                      >
                         {score.playerName}
-                        {score.level === 'cup' && <Trophy size={14} className="text-yellow-500" />}
-                        {score.level === 'competitive' && <Star size={14} className="text-yellow-400 fill-current" />}
+                        {score.level === "cup" && (
+                          <Trophy size={14} className="text-yellow-500" />
+                        )}
+                        {score.level === "competitive" && (
+                          <Star
+                            size={14}
+                            className="text-yellow-400 fill-current"
+                          />
+                        )}
                       </p>
                     </div>
 
                     <div className="flex items-center gap-4 text-right">
                       <div>
-                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">Score</p>
-                        <p className={`text-2xl font-data font-black ${index === 0 ? 'text-kelly-green' : 'text-white'} ${score.status === 'DNF' ? 'text-red-500 text-xl' : ''}`}>
-                          {score.status === 'DNF' ? 'DNF' : score.score}
+                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">
+                          Score
+                        </p>
+                        <p
+                          className={`text-2xl font-data font-black ${index === 0 ? "text-kelly-green" : "text-white"} ${score.status === "DNF" ? "text-red-500 text-xl" : ""}`}
+                        >
+                          {score.status === "DNF" ? "DNF" : score.score}
                         </p>
                       </div>
-                      {isAdminOrCoordinator && (round.status || '').toLowerCase() === 'active' && score.status !== 'DNF' && (
-                        <button
-                          onClick={() => handleWithdrawPlayer(score.score_id)}
-                          className="ml-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 p-2 rounded-full transition-colors"
-                          title="Withdraw Player (DNF)"
-                        >
-                          <X size={16} />
-                        </button>
-                      )}
+                      {isAdminOrCoordinator &&
+                        (round.status || "").toLowerCase() === "active" &&
+                        score.status !== "DNF" && (
+                          <button
+                            onClick={() => handleWithdrawPlayer(score.score_id)}
+                            className="ml-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 p-2 rounded-full transition-colors"
+                            title="Withdraw Player (DNF)"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
                     </div>
                   </motion.div>
                 );
@@ -360,7 +465,7 @@ function RoundDetails() {
           )}
         </div>
 
-        {(round.status || '').toLowerCase() === 'active' && (
+        {(round.status || "").toLowerCase() === "active" && (
           <div>
             <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
               <PlusCircle size={20} className="text-kelly-green" /> Enter Score
@@ -368,11 +473,18 @@ function RoundDetails() {
 
             <div className="bg-dark-surface border border-slate-800 rounded-2xl p-6 shadow-xl">
               {availablePlayers.length === 0 ? (
-                <p className="text-slate-400 text-sm text-center py-4">All players have scores for this round!</p>
+                <p className="text-slate-400 text-sm text-center py-4">
+                  All players have scores for this round!
+                </p>
               ) : (
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="player">Select Player *</label>
+                    <label
+                      className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                      htmlFor="player"
+                    >
+                      Select Player *
+                    </label>
                     <select
                       id="player"
                       value={selectedPlayerId}
@@ -381,7 +493,7 @@ function RoundDetails() {
                       className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
                     >
                       <option value="">-- Choose a player --</option>
-                      {availablePlayers.map(player => (
+                      {availablePlayers.map((player) => (
                         <option key={player.player_id} value={player.player_id}>
                           {formatDisplayName(player.name, players)}
                         </option>
@@ -390,7 +502,12 @@ function RoundDetails() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2" htmlFor="score">Total Score *</label>
+                    <label
+                      className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                      htmlFor="score"
+                    >
+                      Total Score *
+                    </label>
                     <input
                       type="number"
                       id="score"
@@ -402,8 +519,12 @@ function RoundDetails() {
                     />
                   </div>
 
-                  <button type="submit" disabled={isSubmitting} className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider transition-colors mt-2 ${isSubmitting ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-kelly-green text-dark-bg hover:bg-green-500'}`}>
-                    {isSubmitting ? 'Submitting...' : 'Submit Score'}
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`w-full py-4 rounded-xl font-bold uppercase tracking-wider transition-colors mt-2 ${isSubmitting ? "bg-slate-700 text-slate-400 cursor-not-allowed" : "bg-kelly-green text-dark-bg hover:bg-green-500"}`}
+                  >
+                    {isSubmitting ? "Submitting..." : "Submit Score"}
                   </button>
                 </form>
               )}
