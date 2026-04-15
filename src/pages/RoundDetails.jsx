@@ -206,7 +206,7 @@ function RoundDetails() {
       .filter(sp => sp.level === 'cup' || sp.level === 'competitive')
       .map(sp => sp.playerId)
   );
-  const payout = 0.60 * (uniqueCompetitors.size * 5);
+  const payout = 0.60 * (uniqueCompetitors.size * 10);
 
   return (
     <div className="min-h-screen bg-dark-bg text-white p-4 md:p-8 font-sans">
