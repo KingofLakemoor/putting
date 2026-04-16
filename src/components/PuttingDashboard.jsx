@@ -551,7 +551,7 @@ const PuttingDashboard = () => {
 
         {/* ADVERTISEMENT (Small Square) */}
         <motion.a
-          href="https://www.club602.com/merch/p/april-15th-may-20th-putting-league-putting-world"
+          href="https://www.club602.com/merch/p/v53s5ok83kpe3btxvkli60dynhac68-j88xy-5rmhz-mben6-skdkg"
           target="_blank"
           rel="noopener noreferrer"
           whileHover={{ scale: 0.98 }}
@@ -559,7 +559,7 @@ const PuttingDashboard = () => {
           className="order-3 md:order-none bg-dark-surface border border-slate-700/50 rounded-2xl relative overflow-hidden group flex flex-col items-center justify-center text-center p-4 min-h-[180px]"
         >
           <img
-            src="/putting-league-ad-final.jpg"
+            src="/speedzone-putting-league.jpeg"
             alt="Upcoming Putting League"
             className="absolute inset-0 w-full h-full object-cover opacity-100 group-hover:opacity-80 transition-opacity duration-300"
           />
