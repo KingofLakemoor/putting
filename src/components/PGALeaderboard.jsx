@@ -60,7 +60,7 @@ const PGALeaderboard = () => {
           // No active rounds. Find the most recent round overall.
           const sortedAll = [...fetchedRounds].sort(
             (a, b) =>
-              new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
+              new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime(),
           );
           if (sortedAll.length > 0) {
             targetEventId = sortedAll[0].event_id;
@@ -70,9 +70,11 @@ const PGALeaderboard = () => {
 
         let relevantRounds = [];
         if (targetEventId) {
-           relevantRounds = fetchedRounds.filter(r => r.event_id === targetEventId);
+          relevantRounds = fetchedRounds.filter(
+            (r) => r.event_id === targetEventId,
+          );
         } else if (targetDate) {
-           relevantRounds = fetchedRounds.filter(r => r.date === targetDate);
+          relevantRounds = fetchedRounds.filter((r) => r.date === targetDate);
         }
 
         setAllRounds(fetchedRounds);
@@ -117,7 +119,7 @@ const PGALeaderboard = () => {
       if (c.course_id) coursesMap.set(c.course_id, c);
     });
 
-    const activeRoundIds = new Set(activeRounds.map(r => r.round_id));
+    const activeRoundIds = new Set(activeRounds.map((r) => r.round_id));
 
     // Determine dynamically how many rounds exist in this target group
     // (e.g. Round 1, Round 2)
@@ -126,124 +128,138 @@ const PGALeaderboard = () => {
     const playerStats = new Map();
 
     // Group target rounds by player
-    targetRounds.forEach(r => {
-       const processPlayer = (id, isOpponent) => {
-          if (!id) return;
-          if (!playerStats.has(id)) {
-             const profile = playersMap.get(id);
-             let name = "Unknown Player";
-             if (profile) name = profile.name;
-             else if (!isOpponent && r.player_name) name = r.player_name;
-             else if (isOpponent) name = "Unknown Opponent";
+    targetRounds.forEach((r) => {
+      const processPlayer = (id, isOpponent) => {
+        if (!id) return;
+        if (!playerStats.has(id)) {
+          const profile = playersMap.get(id);
+          let name = "Unknown Player";
+          if (profile) name = profile.name;
+          else if (!isOpponent && r.player_name) name = r.player_name;
+          else if (isOpponent) name = "Unknown Opponent";
 
-             playerStats.set(id, {
-                 id,
-                 playerName: formatDisplayName(name, players),
-                 isActive: false,
-                 rounds: [],
-                 aggregateRelative: 0,
-                 totalStrokes: 0,
-                 latestHolesPlayed: 0,
-                 latestScores: [],
-                 latestCurrentScore: 0,
-                 hasDNF: false
-             });
-          }
-
-          const stats = playerStats.get(id);
-
-          // Check if this round is active
-          const isRoundActive = activeRoundIds.has(r.round_id) && (r.status || "").toLowerCase() === "active";
-          if (isRoundActive) {
-             stats.isActive = true;
-          }
-
-          const course = coursesMap.get(r.course_id);
-          const holesMap = new Map();
-          if (course?.holes) {
-             course.holes.forEach(h => holesMap.set(h.hole, h));
-          }
-
-          let roundStrokes = 0;
-          let roundPar = 0;
-          let roundHolesPlayed = 0;
-          let dnf = false;
-
-          const holeScores = [];
-          for (let i = 1; i <= 18; i++) {
-             const scoresObj = isOpponent ? r.opponent_scores : r.scores;
-             const score = scoresObj && scoresObj[i] ? scoresObj[i] : null;
-
-             if (score === "DNF" || (!isOpponent && r.status === "DNF")) {
-                dnf = true;
-             }
-
-             const holeData = holesMap.get(i);
-             const par = holeData ? holeData.par : 2;
-
-             if (score && score > 0 && !dnf) {
-                roundStrokes += score;
-                roundPar += par;
-                roundHolesPlayed++;
-             }
-             holeScores.push({ hole: i, score: score && score > 0 ? score : null, par });
-          }
-
-          if (dnf) {
-             stats.hasDNF = true;
-          }
-
-          const roundRelative = roundStrokes - roundPar;
-          const isComplete = roundHolesPlayed === 18 || (r.status || "").toLowerCase() === "completed";
-
-          stats.rounds.push({
-             round_id: r.round_id,
-             date: r.date,
-             strokes: roundStrokes,
-             relative: roundRelative,
-             isComplete,
-             isActive: isRoundActive,
-             holeScores,
-             holesPlayed: roundHolesPlayed
+          playerStats.set(id, {
+            id,
+            playerName: formatDisplayName(name, players),
+            isActive: false,
+            rounds: [],
+            aggregateRelative: 0,
+            totalStrokes: 0,
+            latestHolesPlayed: 0,
+            latestScores: [],
+            latestCurrentScore: 0,
+            hasDNF: false,
           });
-       };
+        }
 
-       processPlayer(r.player_id || r.uid, false);
-       if (r.opponent_id) {
-          processPlayer(r.opponent_id, true);
-       }
+        const stats = playerStats.get(id);
+
+        // Check if this round is active
+        const isRoundActive =
+          activeRoundIds.has(r.round_id) &&
+          (r.status || "").toLowerCase() === "active";
+        if (isRoundActive) {
+          stats.isActive = true;
+        }
+
+        const course = coursesMap.get(r.course_id);
+        const holesMap = new Map();
+        if (course?.holes) {
+          course.holes.forEach((h) => holesMap.set(h.hole, h));
+        }
+
+        let roundStrokes = 0;
+        let roundPar = 0;
+        let roundHolesPlayed = 0;
+        let dnf = false;
+
+        const holeScores = [];
+        for (let i = 1; i <= 18; i++) {
+          const scoresObj = isOpponent ? r.opponent_scores : r.scores;
+          const score = scoresObj && scoresObj[i] ? scoresObj[i] : null;
+
+          if (score === "DNF" || (!isOpponent && r.status === "DNF")) {
+            dnf = true;
+          }
+
+          const holeData = holesMap.get(i);
+          const par = holeData ? holeData.par : 2;
+
+          if (score && score > 0 && !dnf) {
+            roundStrokes += score;
+            roundPar += par;
+            roundHolesPlayed++;
+          }
+          holeScores.push({
+            hole: i,
+            score: score && score > 0 ? score : null,
+            par,
+          });
+        }
+
+        if (dnf) {
+          stats.hasDNF = true;
+        }
+
+        const roundRelative = roundStrokes - roundPar;
+        const isComplete =
+          roundHolesPlayed === 18 ||
+          (r.status || "").toLowerCase() === "completed";
+
+        stats.rounds.push({
+          round_id: r.round_id,
+          date: r.date,
+          strokes: roundStrokes,
+          relative: roundRelative,
+          isComplete,
+          isActive: isRoundActive,
+          holeScores,
+          holesPlayed: roundHolesPlayed,
+        });
+      };
+
+      processPlayer(r.player_id || r.uid, false);
+      if (r.opponent_id) {
+        processPlayer(r.opponent_id, true);
+      }
     });
 
-    const maxRounds = Math.max(0, ...Array.from(playerStats.values()).map(p => p.rounds.length));
+    const maxRounds = Math.max(
+      0,
+      ...Array.from(playerStats.values()).map((p) => p.rounds.length),
+    );
 
-    const playersList = Array.from(playerStats.values()).map(stats => {
-       // Sort rounds chronologically for this player
-       stats.rounds.sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
+    const playersList = Array.from(playerStats.values()).map((stats) => {
+      // Sort rounds chronologically for this player
+      stats.rounds.sort(
+        (a, b) =>
+          new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime(),
+      );
 
-       // Compute aggregates
-       if (!stats.hasDNF) {
-           stats.rounds.forEach(r => {
-              stats.aggregateRelative += r.relative;
-              stats.totalStrokes += r.strokes;
-           });
-       }
+      // Compute aggregates
+      if (!stats.hasDNF) {
+        stats.rounds.forEach((r) => {
+          stats.aggregateRelative += r.relative;
+          stats.totalStrokes += r.strokes;
+        });
+      }
 
-       // For the 1..18 view, grab their active round or their most recent round
-       let displayRound = stats.rounds.find(r => r.isActive);
-       if (!displayRound && stats.rounds.length > 0) {
-          displayRound = stats.rounds[stats.rounds.length - 1];
-       }
+      // For the 1..18 view, grab their active round or their most recent round
+      let displayRound = stats.rounds.find((r) => r.isActive);
+      if (!displayRound && stats.rounds.length > 0) {
+        displayRound = stats.rounds[stats.rounds.length - 1];
+      }
 
-       if (displayRound) {
-          stats.latestScores = displayRound.holeScores;
-          stats.latestHolesPlayed = displayRound.holesPlayed;
-          stats.latestCurrentScore = displayRound.strokes;
-       } else {
-          // Fallback empty
-          stats.latestScores = Array(18).fill({ hole: 0, score: null, par: 2 });
-       }
+      if (displayRound) {
+        stats.latestScores = displayRound.holeScores;
+        stats.latestHolesPlayed = displayRound.holesPlayed;
+        stats.latestCurrentScore = displayRound.strokes;
+      } else {
+        // Fallback empty
+        stats.latestScores = Array(18).fill({ hole: 0, score: null, par: 2 });
+      }
 
-       return stats;
+      return stats;
     });
 
     playersList.sort((a, b) => {
@@ -267,19 +283,28 @@ const PGALeaderboard = () => {
               <th className="py-3 px-2 text-left font-bold w-12">Pos</th>
               <th className="py-3 px-2 text-left font-bold w-48">Player</th>
               <th className="py-3 px-2 font-bold w-16">Thru</th>
-              <th className="py-3 px-2 font-bold w-16 border-r border-slate-700">Score</th>
+              <th className="py-3 px-2 font-bold w-16 border-r border-slate-700">
+                Score
+              </th>
               {[...Array(hybridPlayersData.maxRounds)].map((_, i) => (
-                 <th key={`rnd_col_${i}`} className="py-3 px-2 font-bold w-16 border-r border-slate-700">
-                    R{i + 1}
-                 </th>
+                <th
+                  key={`rnd_col_${i}`}
+                  className="py-3 px-2 font-bold w-16 border-r border-slate-700"
+                >
+                  R{i + 1}
+                </th>
               ))}
-              <th className="py-3 px-2 font-bold w-16 border-r border-slate-700">Tot</th>
+              <th className="py-3 px-2 font-bold w-16 border-r border-slate-700">
+                Tot
+              </th>
               {[...Array(18)].map((_, i) => (
                 <th key={i} className="py-3 px-1 font-bold w-8">
                   {i + 1}
                 </th>
               ))}
-              <th className="py-3 px-2 font-bold w-16 border-l border-slate-700">Rnd</th>
+              <th className="py-3 px-2 font-bold w-16 border-l border-slate-700">
+                Rnd
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/50">
@@ -300,9 +325,9 @@ const PGALeaderboard = () => {
                   transition={{ delay: index * 0.05 }}
                   key={player.id}
                   className={`transition-colors ${
-                     player.isActive
-                     ? "bg-kelly-green/10 shadow-[inset_0_0_10px_rgba(76,187,23,0.15)] border-l-4 border-l-kelly-green"
-                     : "hover:bg-slate-800/30"
+                    player.isActive
+                      ? "bg-kelly-green/10 shadow-[inset_0_0_10px_rgba(76,187,23,0.15)] border-l-4 border-l-kelly-green"
+                      : "hover:bg-slate-800/30"
                   }`}
                 >
                   <td className="py-3 px-2 text-left font-data font-bold text-slate-300">
@@ -326,10 +351,10 @@ const PGALeaderboard = () => {
                         player.hasDNF
                           ? "text-red-500"
                           : player.aggregateRelative > 0
-                          ? "text-red-500"
-                          : player.aggregateRelative < 0
-                            ? "text-kelly-green"
-                            : "text-slate-300"
+                            ? "text-red-500"
+                            : player.aggregateRelative < 0
+                              ? "text-kelly-green"
+                              : "text-slate-300"
                       }
                     >
                       {player.hasDNF
@@ -344,20 +369,30 @@ const PGALeaderboard = () => {
 
                   {/* Dynamic Rounds */}
                   {[...Array(hybridPlayersData.maxRounds)].map((_, i) => {
-                     const r = player.rounds[i];
-                     if (!r) {
-                        return <td key={`rnd_score_${i}`} className="py-3 px-2 font-data text-slate-500 border-r border-slate-800/50">-</td>;
-                     }
-                     return (
-                        <td key={`rnd_score_${i}`} className={`py-3 px-2 font-data border-r border-slate-800/50 ${r.isComplete ? "font-bold text-white" : "text-slate-300"}`}>
-                           {r.strokes > 0 ? r.strokes : "-"}
+                    const r = player.rounds[i];
+                    if (!r) {
+                      return (
+                        <td
+                          key={`rnd_score_${i}`}
+                          className="py-3 px-2 font-data text-slate-500 border-r border-slate-800/50"
+                        >
+                          -
                         </td>
-                     );
+                      );
+                    }
+                    return (
+                      <td
+                        key={`rnd_score_${i}`}
+                        className={`py-3 px-2 font-data border-r border-slate-800/50 ${r.isComplete ? "font-bold text-white" : "text-slate-300"}`}
+                      >
+                        {r.strokes > 0 ? r.strokes : "-"}
+                      </td>
+                    );
                   })}
 
                   {/* Total Strokes */}
                   <td className="py-3 px-2 font-data font-bold text-slate-300 border-r border-slate-800/50">
-                     {player.hasDNF ? "-" : (player.totalStrokes || "-")}
+                    {player.hasDNF ? "-" : player.totalStrokes || "-"}
                   </td>
 
                   {/* 1..18 Hole by Hole */}

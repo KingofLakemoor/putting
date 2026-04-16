@@ -721,10 +721,7 @@ function AdminRounds() {
   const handleStatusChange = async (id, newStatus, round) => {
     await updateRoundStatus(id, newStatus);
     if (newStatus.toLowerCase() === "completed") {
-      // Calculate points when status is changed to completed, skip for Open formats
-      if (round.round_format !== "Open") {
-        await recalculateCupPointsForEvent(id, round.is_signature);
-      }
+      // Points calculation is now handled manually at the event level.
     }
     loadData();
   };
@@ -1858,6 +1855,17 @@ function AdminEventsList() {
     loadData();
   }, []);
 
+  const handleCalculatePoints = async (event_id) => {
+    if (
+      window.confirm(
+        "Are you sure you want to calculate final points for this event? This will overwrite any existing points for this event.",
+      )
+    ) {
+      await recalculateCupPointsForEvent(event_id);
+      alert("Points calculated successfully!");
+    }
+  };
+
   const handleRename = async (event) => {
     const newName = window.prompt("Enter new event name:", event.base_name);
     if (newName && newName.trim() !== "" && newName !== event.base_name) {
@@ -1934,6 +1942,12 @@ function AdminEventsList() {
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => handleCalculatePoints(event.event_id)}
+                          className="inline-flex items-center gap-1 bg-yellow-500/20 text-yellow-500 px-3 py-1.5 rounded-lg font-bold hover:bg-yellow-500 hover:text-white transition-colors text-[10px] uppercase"
+                        >
+                          <Trophy size={12} /> Calc Points
+                        </button>
                         <button
                           onClick={() => handleRename(event)}
                           className="inline-flex items-center gap-1 bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-slate-600 transition-colors text-[10px] uppercase"
