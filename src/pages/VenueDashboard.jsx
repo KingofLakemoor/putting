@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Activity } from "lucide-react";
 import PGALeaderboard from "../components/PGALeaderboard";
-import Leaderboard from "./Leaderboard";
 
 const VenueDashboard = () => {
-  const [activePlayerCount, setActivePlayerCount] = useState(0);
-
   return (
     <div className="min-h-screen bg-dark-bg text-white font-sans p-8 flex flex-col">
       {/* Header */}
@@ -31,17 +28,13 @@ const VenueDashboard = () => {
         <div className="flex items-center gap-4 mb-8">
           <Activity className="text-kelly-green" size={32} />
           <h2 className="font-sports text-4xl uppercase">
-            {activePlayerCount === 0 ? "Event Rankings" : "Expanded Leaderboard"}
+            Expanded Leaderboard
           </h2>
         </div>
 
         <div className="flex-1 overflow-hidden rounded-xl border border-slate-700/50">
-          {/* Render the full-width PGA Leaderboard if there are active players, otherwise active event rankings */}
-          {/* We always render PGALeaderboard but hide it so it can still fetch and emit onLivePlayersChange */}
-          <div style={{ display: activePlayerCount > 0 ? "block" : "none" }}>
-            <PGALeaderboard onLivePlayersChange={setActivePlayerCount} />
-          </div>
-          {activePlayerCount === 0 && <Leaderboard />}
+          {/* Render the full-width PGA Leaderboard */}
+          <PGALeaderboard />
         </div>
       </div>
     </div>

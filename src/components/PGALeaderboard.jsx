@@ -9,8 +9,10 @@ const ROUNDS_KEY = "putting_league_rounds";
 const PLAYERS_KEY = "putting_league_players";
 const COURSES_KEY = "putting_league_courses";
 
-const PGALeaderboard = ({ onLivePlayersChange }) => {
+const PGALeaderboard = () => {
+  const [allRounds, setAllRounds] = useState([]);
   const [activeRounds, setActiveRounds] = useState([]);
+  const [targetRounds, setTargetRounds] = useState([]);
   const [players, setPlayers] = useState([]);
   const [courses, setCourses] = useState([]);
 
@@ -29,22 +31,53 @@ const PGALeaderboard = ({ onLivePlayersChange }) => {
       },
     );
 
-    // Listen for live rounds on the course
     const unsubscribeRounds = onSnapshot(
       collection(db, ROUNDS_KEY),
       (snapshot) => {
-        const allRounds = snapshot.docs.map((doc) => doc.data());
-        // Only keep 'Active' rounds that have a current user playing
-        const currentActive = allRounds.filter(
+        const fetchedRounds = snapshot.docs.map((doc) => doc.data());
+
+        // Find active rounds that actually have a player
+        const currentActive = fetchedRounds.filter(
           (r) => (r.status || "").toLowerCase() === "active" && r.player_id,
         );
 
-        // Sort by last updated (if available) or by date
         currentActive.sort(
           (a, b) =>
             new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime(),
         );
+
+        // Determine the target event/date to display.
+        // Priority 1: Currently active event_id or date
+        // Priority 2: Most recently completed event_id or date
+
+        let targetEventId = null;
+        let targetDate = null;
+
+        if (currentActive.length > 0) {
+          targetEventId = currentActive[0].event_id;
+          targetDate = currentActive[0].date;
+        } else {
+          // No active rounds. Find the most recent round overall.
+          const sortedAll = [...fetchedRounds].sort(
+            (a, b) =>
+              new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
+          );
+          if (sortedAll.length > 0) {
+            targetEventId = sortedAll[0].event_id;
+            targetDate = sortedAll[0].date;
+          }
+        }
+
+        let relevantRounds = [];
+        if (targetEventId) {
+           relevantRounds = fetchedRounds.filter(r => r.event_id === targetEventId);
+        } else if (targetDate) {
+           relevantRounds = fetchedRounds.filter(r => r.date === targetDate);
+        }
+
+        setAllRounds(fetchedRounds);
         setActiveRounds(currentActive);
+        setTargetRounds(relevantRounds);
       },
     );
 
@@ -72,7 +105,7 @@ const PGALeaderboard = ({ onLivePlayersChange }) => {
     return "w-6 h-6 flex items-center justify-center mx-auto"; // Par
   };
 
-  const livePlayers = useMemo(() => {
+  const hybridPlayersData = useMemo(() => {
     const playersMap = new Map();
     players.forEach((p) => {
       if (p.player_id) playersMap.set(p.player_id, p);
@@ -84,101 +117,146 @@ const PGALeaderboard = ({ onLivePlayersChange }) => {
       if (c.course_id) coursesMap.set(c.course_id, c);
     });
 
-    const playersList = [];
+    const activeRoundIds = new Set(activeRounds.map(r => r.round_id));
 
-    activeRounds.forEach((r) => {
-      const course = coursesMap.get(r.course_id);
+    // Determine dynamically how many rounds exist in this target group
+    // (e.g. Round 1, Round 2)
+    // We can infer this from the round names or assume up to max N.
+    // For simplicity, we assign an index based on chronological order of their rounds.
+    const playerStats = new Map();
 
-      const holesMap = new Map();
-      if (course?.holes) {
-        course.holes.forEach((h) => holesMap.set(h.hole, h));
-      }
+    // Group target rounds by player
+    targetRounds.forEach(r => {
+       const processPlayer = (id, isOpponent) => {
+          if (!id) return;
+          if (!playerStats.has(id)) {
+             const profile = playersMap.get(id);
+             let name = "Unknown Player";
+             if (profile) name = profile.name;
+             else if (!isOpponent && r.player_name) name = r.player_name;
+             else if (isOpponent) name = "Unknown Opponent";
 
-      let currentScore = 0;
-      let holesPlayed = 0;
-      let parSum = 0;
-
-      const playerProfile =
-        playersMap.get(r.player_id) || playersMap.get(r.uid);
-      const actualName = playerProfile ? playerProfile.name : r.player_name;
-
-      const playerScores = [];
-      for (let i = 1; i <= 18; i++) {
-        const score = r.scores && r.scores[i] ? r.scores[i] : null;
-        const holeData = holesMap.get(i);
-        const par = holeData ? holeData.par : 2; // Default par 2
-
-        if (score && score > 0) {
-          currentScore += score;
-          holesPlayed++;
-          parSum += par;
-        }
-        playerScores.push({ hole: i, score: score, par: par });
-      }
-
-      const relativeScore = currentScore - parSum;
-
-      playersList.push({
-        id: r.round_id + "_p1",
-        playerName: formatDisplayName(actualName, players),
-        currentScore,
-        relativeScore,
-        holesPlayed,
-        scores: playerScores,
-      });
-
-      if (r.opponent_id) {
-        let oppScore = 0;
-        let oppHolesPlayed = 0;
-        let oppParSum = 0;
-
-        const oppScores = [];
-        for (let i = 1; i <= 18; i++) {
-          const score =
-            r.opponent_scores && r.opponent_scores[i]
-              ? r.opponent_scores[i]
-              : null;
-          const holeData = holesMap.get(i);
-          const par = holeData ? holeData.par : 2; // Default par 2
-
-          if (score && score > 0) {
-            oppScore += score;
-            oppHolesPlayed++;
-            oppParSum += par;
+             playerStats.set(id, {
+                 id,
+                 playerName: formatDisplayName(name, players),
+                 isActive: false,
+                 rounds: [],
+                 aggregateRelative: 0,
+                 totalStrokes: 0,
+                 latestHolesPlayed: 0,
+                 latestScores: [],
+                 latestCurrentScore: 0,
+                 hasDNF: false
+             });
           }
-          oppScores.push({ hole: i, score: score, par: par });
-        }
 
-        const opponent = playersMap.get(r.opponent_id);
-        const oppName = opponent
-          ? formatDisplayName(opponent.name, players)
-          : "Unknown Opponent";
-        const oppRelativeScore = oppScore - oppParSum;
+          const stats = playerStats.get(id);
 
-        playersList.push({
-          id: r.round_id + "_p2",
-          playerName: oppName,
-          currentScore: oppScore,
-          relativeScore: oppRelativeScore,
-          holesPlayed: oppHolesPlayed,
-          scores: oppScores,
-        });
-      }
+          // Check if this round is active
+          const isRoundActive = activeRoundIds.has(r.round_id) && (r.status || "").toLowerCase() === "active";
+          if (isRoundActive) {
+             stats.isActive = true;
+          }
+
+          const course = coursesMap.get(r.course_id);
+          const holesMap = new Map();
+          if (course?.holes) {
+             course.holes.forEach(h => holesMap.set(h.hole, h));
+          }
+
+          let roundStrokes = 0;
+          let roundPar = 0;
+          let roundHolesPlayed = 0;
+          let dnf = false;
+
+          const holeScores = [];
+          for (let i = 1; i <= 18; i++) {
+             const scoresObj = isOpponent ? r.opponent_scores : r.scores;
+             const score = scoresObj && scoresObj[i] ? scoresObj[i] : null;
+
+             if (score === "DNF" || (!isOpponent && r.status === "DNF")) {
+                dnf = true;
+             }
+
+             const holeData = holesMap.get(i);
+             const par = holeData ? holeData.par : 2;
+
+             if (score && score > 0 && !dnf) {
+                roundStrokes += score;
+                roundPar += par;
+                roundHolesPlayed++;
+             }
+             holeScores.push({ hole: i, score: score && score > 0 ? score : null, par });
+          }
+
+          if (dnf) {
+             stats.hasDNF = true;
+          }
+
+          const roundRelative = roundStrokes - roundPar;
+          const isComplete = roundHolesPlayed === 18 || (r.status || "").toLowerCase() === "completed";
+
+          stats.rounds.push({
+             round_id: r.round_id,
+             date: r.date,
+             strokes: roundStrokes,
+             relative: roundRelative,
+             isComplete,
+             isActive: isRoundActive,
+             holeScores,
+             holesPlayed: roundHolesPlayed
+          });
+       };
+
+       processPlayer(r.player_id || r.uid, false);
+       if (r.opponent_id) {
+          processPlayer(r.opponent_id, true);
+       }
     });
 
-    return playersList.sort((a, b) => {
-      if (a.relativeScore === b.relativeScore) {
-        return b.holesPlayed - a.holesPlayed;
-      }
-      return a.relativeScore - b.relativeScore;
-    });
-  }, [activeRounds, players, courses]);
+    const maxRounds = Math.max(0, ...Array.from(playerStats.values()).map(p => p.rounds.length));
 
-  useEffect(() => {
-    if (onLivePlayersChange) {
-      onLivePlayersChange(livePlayers.length);
-    }
-  }, [livePlayers.length, onLivePlayersChange]);
+    const playersList = Array.from(playerStats.values()).map(stats => {
+       // Sort rounds chronologically for this player
+       stats.rounds.sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
+
+       // Compute aggregates
+       if (!stats.hasDNF) {
+           stats.rounds.forEach(r => {
+              stats.aggregateRelative += r.relative;
+              stats.totalStrokes += r.strokes;
+           });
+       }
+
+       // For the 1..18 view, grab their active round or their most recent round
+       let displayRound = stats.rounds.find(r => r.isActive);
+       if (!displayRound && stats.rounds.length > 0) {
+          displayRound = stats.rounds[stats.rounds.length - 1];
+       }
+
+       if (displayRound) {
+          stats.latestScores = displayRound.holeScores;
+          stats.latestHolesPlayed = displayRound.holesPlayed;
+          stats.latestCurrentScore = displayRound.strokes;
+       } else {
+          // Fallback empty
+          stats.latestScores = Array(18).fill({ hole: 0, score: null, par: 2 });
+       }
+
+       return stats;
+    });
+
+    playersList.sort((a, b) => {
+      if (a.hasDNF && !b.hasDNF) return 1;
+      if (!a.hasDNF && b.hasDNF) return -1;
+      if (a.aggregateRelative === b.aggregateRelative) {
+        return b.latestHolesPlayed - a.latestHolesPlayed;
+      }
+      return a.aggregateRelative - b.aggregateRelative;
+    });
+
+    return { playersList, maxRounds };
+  }, [targetRounds, activeRounds, players, courses]);
 
   return (
     <div className="w-full bg-dark-bg p-6 text-white font-sans overflow-x-auto">
@@ -189,33 +267,43 @@ const PGALeaderboard = ({ onLivePlayersChange }) => {
               <th className="py-3 px-2 text-left font-bold w-12">Pos</th>
               <th className="py-3 px-2 text-left font-bold w-48">Player</th>
               <th className="py-3 px-2 font-bold w-16">Thru</th>
-              <th className="py-3 px-2 font-bold w-16">Tot</th>
+              <th className="py-3 px-2 font-bold w-16 border-r border-slate-700">Score</th>
+              {[...Array(hybridPlayersData.maxRounds)].map((_, i) => (
+                 <th key={`rnd_col_${i}`} className="py-3 px-2 font-bold w-16 border-r border-slate-700">
+                    R{i + 1}
+                 </th>
+              ))}
+              <th className="py-3 px-2 font-bold w-16 border-r border-slate-700">Tot</th>
               {[...Array(18)].map((_, i) => (
                 <th key={i} className="py-3 px-1 font-bold w-8">
                   {i + 1}
                 </th>
               ))}
-              <th className="py-3 px-2 font-bold w-16">Rnd</th>
+              <th className="py-3 px-2 font-bold w-16 border-l border-slate-700">Rnd</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/50">
-            {livePlayers.length === 0 ? (
+            {hybridPlayersData.playersList.length === 0 ? (
               <tr>
                 <td
-                  colSpan="23"
+                  colSpan={23 + hybridPlayersData.maxRounds}
                   className="py-12 text-slate-500 italic text-center"
                 >
-                  No active players on the course.
+                  No players found for this event.
                 </td>
               </tr>
             ) : (
-              livePlayers.map((player, index) => (
+              hybridPlayersData.playersList.map((player, index) => (
                 <motion.tr
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                   key={player.id}
-                  className="hover:bg-slate-800/30 transition-colors"
+                  className={`transition-colors ${
+                     player.isActive
+                     ? "bg-kelly-green/10 shadow-[inset_0_0_10px_rgba(76,187,23,0.15)] border-l-4 border-l-kelly-green"
+                     : "hover:bg-slate-800/30"
+                  }`}
                 >
                   <td className="py-3 px-2 text-left font-data font-bold text-slate-300">
                     {index + 1}
@@ -224,32 +312,56 @@ const PGALeaderboard = ({ onLivePlayersChange }) => {
                     {player.playerName}
                   </td>
                   <td className="py-3 px-2 font-data text-slate-400">
-                    {player.holesPlayed === 18
+                    {player.latestHolesPlayed === 18
                       ? "F"
-                      : player.holesPlayed === 0
+                      : player.latestHolesPlayed === 0
                         ? "-"
-                        : player.holesPlayed}
+                        : player.latestHolesPlayed}
                   </td>
-                  <td className="py-3 px-2 font-data font-bold">
+
+                  {/* Aggregate Score */}
+                  <td className="py-3 px-2 font-data font-black text-lg border-r border-slate-800/50">
                     <span
                       className={
-                        player.relativeScore > 0
+                        player.hasDNF
                           ? "text-red-500"
-                          : player.relativeScore < 0
+                          : player.aggregateRelative > 0
+                          ? "text-red-500"
+                          : player.aggregateRelative < 0
                             ? "text-kelly-green"
                             : "text-slate-300"
                       }
                     >
-                      {player.holesPlayed === 0
-                        ? "E"
-                        : player.relativeScore > 0
-                          ? `+${player.relativeScore}`
-                          : player.relativeScore === 0
+                      {player.hasDNF
+                        ? "DNF"
+                        : player.aggregateRelative > 0
+                          ? `+${player.aggregateRelative}`
+                          : player.aggregateRelative === 0
                             ? "E"
-                            : player.relativeScore}
+                            : player.aggregateRelative}
                     </span>
                   </td>
-                  {player.scores.map((scoreObj, i) => (
+
+                  {/* Dynamic Rounds */}
+                  {[...Array(hybridPlayersData.maxRounds)].map((_, i) => {
+                     const r = player.rounds[i];
+                     if (!r) {
+                        return <td key={`rnd_score_${i}`} className="py-3 px-2 font-data text-slate-500 border-r border-slate-800/50">-</td>;
+                     }
+                     return (
+                        <td key={`rnd_score_${i}`} className={`py-3 px-2 font-data border-r border-slate-800/50 ${r.isComplete ? "font-bold text-white" : "text-slate-300"}`}>
+                           {r.strokes > 0 ? r.strokes : "-"}
+                        </td>
+                     );
+                  })}
+
+                  {/* Total Strokes */}
+                  <td className="py-3 px-2 font-data font-bold text-slate-300 border-r border-slate-800/50">
+                     {player.hasDNF ? "-" : (player.totalStrokes || "-")}
+                  </td>
+
+                  {/* 1..18 Hole by Hole */}
+                  {player.latestScores.map((scoreObj, i) => (
                     <td key={i} className="py-3 px-1 font-data text-sm">
                       <div
                         className={getScoreStyle(scoreObj.score, scoreObj.par)}
@@ -258,8 +370,10 @@ const PGALeaderboard = ({ onLivePlayersChange }) => {
                       </div>
                     </td>
                   ))}
-                  <td className="py-3 px-2 font-data text-slate-300">
-                    {player.currentScore || "-"}
+
+                  {/* Latest Round Strokes */}
+                  <td className="py-3 px-2 font-data text-slate-300 border-l border-slate-800/50">
+                    {player.latestCurrentScore || "-"}
                   </td>
                 </motion.tr>
               ))
