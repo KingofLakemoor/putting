@@ -9,7 +9,7 @@ const ROUNDS_KEY = "putting_league_rounds";
 const PLAYERS_KEY = "putting_league_players";
 const COURSES_KEY = "putting_league_courses";
 
-const PGALeaderboard = () => {
+const PGALeaderboard = ({ onLivePlayersChange }) => {
   const [activeRounds, setActiveRounds] = useState([]);
   const [players, setPlayers] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -173,6 +173,12 @@ const PGALeaderboard = () => {
       return a.relativeScore - b.relativeScore;
     });
   }, [activeRounds, players, courses]);
+
+  useEffect(() => {
+    if (onLivePlayersChange) {
+      onLivePlayersChange(livePlayers.length);
+    }
+  }, [livePlayers.length, onLivePlayersChange]);
 
   return (
     <div className="w-full bg-dark-bg p-6 text-white font-sans overflow-x-auto">
