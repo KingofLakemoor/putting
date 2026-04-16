@@ -475,60 +475,73 @@ export const addCupPoints = async (pointsData) => {
   return newPoints;
 };
 
-export const deleteCupPointsForEvent = async (event_round_id) => {
+export const deleteCupPointsForEvent = async (event_id) => {
   const q = query(
     collection(db, CUP_POINTS_KEY),
-    where("event_round_id", "==", event_round_id),
+    where("event_id", "==", event_id),
   );
   const querySnapshot = await getDocs(q);
   const deletePromises = querySnapshot.docs.map((docSnapshot) =>
-    deleteDoc(doc(db, CUP_POINTS_KEY, docSnapshot.id)),
+    deleteDoc(docSnapshot.ref),
   );
   await Promise.all(deletePromises);
 };
 
-export const recalculateCupPointsForEvent = async (
-  event_round_id,
-  isSignatureEvent = false,
-) => {
-  // Find all scores for this event to calculate positions
-  const scoresQuery = query(
-    collection(db, SCORES_KEY),
-    where("round_id", "==", event_round_id),
-  );
-  const querySnapshot = await getDocs(scoresQuery);
-  const eventScores = querySnapshot.docs.map((doc) => doc.data());
-
-  if (eventScores.length === 0) return; // No scores, nothing to calculate
-
-  // We need to fetch the course par for this event to calculate total vs par for proper tie-breaking
-  // but for cup points it depends on purely total score. Let's get the event round to find the course
-  let coursePar = 0;
-  const roundQuery = query(
+export const recalculateCupPointsForEvent = async (event_id) => {
+  // 1. Find all rounds for this event
+  const roundsQuery = query(
     collection(db, ROUNDS_KEY),
-    where("round_id", "==", event_round_id),
+    where("event_id", "==", event_id),
   );
-  const roundSnapshot = await getDocs(roundQuery);
-  if (!roundSnapshot.empty) {
-    const round = roundSnapshot.docs[0].data();
-    if (round.course_id) {
-      const course = await getCourse(round.course_id);
-      if (course && course.holes) {
-        coursePar = course.holes.reduce((sum, h) => sum + h.par, 0);
+  const roundSnapshot = await getDocs(roundsQuery);
+  const eventRounds = roundSnapshot.docs.map((doc) => doc.data());
+
+  if (eventRounds.length === 0) return;
+
+  const roundIds = eventRounds.map((r) => r.round_id);
+  const isSignatureEvent = eventRounds.some((r) => r.is_signature);
+  const numRounds = eventRounds.length;
+
+  // 2. Fetch all scores for these rounds
+  const allScores = [];
+  for (let i = 0; i < roundIds.length; i += 10) {
+    const batch = roundIds.slice(i, i + 10);
+    const scoresQuery = query(
+      collection(db, SCORES_KEY),
+      where("round_id", "in", batch),
+    );
+    const qs = await getDocs(scoresQuery);
+    allScores.push(...qs.docs.map((d) => d.data()));
+  }
+
+  if (allScores.length === 0) return;
+
+  // 3. Aggregate scores per player and track completed rounds and DNF status
+  const playerStats = {};
+  for (const s of allScores) {
+    const pId = s.player_id;
+    if (!playerStats[pId]) {
+      playerStats[pId] = { total: 0, roundsPlayed: 0, hasDNF: false };
+    }
+    if (s.status === "DNF") {
+      playerStats[pId].hasDNF = true;
+    } else {
+      const scoreVal = parseInt(s.score, 10);
+      if (!isNaN(scoreVal)) {
+        playerStats[pId].total += scoreVal;
+        playerStats[pId].roundsPlayed += 1;
       }
     }
   }
 
-  // Aggregate scores per player for this event
+  // 4. Filter players (must complete all rounds and have no DNFs)
   const playerTotals = {};
-  for (const s of eventScores) {
-    const pId = s.player_id;
-    if (!playerTotals[pId]) {
-      playerTotals[pId] = 0;
-    }
-    const scoreVal = parseInt(s.score, 10);
-    if (!isNaN(scoreVal)) {
-      playerTotals[pId] += scoreVal;
+  for (const pId in playerStats) {
+    if (
+      !playerStats[pId].hasDNF &&
+      playerStats[pId].roundsPlayed === numRounds
+    ) {
+      playerTotals[pId] = playerStats[pId].total;
     }
   }
 
@@ -593,13 +606,13 @@ export const recalculateCupPointsForEvent = async (
   }
 
   // Clear existing points for this event
-  await deleteCupPointsForEvent(event_round_id);
+  await deleteCupPointsForEvent(event_id);
 
   // Save new points
   const currentYear = new Date().getFullYear();
   const promises = rankedPlayers.map((rp) =>
     addCupPoints({
-      event_round_id,
+      event_id,
       player_id: rp.player_id,
       points: rp.points,
       rank: rp.rank,

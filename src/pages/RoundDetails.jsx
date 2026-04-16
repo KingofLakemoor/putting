@@ -185,7 +185,11 @@ function RoundDetails() {
       )
     ) {
       await updateScore(scoreId, "DNF");
-      setScores(scores.map((s) => s.score_id === scoreId ? { ...s, status: "DNF" } : s));
+      setScores(
+        scores.map((s) =>
+          s.score_id === scoreId ? { ...s, status: "DNF" } : s,
+        ),
+      );
     }
   };
 
@@ -201,11 +205,7 @@ function RoundDetails() {
       setRound((prev) => ({ ...prev, status: "Completed" }));
 
       // Calculate points when status is changed to completed, skip for Open formats
-      if (round.round_format !== "Open" && round.event_id) {
-        // Note: recalculateCupPointsForEvent expects the event_round_id for scoring.
-        // Assuming `id` is the template round id that serves as event_round_id for players.
-        await recalculateCupPointsForEvent(id, round.is_signature);
-      }
+      // Points calculation is now handled manually at the event level from the Admin dashboard.
     }
   };
 
