@@ -18,10 +18,8 @@ import {
   getPlayers,
   getScoresForRound,
   addScore,
-  deleteScore,
   updateScore,
   updateRoundStatus,
-  recalculateCupPointsForEvent,
   getRounds,
 } from "../db";
 import { formatDisplayName } from "../utils/format";
