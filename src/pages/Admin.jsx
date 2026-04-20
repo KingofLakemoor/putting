@@ -161,8 +161,12 @@ function AdminCoordinators() {
   const [error, setError] = useState("");
 
   const loadData = async () => {
-    setCoordinators(await getCoordinators());
-    setPlayers(await getPlayers());
+    const [coordinatorsData, playersData] = await Promise.all([
+      getCoordinators(),
+      getPlayers()
+    ]);
+    setCoordinators(coordinatorsData);
+    setPlayers(playersData);
   };
 
   useEffect(() => {
@@ -640,11 +644,15 @@ function AdminRounds() {
   const [archivedSeasons, setArchivedSeasons] = useState([]);
 
   const loadData = async () => {
-    const allRounds = await getRounds();
-    setRounds(allRounds);
-    setCourses(await getCourses());
+    const [allRounds, coursesData, settings] = await Promise.all([
+      getRounds(),
+      getCourses(),
+      getSettings()
+    ]);
 
-    const settings = await getSettings();
+    setRounds(allRounds);
+    setCourses(coursesData);
+
     setLiveSeason(settings.live_season || "");
     setCupFinaleSeason(settings.cup_finale_season || "");
     setArchivedSeasons(settings.archived_seasons || []);
@@ -1213,9 +1221,14 @@ function AdminScores() {
   const [scoreError, setScoreError] = useState(null);
 
   const loadData = async () => {
-    setScores(await getScores());
-    setRounds(await getRounds());
-    setPlayers(await getPlayers());
+    const [scoresData, roundsData, playersData] = await Promise.all([
+      getScores(),
+      getRounds(),
+      getPlayers()
+    ]);
+    setScores(scoresData);
+    setRounds(roundsData);
+    setPlayers(playersData);
   };
 
   useEffect(() => {

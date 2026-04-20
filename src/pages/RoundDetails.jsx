@@ -51,8 +51,11 @@ function RoundDetails() {
 
       // Load players and scores
       if (currentRound) {
-        setPlayers(await getPlayers());
-        const roundScores = await getScoresForRound(id);
+        const [playersData, roundScores] = await Promise.all([
+          getPlayers(),
+          getScoresForRound(id)
+        ]);
+        setPlayers(playersData);
         setScores(roundScores);
 
         if (currentRound.event_id) {
