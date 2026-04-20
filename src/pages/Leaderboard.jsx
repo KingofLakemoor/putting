@@ -21,11 +21,13 @@ function Leaderboard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const players = await getPlayers();
-      let scores = await getScores();
-      const allRounds = await getRounds();
-      const settings = await getSettings();
-      const courses = await getCourses();
+      let [players, scores, allRounds, settings, courses] = await Promise.all([
+        getPlayers(),
+        getScores(),
+        getRounds(),
+        getSettings(),
+        getCourses(),
+      ]);
 
       const courseMap = {};
       courses.forEach((c) => {
