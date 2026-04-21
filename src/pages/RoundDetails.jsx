@@ -51,23 +51,36 @@ function RoundDetails() {
 
       // Load players and scores
       if (currentRound) {
-        const [playersData, roundScores] = await Promise.all([
-          getPlayers(),
-          getScoresForRound(id)
-        ]);
+        let playersData, roundScores, allRounds = [];
+
+        if (currentRound.event_id) {
+          [playersData, roundScores, allRounds] = await Promise.all([
+            getPlayers(),
+            getScoresForRound(id),
+            getRounds()
+          ]);
+        } else {
+          [playersData, roundScores] = await Promise.all([
+            getPlayers(),
+            getScoresForRound(id)
+          ]);
+        }
+
         setPlayers(playersData);
         setScores(roundScores);
 
+        let allScoresForEvent = [];
+
         if (currentRound.event_id) {
-          const allRounds = await getRounds();
           const relatedRounds = allRounds.filter(
             (r) => r.event_id === currentRound.event_id,
           );
-          let allScoresForEvent = [];
-          for (const r of relatedRounds) {
-            const s = await getScoresForRound(r.round_id);
-            allScoresForEvent = allScoresForEvent.concat(s);
-          }
+
+          const scoresPromises = relatedRounds.map(r => getScoresForRound(r.round_id));
+          const scoresResults = await Promise.all(scoresPromises);
+
+          allScoresForEvent = scoresResults.flat();
+
           setEventScores(allScoresForEvent);
         } else {
           setEventScores(roundScores);
@@ -79,7 +92,6 @@ function RoundDetails() {
           if (match) {
             const currentRoundNumber = parseInt(match[1], 10);
             if (currentRoundNumber > 1) {
-              const allRounds = await getRounds();
               // Find the previous round in the same event
               const previousRoundNamePattern = new RegExp(
                 `Round ${currentRoundNumber - 1}`,
@@ -93,9 +105,7 @@ function RoundDetails() {
               );
 
               if (previousRound) {
-                const prevScores = await getScoresForRound(
-                  previousRound.round_id,
-                );
+                const prevScores = allScoresForEvent.filter(s => s.round_id === previousRound.round_id);
                 // Sort scores (lowest first)
                 prevScores.sort((a, b) => a.score - b.score);
 

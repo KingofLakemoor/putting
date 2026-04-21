@@ -504,13 +504,17 @@ export const recalculateCupPointsForEvent = async (event_id) => {
 
   // 2. Fetch all scores for these rounds
   const allScores = [];
+  const scorePromises = [];
   for (let i = 0; i < roundIds.length; i += 10) {
     const batch = roundIds.slice(i, i + 10);
     const scoresQuery = query(
       collection(db, SCORES_KEY),
       where("round_id", "in", batch),
     );
-    const qs = await getDocs(scoresQuery);
+    scorePromises.push(getDocs(scoresQuery));
+  }
+  const querySnapshots = await Promise.all(scorePromises);
+  for (const qs of querySnapshots) {
     allScores.push(...qs.docs.map((d) => d.data()));
   }
 
