@@ -906,6 +906,11 @@ function AdminRounds() {
             </div>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-slate-800">
+              <datalist id="seasons-list">
+                {seasons.map((season) => (
+                  <option key={season} value={season} />
+                ))}
+              </datalist>
               <table className="w-full border-collapse text-left text-sm whitespace-nowrap">
                 <thead className="bg-slate-800 text-slate-400 uppercase tracking-wider text-xs">
                   <tr>
@@ -961,6 +966,7 @@ function AdminRounds() {
                         <div className="flex flex-col gap-2">
                           <input
                             type="text"
+                            list="seasons-list"
                             defaultValue={round.season || ""}
                             onBlur={(e) =>
                               handleSeasonChange(round.round_id, e.target.value)
