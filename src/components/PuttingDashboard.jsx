@@ -559,7 +559,7 @@ const PuttingDashboard = () => {
           className="order-3 md:order-none bg-dark-surface border border-slate-700/50 rounded-2xl relative overflow-hidden group flex flex-col items-center justify-center text-center p-4 min-h-[180px]"
         >
           <img
-            src="/speedzone-putting-league.jpeg"
+            src="/602-Golf-15.jpeg"
             alt="Upcoming Putting League"
             className="absolute inset-0 w-full h-full object-cover opacity-100 group-hover:opacity-80 transition-opacity duration-300"
           />
