@@ -41,10 +41,21 @@ const PGALeaderboard = () => {
           (r) => (r.status || "").toLowerCase() === "active" && r.player_id,
         );
 
-        currentActive.sort(
-          (a, b) =>
-            new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime(),
-        );
+        const getRoundTime = (r) => {
+          if (r.date) return new Date(r.date).getTime();
+          if (r.created_at) {
+            // handle firestore timestamp or iso string
+            if (typeof r.created_at === "string") {
+              return new Date(r.created_at).getTime();
+            }
+            return r.created_at.toMillis
+              ? r.created_at.toMillis()
+              : r.created_at.seconds * 1000;
+          }
+          return 0;
+        };
+
+        currentActive.sort((a, b) => getRoundTime(b) - getRoundTime(a));
 
         // Determine the target event/date to display.
         // Priority 1: Currently active event_id or date
@@ -53,25 +64,51 @@ const PGALeaderboard = () => {
         let targetEventId = null;
         let targetDate = null;
 
+        const getTargetFromRound = (round) => {
+          let tEventId = round.event_id;
+          let tDate = round.date;
+
+          // If this is a personal round linked to a template round, we need the template's event_id
+          if (!tEventId && round.event_round_id) {
+            const templateRound = fetchedRounds.find(
+              (r) => r.round_id === round.event_round_id,
+            );
+            if (templateRound) {
+              tEventId = templateRound.event_id;
+              tDate = templateRound.date;
+            }
+          }
+          return { tEventId, tDate };
+        };
+
         if (currentActive.length > 0) {
-          targetEventId = currentActive[0].event_id;
-          targetDate = currentActive[0].date;
+          const { tEventId, tDate } = getTargetFromRound(currentActive[0]);
+          targetEventId = tEventId;
+          targetDate = tDate;
         } else {
           // No active rounds. Find the most recent round overall.
           const sortedAll = [...fetchedRounds].sort(
-            (a, b) =>
-              new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime(),
+            (a, b) => getRoundTime(b) - getRoundTime(a),
           );
           if (sortedAll.length > 0) {
-            targetEventId = sortedAll[0].event_id;
-            targetDate = sortedAll[0].date;
+            const { tEventId, tDate } = getTargetFromRound(sortedAll[0]);
+            targetEventId = tEventId;
+            targetDate = tDate;
           }
         }
 
         let relevantRounds = [];
         if (targetEventId) {
-          relevantRounds = fetchedRounds.filter(
+          // Get all template rounds for this event
+          const eventTemplateRounds = fetchedRounds.filter(
             (r) => r.event_id === targetEventId,
+          );
+          const templateRoundIds = eventTemplateRounds.map((r) => r.round_id);
+
+          relevantRounds = fetchedRounds.filter(
+            (r) =>
+              r.event_id === targetEventId ||
+              templateRoundIds.includes(r.event_round_id),
           );
         } else if (targetDate) {
           relevantRounds = fetchedRounds.filter((r) => r.date === targetDate);
