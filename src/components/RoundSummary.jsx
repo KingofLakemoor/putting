@@ -23,7 +23,7 @@ const RoundSummary = ({
   // Calculate total and identifies highlights
   const scores = Object.values(roundData.scores || {});
   const totalScore = scores.reduce((a, b) => a + b, 0);
-  const birdies = scores.filter((s) => s < 3).length; // Assuming Par 3 for all holes
+  const aces = scores.filter((s) => s === 1).length;
 
   const opponentScores = Object.values(roundData.opponent_scores || {});
   const opponentTotalScore = opponentScores.reduce((a, b) => a + b, 0);
@@ -63,7 +63,7 @@ const RoundSummary = ({
       navigator
         .share({
           title: "Club 602 Round Summary",
-          text: `I just scored ${totalScore} with ${birdies} birdies at ${locationStr}! #Club602`,
+          text: `I just scored ${totalScore} with ${aces} hole in 1s at ${locationStr}! #Club602`,
         })
         .catch((err) => {
           console.error("Error sharing:", err);
@@ -130,10 +130,10 @@ const RoundSummary = ({
 
         <div className="bg-dark-surface border border-slate-800 p-4 sm:p-6 rounded-2xl text-center">
           <p className="text-[9px] sm:text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">
-            Birdies
+            Hole in 1s
           </p>
           <p className="text-4xl sm:text-5xl font-data font-black text-kelly-green">
-            {birdies}
+            {aces}
           </p>
         </div>
       </div>
