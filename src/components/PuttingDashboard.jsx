@@ -184,11 +184,6 @@ const PuttingDashboard = () => {
           setLeaderboardLink("/leaderboard");
         }
 
-        const validRoundIds = roundsForStandings.map((r) => r.round_id);
-        const filteredScores = scores.filter((s) =>
-          validRoundIds.includes(s.round_id),
-        );
-
         const playersMap = new Map();
         for (const p of players) {
           if (p.uid) playersMap.set(p.uid, p);
@@ -208,62 +203,101 @@ const PuttingDashboard = () => {
           }
         });
 
-        const roundsMap = new Map();
-        roundsForStandings.forEach((r) => {
-          if (r.round_id) roundsMap.set(r.round_id, r);
-        });
+        const calculateRanks = (roundsSubset) => {
+          const validRoundIds = roundsSubset.map((r) => r.round_id);
+          const filteredScoresSubset = scores.filter((s) =>
+            validRoundIds.includes(s.round_id),
+          );
 
-        const scoresByPlayerId = {};
-        for (const score of filteredScores) {
-          const player = playersMap.get(score.player_id);
-          const targetId = player ? player.player_id : score.player_id;
+          const roundsMapSubset = new Map();
+          roundsSubset.forEach((r) => {
+            if (r.round_id) roundsMapSubset.set(r.round_id, r);
+          });
 
-          if (!scoresByPlayerId[targetId]) {
-            scoresByPlayerId[targetId] = [];
+          const scoresByPlayerIdSubset = {};
+          for (const score of filteredScoresSubset) {
+            const player = playersMap.get(score.player_id);
+            const targetId = player ? player.player_id : score.player_id;
+
+            if (!scoresByPlayerIdSubset[targetId]) {
+              scoresByPlayerIdSubset[targetId] = [];
+            }
+            scoresByPlayerIdSubset[targetId].push(score);
           }
-          scoresByPlayerId[targetId].push(score);
+
+          const playerStatsSubset = players.map((player) => {
+            const playerScores = scoresByPlayerIdSubset[player.player_id] || [];
+            let totalScore = 0;
+            let totalPar = 0;
+            let totalHoles = 0;
+            for (const s of playerScores) {
+              const parsed = parseInt(s.score, 10);
+              if (!isNaN(parsed)) {
+                totalScore += parsed;
+
+                const round = roundsMapSubset.get(s.round_id);
+                let parForRound = 36;
+                let holesForRound = 18;
+
+                if (round && round.course_id) {
+                  const course = coursesMap.get(round.course_id);
+                  if (course) {
+                    parForRound = course._computedTotalPar;
+                    holesForRound = course._computedTotalHoles;
+                  }
+                }
+
+                totalPar += parForRound;
+                totalHoles += holesForRound;
+              }
+            }
+
+            const relativeScore = totalScore - totalPar;
+
+            return {
+              ...player,
+              name: formatDisplayName(player.name, players),
+              totalScore,
+              relativeScore,
+              roundsPlayed: playerScores.length,
+            };
+          });
+
+          const activePlayersSubset = playerStatsSubset.filter((p) => p.roundsPlayed > 0);
+          activePlayersSubset.sort((a, b) => a.relativeScore - b.relativeScore);
+          return activePlayersSubset.map((p, index) => ({ ...p, rank: index + 1 }));
+        };
+
+        const validRoundsSorted = [...roundsForStandings].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+        const latestRound = validRoundsSorted[0];
+
+        let previousRoundsForStandings = roundsForStandings;
+        if (latestRound) {
+          if (latestRound.event_id) {
+            previousRoundsForStandings = roundsForStandings.filter(r => r.event_id !== latestRound.event_id);
+          } else {
+            previousRoundsForStandings = roundsForStandings.filter(r => r.date !== latestRound.date);
+          }
         }
 
-        const playerStats = players.map((player) => {
-          const playerScores = scoresByPlayerId[player.player_id] || [];
-          let totalScore = 0;
-          let totalPar = 0;
-          let totalHoles = 0;
-          for (const s of playerScores) {
-            const parsed = parseInt(s.score, 10);
-            if (!isNaN(parsed)) {
-              totalScore += parsed;
+        const previousStandings = calculateRanks(previousRoundsForStandings);
+        const previousRankMap = new Map();
+        previousStandings.forEach(p => previousRankMap.set(p.player_id, p.rank));
 
-              const round = roundsMap.get(s.round_id);
-              let parForRound = 36;
-              let holesForRound = 18;
+        const currentStandings = calculateRanks(roundsForStandings);
 
-              if (round && round.course_id) {
-                const course = coursesMap.get(round.course_id);
-                if (course) {
-                  parForRound = course._computedTotalPar;
-                  holesForRound = course._computedTotalHoles;
-                }
-              }
-
-              totalPar += parForRound;
-              totalHoles += holesForRound;
+        const activePlayers = currentStandings.map(player => {
+            const prevRank = previousRankMap.get(player.player_id);
+            let trend = "stable";
+            if (!prevRank) {
+                trend = "up"; // new player
+            } else if (player.rank < prevRank) {
+                trend = "up";
+            } else if (player.rank > prevRank) {
+                trend = "down";
             }
-          }
-
-          const relativeScore = totalScore - totalPar;
-
-          return {
-            ...player,
-            name: formatDisplayName(player.name, players),
-            totalScore,
-            relativeScore,
-            roundsPlayed: playerScores.length,
-          };
+            return { ...player, trend };
         });
-
-        const activePlayers = playerStats.filter((p) => p.roundsPlayed > 0);
-        activePlayers.sort((a, b) => a.relativeScore - b.relativeScore);
 
         setDashboardStandings(activePlayers);
       } catch (error) {
@@ -415,7 +449,15 @@ const PuttingDashboard = () => {
                       </p>
                     </div>
                     <div className="flex flex-col items-center justify-center">
-                      <TrendingUp size={16} className="text-kelly-green mb-1" />
+                      {player.trend === "up" && (
+                        <TrendingUp size={16} className="text-kelly-green mb-1" />
+                      )}
+                      {player.trend === "down" && (
+                        <TrendingDown size={16} className="text-red-500 mb-1" />
+                      )}
+                      {player.trend === "stable" && (
+                        <Minus size={16} className="text-slate-500 mb-1" />
+                      )}
                       <span className="text-[9px] text-slate-500">POS</span>
                     </div>
                   </div>
