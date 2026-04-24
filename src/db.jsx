@@ -417,26 +417,22 @@ export const getScoresForRound = async (round_id) => {
 export const getScoresForPlayer = async (player_id) => {
   const actualId = await getActualPlayerId(player_id);
 
+  const idsToQuery = [player_id];
+  if (actualId && actualId !== player_id) {
+    idsToQuery.push(actualId);
+  }
+
   // Due to backwards compatibility, some scores might be saved with the raw UID instead of the player_id
-  const uidScoresQuery = query(
+  // Combining into a single 'in' query for performance
+  const scoresQuery = query(
     collection(db, SCORES_KEY),
-    where("player_id", "==", player_id),
+    where("player_id", "in", idsToQuery),
   );
-  const uidQuerySnapshot = await getDocs(uidScoresQuery);
-  let scores = uidQuerySnapshot.docs.map((doc) => doc.data());
+  const querySnapshot = await getDocs(scoresQuery);
+  let scores = querySnapshot.docs.map((doc) => doc.data());
 
-  if (actualId !== player_id) {
-    const actualIdScoresQuery = query(
-      collection(db, SCORES_KEY),
-      where("player_id", "==", actualId),
-    );
-    const actualIdQuerySnapshot = await getDocs(actualIdScoresQuery);
-    scores = [
-      ...scores,
-      ...actualIdQuerySnapshot.docs.map((doc) => doc.data()),
-    ];
-
-    // Deduplicate scores
+  // Deduplicate scores if multiple IDs were queried
+  if (idsToQuery.length > 1) {
     const uniqueScoresMap = new Map();
     scores.forEach((s) => uniqueScoresMap.set(s.score_id, s));
     scores = Array.from(uniqueScoresMap.values());
