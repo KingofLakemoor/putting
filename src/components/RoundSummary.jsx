@@ -5,8 +5,6 @@ import {
   Share2,
   RotateCcw,
   Trophy,
-  Target,
-  X,
 } from "lucide-react";
 import { Dialog } from "@headlessui/react";
 import { toast } from "react-hot-toast";
