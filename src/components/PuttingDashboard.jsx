@@ -37,6 +37,8 @@ const PuttingDashboard = () => {
   const [trendColor, setTrendColor] = useState("text-slate-500");
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [promoLink, setPromoLink] = useState("https://www.club602.com/merch/p/v53s5ok83kpe3btxvkli60dynhac68-j88xy-5rmhz-mben6-skdkg");
+  const [promoImage, setPromoImage] = useState("/602-Golf-13.jpeg");
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
@@ -156,6 +158,9 @@ const PuttingDashboard = () => {
         const scores = await getScores();
         const players = await getPlayers();
         const settings = await getSettings();
+
+        if (settings.promo_link) setPromoLink(settings.promo_link);
+        if (settings.promo_image) setPromoImage(settings.promo_image);
         const courses = await getCourses();
 
         // Check for today's date
@@ -593,7 +598,7 @@ const PuttingDashboard = () => {
 
         {/* ADVERTISEMENT (Small Square) */}
         <motion.a
-          href="https://www.club602.com/merch/p/v53s5ok83kpe3btxvkli60dynhac68-j88xy-5rmhz-mben6-skdkg"
+          href={promoLink}
           target="_blank"
           rel="noopener noreferrer"
           whileHover={{ scale: 0.98 }}
@@ -601,7 +606,7 @@ const PuttingDashboard = () => {
           className="order-3 md:order-none bg-dark-surface border border-slate-700/50 rounded-2xl relative overflow-hidden group flex flex-col items-center justify-center text-center p-4 min-h-[180px]"
         >
           <img
-            src="/602-Golf-13.jpeg"
+            src={promoImage}
             alt="Upcoming Putting League"
             className="absolute inset-0 w-full h-full object-cover opacity-100 group-hover:opacity-80 transition-opacity duration-300"
           />

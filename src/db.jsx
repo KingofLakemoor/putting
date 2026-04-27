@@ -30,7 +30,12 @@ export const getSettings = async () => {
   if (!settingsDoc.empty) {
     return settingsDoc.docs[0].data();
   }
-  return { live_season: null, archived_seasons: [], cup_finale_season: null };
+  return { live_season: null, archived_seasons: [], cup_finale_season: null, promo_link: null, promo_image: null };
+};
+
+export const updateDashboardPromo = async (promoLink, promoImage) => {
+  const settingsRef = doc(db, SETTINGS_KEY, "global");
+  await setDoc(settingsRef, { promo_link: promoLink, promo_image: promoImage }, { merge: true });
 };
 
 export const updateLiveSeason = async (season) => {
