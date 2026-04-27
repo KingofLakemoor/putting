@@ -44,6 +44,7 @@ import {
   updateCupFinaleSeason,
   addArchivedSeason,
   removeArchivedSeason,
+  updateDashboardPromo,
   recalculateCupPointsForEvent,
 } from "../db";
 import { doc, updateDoc } from "firebase/firestore";
@@ -642,6 +643,8 @@ function AdminRounds() {
   const [liveSeason, setLiveSeason] = useState("");
   const [cupFinaleSeason, setCupFinaleSeason] = useState("");
   const [archivedSeasons, setArchivedSeasons] = useState([]);
+  const [promoLink, setPromoLink] = useState("");
+  const [promoImage, setPromoImage] = useState("");
 
   const loadData = async () => {
     const [allRounds, coursesData, settings] = await Promise.all([
@@ -656,6 +659,8 @@ function AdminRounds() {
     setLiveSeason(settings.live_season || "");
     setCupFinaleSeason(settings.cup_finale_season || "");
     setArchivedSeasons(settings.archived_seasons || []);
+    setPromoLink(settings.promo_link || "");
+    setPromoImage(settings.promo_image || "");
 
     const uniqueSeasons = [
       ...new Set(allRounds.map((r) => r.season).filter(Boolean)),
@@ -731,6 +736,12 @@ function AdminRounds() {
     if (newStatus.toLowerCase() === "completed") {
       // Points calculation is now handled manually at the event level.
     }
+    loadData();
+  };
+
+  const handleSavePromoSettings = async (e) => {
+    e.preventDefault();
+    await updateDashboardPromo(promoLink, promoImage);
     loadData();
   };
 
@@ -879,6 +890,60 @@ function AdminRounds() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
+            <BookOpen size={20} className="text-kelly-green" /> Dashboard Promo Settings
+          </h3>
+          <div className="bg-dark-surface border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <form onSubmit={handleSavePromoSettings} className="flex flex-col gap-4">
+              <div>
+                <label
+                  className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                  htmlFor="promoLink"
+                >
+                  Promo Link URL
+                </label>
+                <input
+                  type="text"
+                  id="promoLink"
+                  className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors"
+                  placeholder="https://www.club602.com/merch/..."
+                  value={promoLink}
+                  onChange={(e) => setPromoLink(e.target.value)}
+                />
+                <p className="text-[10px] text-slate-500 mt-2">
+                  The URL that users will go to when they click the promo box. Leave blank for default.
+                </p>
+              </div>
+              <div>
+                <label
+                  className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                  htmlFor="promoImage"
+                >
+                  Promo Image URL
+                </label>
+                <input
+                  type="text"
+                  id="promoImage"
+                  className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-kelly-green focus:outline-none transition-colors"
+                  placeholder="/602-Golf-13.jpeg"
+                  value={promoImage}
+                  onChange={(e) => setPromoImage(e.target.value)}
+                />
+                <p className="text-[10px] text-slate-500 mt-2">
+                  The URL for the image shown in the promo box. Can be an external URL or relative path. Leave blank for default.
+                </p>
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-kelly-green text-dark-bg py-4 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors mt-2 flex items-center justify-center gap-2"
+              >
+                <Check size={20} /> Save Promo Settings
+              </button>
+            </form>
           </div>
         </div>
 
