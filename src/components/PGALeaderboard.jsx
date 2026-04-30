@@ -36,9 +36,9 @@ const PGALeaderboard = () => {
       (snapshot) => {
         const fetchedRounds = snapshot.docs.map((doc) => doc.data());
 
-        // Find active rounds that actually have a player
+        // Find all active rounds (both events/template rounds and personal rounds)
         const currentActive = fetchedRounds.filter(
-          (r) => (r.status || "").toLowerCase() === "active" && r.player_id,
+          (r) => (r.status || "").toLowerCase() === "active",
         );
 
         const getRoundTime = (r) => {
@@ -51,6 +51,15 @@ const PGALeaderboard = () => {
             return r.created_at.toMillis
               ? r.created_at.toMillis()
               : r.created_at.seconds * 1000;
+          }
+          // Fallback: If it's a personal round missing a date/created_at, try to use its template round's date
+          if (r.event_round_id) {
+            const template = fetchedRounds.find(
+              (tr) => tr.round_id === r.event_round_id,
+            );
+            if (template && template.date) {
+              return new Date(template.date).getTime();
+            }
           }
           return 0;
         };
