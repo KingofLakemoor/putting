@@ -50,6 +50,7 @@ function App() {
             <Route path="/signin" element={<SignIn />} />
             <Route path="/venue" element={<VenueDashboard />} />
             <Route path="/tv" element={<VenueDashboard />} />
+            <Route path="/leaderboard-preview" element={<Leaderboard />} />
             <Route
               path="/"
               element={
