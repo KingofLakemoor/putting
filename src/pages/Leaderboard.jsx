@@ -17,6 +17,8 @@ function Leaderboard() {
   const [seasons, setSeasons] = useState([]);
   const [events, setEvents] = useState([]);
   const [filter, setFilter] = useState("global");
+  const [sortMetric, setSortMetric] = useState("top2");
+  const [rawPlayerStats, setRawPlayerStats] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -87,6 +89,8 @@ function Leaderboard() {
       eventsList.sort((a, b) => new Date(b.date) - new Date(a.date));
       setEvents(eventsList);
 
+      let filteredRounds = visibleRounds;
+
       if (filter !== "global") {
         if (filter.startsWith("season_")) {
           const seasonName = filter.substring(7);
@@ -94,20 +98,24 @@ function Leaderboard() {
             .filter((r) => r.season === seasonName)
             .map((r) => r.round_id);
           scores = scores.filter((s) => roundIdsInSeason.includes(s.round_id));
+          filteredRounds = allRounds.filter((r) => r.season === seasonName);
         } else if (filter.startsWith("event_")) {
           const filterEventId = filter.substring(6);
           const roundIdsInEvent = visibleRounds
             .filter((r) => String(r.event_id) === filterEventId)
             .map((r) => r.round_id);
           scores = scores.filter((s) => roundIdsInEvent.includes(s.round_id));
+          filteredRounds = visibleRounds.filter((r) => String(r.event_id) === filterEventId);
         } else if (filter.startsWith("date_")) {
           const filterDate = filter.substring(5);
           const roundIdsInDate = visibleRounds
             .filter((r) => r.date === filterDate)
             .map((r) => r.round_id);
           scores = scores.filter((s) => roundIdsInDate.includes(s.round_id));
+          filteredRounds = visibleRounds.filter((r) => r.date === filterDate);
         } else {
           scores = scores.filter((s) => String(s.round_id) === String(filter));
+          filteredRounds = visibleRounds.filter((r) => String(r.round_id) === String(filter));
         }
       } else {
         // Global filter - still exclude archived seasons rounds
@@ -141,6 +149,101 @@ function Leaderboard() {
         scoresByPlayerId[targetId].push(score);
       }
 
+      // Calculate dynamic 602 Cup Points
+      const cupPointsByPlayer = {};
+
+      // Group filtered rounds by event_id or date if no event_id
+      const eventsMap = {};
+      filteredRounds.forEach(r => {
+        const key = r.event_id ? `event_${r.event_id}` : `date_${r.date}`;
+        if (!eventsMap[key]) {
+          eventsMap[key] = {
+            rounds: [],
+            isSignature: false
+          };
+        }
+        eventsMap[key].rounds.push(r.round_id);
+        if (r.is_signature) {
+          eventsMap[key].isSignature = true;
+        }
+      });
+
+      // Calculate points per event
+      Object.values(eventsMap).forEach(evt => {
+        const eventScores = scores.filter(s => evt.rounds.includes(s.round_id));
+        if (eventScores.length === 0) return;
+
+        const playerEventStats = {};
+        eventScores.forEach(s => {
+          const pId = s.player_id;
+          if (!playerEventStats[pId]) {
+            playerEventStats[pId] = { total: 0, hasDNF: false };
+          }
+          if (s.status === "DNF") {
+            playerEventStats[pId].hasDNF = true;
+          } else {
+            const scoreVal = parseInt(s.score, 10);
+            if (!isNaN(scoreVal)) {
+              playerEventStats[pId].total += scoreVal;
+            }
+          }
+        });
+
+        const validPlayers = Object.keys(playerEventStats)
+          .filter(pId => !playerEventStats[pId].hasDNF)
+          .map(pId => ({ player_id: pId, total: playerEventStats[pId].total }));
+
+        validPlayers.sort((a, b) => a.total - b.total);
+
+        const baseScale = [100, 75, 60, 50, 40, 35, 30, 25, 20, 15, 10, 10, 10, 10, 10];
+        const signatureScale = [150, 115, 90, 75, 60, 50, 45, 35, 30, 20, 15, 15, 15, 15, 15];
+        const scale = evt.isSignature ? signatureScale : baseScale;
+        const participationPoints = evt.isSignature ? 10 : 5;
+
+        let rank = 1;
+        for (let i = 0; i < validPlayers.length; ) {
+          const currentScore = validPlayers[i].total;
+          let tieCount = 0;
+
+          while (
+            i + tieCount < validPlayers.length &&
+            validPlayers[i + tieCount].total === currentScore
+          ) {
+            tieCount++;
+          }
+
+          let totalPointsForTie = 0;
+          for (let j = 0; j < tieCount; j++) {
+            const positionIndex = rank - 1 + j;
+            if (positionIndex < scale.length) {
+              totalPointsForTie += scale[positionIndex];
+            } else {
+              totalPointsForTie += participationPoints;
+            }
+          }
+
+          const pointsPerPlayer = totalPointsForTie / tieCount;
+
+          for (let j = 0; j < tieCount; j++) {
+            const targetId = playersMap.get(validPlayers[i + j].player_id)?.player_id || validPlayers[i + j].player_id;
+            if (!cupPointsByPlayer[targetId]) cupPointsByPlayer[targetId] = 0;
+            cupPointsByPlayer[targetId] += pointsPerPlayer;
+          }
+
+          rank += tieCount;
+          i += tieCount;
+        }
+
+        // Add participation points for DNFs (if they played but DNF'd)
+        Object.keys(playerEventStats).forEach(pId => {
+          if (playerEventStats[pId].hasDNF) {
+            const targetId = playersMap.get(pId)?.player_id || pId;
+            if (!cupPointsByPlayer[targetId]) cupPointsByPlayer[targetId] = 0;
+            cupPointsByPlayer[targetId] += participationPoints;
+          }
+        });
+      });
+
       // Calculate aggregated score
       const playerStats = players.map((player) => {
         const playerScores = scoresByPlayerId[player.player_id] || [];
@@ -149,6 +252,8 @@ function Leaderboard() {
         let totalPar = 0;
         let totalHoles = 0;
         let hasDNF = false;
+
+        const individualRounds = [];
 
         for (let i = 0; i < playerScores.length; i++) {
           const scoreObj = playerScores[i];
@@ -177,23 +282,49 @@ function Leaderboard() {
 
             totalPar += parForRound;
             totalHoles += holesForRound;
+
+            individualRounds.push({
+               score: parsedScore,
+               par: parForRound,
+               relative: parsedScore - parForRound
+            });
           }
         }
 
-        const relativeScore = totalScore - totalPar;
+        const relativeScoreAll = totalScore - totalPar;
         const avgScore =
           totalHoles > 0 ? ((totalScore / totalHoles) * 18).toFixed(1) : 0;
+
+        // Calculate Best 2 Rounds
+        individualRounds.sort((a, b) => a.relative - b.relative);
+        let relativeScoreTop2 = 0;
+        let top2Holes = 0;
+        let top2Par = 0;
+        let top2Score = 0;
+
+        for (let i = 0; i < Math.min(2, individualRounds.length); i++) {
+            relativeScoreTop2 += individualRounds[i].relative;
+            top2Holes += 18; // approximation
+            top2Par += individualRounds[i].par;
+            top2Score += individualRounds[i].score;
+        }
 
         return {
           ...player,
           name: formatDisplayName(player.name, players),
           totalScore,
           totalPar,
-          relativeScore,
+          relativeScoreAll,
+          relativeScoreTop2,
           totalHoles,
+          top2Holes,
+          top2Par,
+          top2Score,
           avgScore,
           roundsPlayed: playerScores.length,
+          validRoundsPlayed: individualRounds.length,
           hasDNF,
+          cupPoints: cupPointsByPlayer[player.player_id] || 0,
         };
       });
 
@@ -201,20 +332,47 @@ function Leaderboard() {
       // 0 scores automatically placing them at the top.
       const activePlayers = playerStats.filter((p) => p.roundsPlayed > 0);
 
-      // Sort by score ascending (lower is better), push DNF to bottom
-      activePlayers.sort((a, b) => {
-        if (a.hasDNF && !b.hasDNF) return 1;
-        if (!a.hasDNF && b.hasDNF) return -1;
-        return a.relativeScore - b.relativeScore;
-      });
-
-      setLeaderboard(activePlayers);
+      setRawPlayerStats(activePlayers);
       setIsLoading(false);
     };
 
     setIsLoading(true);
-    fetchData();
+    fetchData().catch(e => {
+        console.error("Error fetching leaderboard data", e);
+        setIsLoading(false);
+    });
   }, [filter]);
+
+  useEffect(() => {
+    let playersToSort = [...rawPlayerStats];
+
+    playersToSort.sort((a, b) => {
+      if (sortMetric === "total") {
+        // DNF always at the bottom only for total metric
+        if (a.hasDNF && !b.hasDNF) return 1;
+        if (!a.hasDNF && b.hasDNF) return -1;
+        if (a.hasDNF && b.hasDNF) return 0;
+      }
+
+      if (sortMetric === "top2") {
+        // Minimum 2 valid rounds required to qualify, single round players go to the bottom
+        const aHasMin = a.validRoundsPlayed >= 2;
+        const bHasMin = b.validRoundsPlayed >= 2;
+        if (aHasMin && !bHasMin) return -1;
+        if (!aHasMin && bHasMin) return 1;
+
+        return a.relativeScoreTop2 - b.relativeScoreTop2;
+      } else if (sortMetric === "points") {
+        // Sort by cup points descending
+        return b.cupPoints - a.cupPoints;
+      } else {
+        // sortMetric === "total"
+        return a.relativeScoreAll - b.relativeScoreAll;
+      }
+    });
+
+    setLeaderboard(playersToSort);
+  }, [rawPlayerStats, sortMetric]);
 
   const getActiveRound = () => {
     if (
@@ -259,7 +417,16 @@ function Leaderboard() {
           </p>
         </div>
 
-        <div className="w-full md:w-auto">
+        <div className="w-full md:w-auto flex flex-col md:flex-row gap-4">
+          <select
+            value={sortMetric}
+            onChange={(e) => setSortMetric(e.target.value)}
+            className="w-full md:w-48 bg-dark-surface border border-slate-700 text-white rounded-xl p-3 focus:border-kelly-green focus:outline-none transition-colors appearance-none font-bold text-sm"
+          >
+            <option value="points">602 Cup Points</option>
+            <option value="top2">Best 2 Rounds</option>
+            <option value="total">Total Strokes</option>
+          </select>
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
@@ -318,7 +485,12 @@ function Leaderboard() {
         <div className="space-y-3">
           {leaderboard.map((player, index) => {
             const rank = index + 1;
-            const isBelowCut = cutLine && rank > cutLine;
+            let isBelowCut = cutLine && rank > cutLine;
+
+            // For "top2" metric, gray out players with less than 2 valid rounds
+            if (sortMetric === "top2" && player.validRoundsPlayed < 2) {
+              isBelowCut = true;
+            }
 
             return (
               <React.Fragment key={player.player_id}>
@@ -407,26 +579,30 @@ function Leaderboard() {
 
                     <div className="text-center sm:border-l border-slate-800 sm:pl-8 min-w-[60px]">
                       <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1">
-                        Tot
+                        {sortMetric === "points" ? "PTS" : "Tot"}
                       </p>
                       <p
                         className={`text-3xl font-data font-black ${
-                          player.hasDNF
+                          (player.hasDNF && sortMetric === "total")
                             ? "text-red-500 text-xl"
-                            : player.relativeScore > 0
-                              ? "text-red-500"
-                              : player.relativeScore < 0
-                                ? "text-kelly-green"
-                                : "text-slate-300"
+                            : sortMetric === "points"
+                              ? "text-slate-300"
+                              : (sortMetric === "top2" ? player.relativeScoreTop2 : player.relativeScoreAll) > 0
+                                ? "text-red-500"
+                                : (sortMetric === "top2" ? player.relativeScoreTop2 : player.relativeScoreAll) < 0
+                                  ? "text-kelly-green"
+                                  : "text-slate-300"
                         }`}
                       >
-                        {player.hasDNF
+                        {(player.hasDNF && sortMetric === "total")
                           ? "DNF"
-                          : player.relativeScore > 0
-                            ? `+${player.relativeScore}`
-                            : player.relativeScore === 0
-                              ? "E"
-                              : player.relativeScore}
+                          : sortMetric === "points"
+                            ? Math.round(player.cupPoints * 10) / 10
+                            : (sortMetric === "top2" ? player.relativeScoreTop2 : player.relativeScoreAll) > 0
+                              ? `+${sortMetric === "top2" ? player.relativeScoreTop2 : player.relativeScoreAll}`
+                              : (sortMetric === "top2" ? player.relativeScoreTop2 : player.relativeScoreAll) === 0
+                                ? "E"
+                                : (sortMetric === "top2" ? player.relativeScoreTop2 : player.relativeScoreAll)}
                       </p>
                     </div>
                   </div>
