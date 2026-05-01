@@ -24,11 +24,10 @@ const MATCHUPS_KEY = "putting_league_matchups";
 
 // --- Settings ---
 export const getSettings = async () => {
-  const settingsDoc = await getDocs(
-    query(collection(db, SETTINGS_KEY), where("__name__", "==", "global")),
-  );
-  if (!settingsDoc.empty) {
-    return settingsDoc.docs[0].data();
+  const settingsRef = doc(db, SETTINGS_KEY, "global");
+  const settingsDoc = await getDoc(settingsRef);
+  if (settingsDoc.exists()) {
+    return settingsDoc.data();
   }
   return { live_season: null, archived_seasons: [], cup_finale_season: null, promo_link: null, promo_image: null };
 };

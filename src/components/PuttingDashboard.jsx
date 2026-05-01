@@ -159,8 +159,8 @@ const PuttingDashboard = () => {
         const players = await getPlayers();
         const settings = await getSettings();
 
-        if (settings.promo_link) setPromoLink(settings.promo_link);
-        if (settings.promo_image) setPromoImage(settings.promo_image);
+        if (settings.promo_link !== undefined && settings.promo_link !== null) setPromoLink(settings.promo_link);
+        if (settings.promo_image !== undefined && settings.promo_image !== null) setPromoImage(settings.promo_image);
         const courses = await getCourses();
 
         // Check for today's date
