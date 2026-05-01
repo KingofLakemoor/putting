@@ -235,6 +235,8 @@ const PuttingDashboard = () => {
             let totalScore = 0;
             let totalPar = 0;
             let totalHoles = 0;
+            let individualRounds = [];
+
             for (const s of playerScores) {
               const parsed = parseInt(s.score, 10);
               if (!isNaN(parsed)) {
@@ -254,22 +256,52 @@ const PuttingDashboard = () => {
 
                 totalPar += parForRound;
                 totalHoles += holesForRound;
+
+                individualRounds.push({
+                  score: parsed,
+                  par: parForRound,
+                  relative: parsed - parForRound,
+                });
               }
             }
 
-            const relativeScore = totalScore - totalPar;
+            const relativeScoreAll = totalScore - totalPar;
+
+            individualRounds.sort((a, b) => a.relative - b.relative);
+            let relativeScoreTop2 = 0;
+            let top2Holes = 0;
+            let top2Par = 0;
+            let top2Score = 0;
+
+            for (let i = 0; i < Math.min(2, individualRounds.length); i++) {
+                relativeScoreTop2 += individualRounds[i].relative;
+                top2Holes += 18;
+                top2Par += individualRounds[i].par;
+                top2Score += individualRounds[i].score;
+            }
 
             return {
               ...player,
               name: formatDisplayName(player.name, players),
               totalScore,
-              relativeScore,
+              relativeScore: relativeScoreAll,
+              relativeScoreTop2,
               roundsPlayed: playerScores.length,
+              validRoundsPlayed: individualRounds.length,
             };
           });
 
           const activePlayersSubset = playerStatsSubset.filter((p) => p.roundsPlayed > 0);
-          activePlayersSubset.sort((a, b) => a.relativeScore - b.relativeScore);
+
+          activePlayersSubset.sort((a, b) => {
+            const aHasMin = a.validRoundsPlayed >= 2;
+            const bHasMin = b.validRoundsPlayed >= 2;
+            if (aHasMin && !bHasMin) return -1;
+            if (!aHasMin && bHasMin) return 1;
+
+            return a.relativeScoreTop2 - b.relativeScoreTop2;
+          });
+
           return activePlayersSubset.map((p, index) => ({ ...p, rank: index + 1 }));
         };
 
@@ -439,18 +471,18 @@ const PuttingDashboard = () => {
                       <p className="text-[9px] text-slate-500 uppercase">Tot</p>
                       <p
                         className={`text-2xl font-data font-bold ${
-                          player.relativeScore > 0
+                          player.relativeScoreTop2 > 0
                             ? "text-red-500"
-                            : player.relativeScore < 0
+                            : player.relativeScoreTop2 < 0
                               ? "text-kelly-green"
                               : "text-slate-300"
                         }`}
                       >
-                        {player.relativeScore > 0
-                          ? `+${player.relativeScore}`
-                          : player.relativeScore === 0
+                        {player.relativeScoreTop2 > 0
+                          ? `+${player.relativeScoreTop2}`
+                          : player.relativeScoreTop2 === 0
                             ? "E"
-                            : player.relativeScore}
+                            : player.relativeScoreTop2}
                       </p>
                     </div>
                     <div className="flex flex-col items-center justify-center">
