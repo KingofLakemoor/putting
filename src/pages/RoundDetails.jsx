@@ -51,18 +51,20 @@ function RoundDetails() {
 
       // Load players and scores
       if (currentRound) {
-        let playersData, roundScores, allRounds = [];
+        let playersData,
+          roundScores,
+          allRounds = [];
 
         if (currentRound.event_id) {
           [playersData, roundScores, allRounds] = await Promise.all([
             getPlayers(),
             getScoresForRound(id),
-            getRounds()
+            getRounds(),
           ]);
         } else {
           [playersData, roundScores] = await Promise.all([
             getPlayers(),
-            getScoresForRound(id)
+            getScoresForRound(id),
           ]);
         }
 
@@ -76,7 +78,9 @@ function RoundDetails() {
             (r) => r.event_id === currentRound.event_id,
           );
 
-          const scoresPromises = relatedRounds.map(r => getScoresForRound(r.round_id));
+          const scoresPromises = relatedRounds.map((r) =>
+            getScoresForRound(r.round_id),
+          );
           const scoresResults = await Promise.all(scoresPromises);
 
           allScoresForEvent = scoresResults.flat();
@@ -105,7 +109,9 @@ function RoundDetails() {
               );
 
               if (previousRound) {
-                const prevScores = allScoresForEvent.filter(s => s.round_id === previousRound.round_id);
+                const prevScores = allScoresForEvent.filter(
+                  (s) => s.round_id === previousRound.round_id,
+                );
                 // Sort scores (lowest first)
                 prevScores.sort((a, b) => a.score - b.score);
 

@@ -37,7 +37,9 @@ const PuttingDashboard = () => {
   const [trendColor, setTrendColor] = useState("text-slate-500");
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [promoLink, setPromoLink] = useState("https://www.club602.com/merch/p/v53s5ok83kpe3btxvkli60dynhac68-j88xy-5rmhz-mben6-skdkg");
+  const [promoLink, setPromoLink] = useState(
+    "https://www.club602.com/merch/p/v53s5ok83kpe3btxvkli60dynhac68-j88xy-5rmhz-mben6-skdkg",
+  );
   const [promoImage, setPromoImage] = useState("/602-Golf-13.jpeg");
   const navigate = useNavigate();
   const { currentUser } = useAuth();
@@ -159,8 +161,18 @@ const PuttingDashboard = () => {
         const players = await getPlayers();
         const settings = await getSettings();
 
-        if (settings.promo_link !== undefined && settings.promo_link !== null && settings.promo_link !== "") setPromoLink(settings.promo_link);
-        if (settings.promo_image !== undefined && settings.promo_image !== null && settings.promo_image !== "") setPromoImage(settings.promo_image);
+        if (
+          settings.promo_link !== undefined &&
+          settings.promo_link !== null &&
+          settings.promo_link !== ""
+        )
+          setPromoLink(settings.promo_link);
+        if (
+          settings.promo_image !== undefined &&
+          settings.promo_image !== null &&
+          settings.promo_image !== ""
+        )
+          setPromoImage(settings.promo_image);
         const courses = await getCourses();
 
         // Check for today's date
@@ -274,10 +286,10 @@ const PuttingDashboard = () => {
             let top2Score = 0;
 
             for (let i = 0; i < Math.min(2, individualRounds.length); i++) {
-                relativeScoreTop2 += individualRounds[i].relative;
-                top2Holes += 18;
-                top2Par += individualRounds[i].par;
-                top2Score += individualRounds[i].score;
+              relativeScoreTop2 += individualRounds[i].relative;
+              top2Holes += 18;
+              top2Par += individualRounds[i].par;
+              top2Score += individualRounds[i].score;
             }
 
             return {
@@ -291,7 +303,9 @@ const PuttingDashboard = () => {
             };
           });
 
-          const activePlayersSubset = playerStatsSubset.filter((p) => p.roundsPlayed > 0);
+          const activePlayersSubset = playerStatsSubset.filter(
+            (p) => p.roundsPlayed > 0,
+          );
 
           activePlayersSubset.sort((a, b) => {
             const aHasMin = a.validRoundsPlayed >= 2;
@@ -302,38 +316,49 @@ const PuttingDashboard = () => {
             return a.relativeScoreTop2 - b.relativeScoreTop2;
           });
 
-          return activePlayersSubset.map((p, index) => ({ ...p, rank: index + 1 }));
+          return activePlayersSubset.map((p, index) => ({
+            ...p,
+            rank: index + 1,
+          }));
         };
 
-        const validRoundsSorted = [...roundsForStandings].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+        const validRoundsSorted = [...roundsForStandings].sort(
+          (a, b) => new Date(b.date || 0) - new Date(a.date || 0),
+        );
         const latestRound = validRoundsSorted[0];
 
         let previousRoundsForStandings = roundsForStandings;
         if (latestRound) {
           if (latestRound.event_id) {
-            previousRoundsForStandings = roundsForStandings.filter(r => r.event_id !== latestRound.event_id);
+            previousRoundsForStandings = roundsForStandings.filter(
+              (r) => r.event_id !== latestRound.event_id,
+            );
           } else {
-            previousRoundsForStandings = roundsForStandings.filter(r => r.date !== latestRound.date);
+            previousRoundsForStandings = roundsForStandings.filter(
+              (r) => r.date !== latestRound.date,
+            );
           }
         }
 
         const previousStandings = calculateRanks(previousRoundsForStandings);
         const previousRankMap = new Map();
-        previousStandings.forEach(p => previousRankMap.set(p.player_id, p.rank));
+        previousStandings.forEach((p) =>
+          previousRankMap.set(p.player_id, p.rank),
+        );
 
         const currentStandings = calculateRanks(roundsForStandings);
 
-        const activePlayers = currentStandings.map(player => {
-            const prevRank = previousRankMap.get(player.player_id);
-            let trend = "stable";
-            if (!prevRank) {
-                trend = "up"; // new player
-            } else if (player.rank < prevRank) {
-                trend = "up";
-            } else if (player.rank > prevRank) {
-                trend = "down";
-            }
-            return { ...player, trend };
+        const activePlayers = currentStandings.map((player) => {
+          const prevRank = previousRankMap.get(player.player_id);
+          let trend = "stable";
+          if (!prevRank) {
+            trend = "up"; // new player
+          } else if (player.rank < prevRank) {
+            trend = "up";
+          } else if (player.rank > prevRank) {
+            trend = "down";
+          }
+          return { ...player, trend };
         });
 
         setDashboardStandings(activePlayers);
@@ -487,7 +512,10 @@ const PuttingDashboard = () => {
                     </div>
                     <div className="flex flex-col items-center justify-center">
                       {player.trend === "up" && (
-                        <TrendingUp size={16} className="text-kelly-green mb-1" />
+                        <TrendingUp
+                          size={16}
+                          className="text-kelly-green mb-1"
+                        />
                       )}
                       {player.trend === "down" && (
                         <TrendingDown size={16} className="text-red-500 mb-1" />
