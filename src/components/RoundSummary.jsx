@@ -1,11 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  CheckCircle2,
-  Share2,
-  RotateCcw,
-  Trophy,
-} from "lucide-react";
+import { CheckCircle2, Share2, RotateCcw, Trophy } from "lucide-react";
 import { Dialog } from "@headlessui/react";
 import { toast } from "react-hot-toast";
 

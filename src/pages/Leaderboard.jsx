@@ -105,7 +105,9 @@ function Leaderboard() {
             .filter((r) => String(r.event_id) === filterEventId)
             .map((r) => r.round_id);
           scores = scores.filter((s) => roundIdsInEvent.includes(s.round_id));
-          filteredRounds = visibleRounds.filter((r) => String(r.event_id) === filterEventId);
+          filteredRounds = visibleRounds.filter(
+            (r) => String(r.event_id) === filterEventId,
+          );
         } else if (filter.startsWith("date_")) {
           const filterDate = filter.substring(5);
           const roundIdsInDate = visibleRounds
@@ -115,7 +117,9 @@ function Leaderboard() {
           filteredRounds = visibleRounds.filter((r) => r.date === filterDate);
         } else {
           scores = scores.filter((s) => String(s.round_id) === String(filter));
-          filteredRounds = visibleRounds.filter((r) => String(r.round_id) === String(filter));
+          filteredRounds = visibleRounds.filter(
+            (r) => String(r.round_id) === String(filter),
+          );
         }
       } else {
         // Global filter - still exclude archived seasons rounds
@@ -154,12 +158,12 @@ function Leaderboard() {
 
       // Group filtered rounds by event_id or date if no event_id
       const eventsMap = {};
-      filteredRounds.forEach(r => {
+      filteredRounds.forEach((r) => {
         const key = r.event_id ? `event_${r.event_id}` : `date_${r.date}`;
         if (!eventsMap[key]) {
           eventsMap[key] = {
             rounds: [],
-            isSignature: false
+            isSignature: false,
           };
         }
         eventsMap[key].rounds.push(r.round_id);
@@ -169,12 +173,14 @@ function Leaderboard() {
       });
 
       // Calculate points per event
-      Object.values(eventsMap).forEach(evt => {
-        const eventScores = scores.filter(s => evt.rounds.includes(s.round_id));
+      Object.values(eventsMap).forEach((evt) => {
+        const eventScores = scores.filter((s) =>
+          evt.rounds.includes(s.round_id),
+        );
         if (eventScores.length === 0) return;
 
         const playerEventStats = {};
-        eventScores.forEach(s => {
+        eventScores.forEach((s) => {
           const pId = s.player_id;
           if (!playerEventStats[pId]) {
             playerEventStats[pId] = { total: 0, hasDNF: false };
@@ -190,13 +196,20 @@ function Leaderboard() {
         });
 
         const validPlayers = Object.keys(playerEventStats)
-          .filter(pId => !playerEventStats[pId].hasDNF)
-          .map(pId => ({ player_id: pId, total: playerEventStats[pId].total }));
+          .filter((pId) => !playerEventStats[pId].hasDNF)
+          .map((pId) => ({
+            player_id: pId,
+            total: playerEventStats[pId].total,
+          }));
 
         validPlayers.sort((a, b) => a.total - b.total);
 
-        const baseScale = [100, 75, 60, 50, 40, 35, 30, 25, 20, 15, 10, 10, 10, 10, 10];
-        const signatureScale = [150, 115, 90, 75, 60, 50, 45, 35, 30, 20, 15, 15, 15, 15, 15];
+        const baseScale = [
+          100, 75, 60, 50, 40, 35, 30, 25, 20, 15, 10, 10, 10, 10, 10,
+        ];
+        const signatureScale = [
+          150, 115, 90, 75, 60, 50, 45, 35, 30, 20, 15, 15, 15, 15, 15,
+        ];
         const scale = evt.isSignature ? signatureScale : baseScale;
         const participationPoints = evt.isSignature ? 10 : 5;
 
@@ -225,7 +238,9 @@ function Leaderboard() {
           const pointsPerPlayer = totalPointsForTie / tieCount;
 
           for (let j = 0; j < tieCount; j++) {
-            const targetId = playersMap.get(validPlayers[i + j].player_id)?.player_id || validPlayers[i + j].player_id;
+            const targetId =
+              playersMap.get(validPlayers[i + j].player_id)?.player_id ||
+              validPlayers[i + j].player_id;
             if (!cupPointsByPlayer[targetId]) cupPointsByPlayer[targetId] = 0;
             cupPointsByPlayer[targetId] += pointsPerPlayer;
           }
@@ -235,7 +250,7 @@ function Leaderboard() {
         }
 
         // Add participation points for DNFs (if they played but DNF'd)
-        Object.keys(playerEventStats).forEach(pId => {
+        Object.keys(playerEventStats).forEach((pId) => {
           if (playerEventStats[pId].hasDNF) {
             const targetId = playersMap.get(pId)?.player_id || pId;
             if (!cupPointsByPlayer[targetId]) cupPointsByPlayer[targetId] = 0;
@@ -284,9 +299,9 @@ function Leaderboard() {
             totalHoles += holesForRound;
 
             individualRounds.push({
-               score: parsedScore,
-               par: parForRound,
-               relative: parsedScore - parForRound
+              score: parsedScore,
+              par: parForRound,
+              relative: parsedScore - parForRound,
             });
           }
         }
@@ -303,10 +318,10 @@ function Leaderboard() {
         let top2Score = 0;
 
         for (let i = 0; i < Math.min(2, individualRounds.length); i++) {
-            relativeScoreTop2 += individualRounds[i].relative;
-            top2Holes += 18; // approximation
-            top2Par += individualRounds[i].par;
-            top2Score += individualRounds[i].score;
+          relativeScoreTop2 += individualRounds[i].relative;
+          top2Holes += 18; // approximation
+          top2Par += individualRounds[i].par;
+          top2Score += individualRounds[i].score;
         }
 
         return {
@@ -337,9 +352,9 @@ function Leaderboard() {
     };
 
     setIsLoading(true);
-    fetchData().catch(e => {
-        console.error("Error fetching leaderboard data", e);
-        setIsLoading(false);
+    fetchData().catch((e) => {
+      console.error("Error fetching leaderboard data", e);
+      setIsLoading(false);
     });
   }, [filter]);
 
@@ -583,26 +598,36 @@ function Leaderboard() {
                       </p>
                       <p
                         className={`text-3xl font-data font-black ${
-                          (player.hasDNF && sortMetric === "total")
+                          player.hasDNF && sortMetric === "total"
                             ? "text-red-500 text-xl"
                             : sortMetric === "points"
                               ? "text-slate-300"
-                              : (sortMetric === "top2" ? player.relativeScoreTop2 : player.relativeScoreAll) > 0
+                              : (sortMetric === "top2"
+                                    ? player.relativeScoreTop2
+                                    : player.relativeScoreAll) > 0
                                 ? "text-red-500"
-                                : (sortMetric === "top2" ? player.relativeScoreTop2 : player.relativeScoreAll) < 0
+                                : (sortMetric === "top2"
+                                      ? player.relativeScoreTop2
+                                      : player.relativeScoreAll) < 0
                                   ? "text-kelly-green"
                                   : "text-slate-300"
                         }`}
                       >
-                        {(player.hasDNF && sortMetric === "total")
+                        {player.hasDNF && sortMetric === "total"
                           ? "DNF"
                           : sortMetric === "points"
                             ? Math.round(player.cupPoints * 10) / 10
-                            : (sortMetric === "top2" ? player.relativeScoreTop2 : player.relativeScoreAll) > 0
+                            : (sortMetric === "top2"
+                                  ? player.relativeScoreTop2
+                                  : player.relativeScoreAll) > 0
                               ? `+${sortMetric === "top2" ? player.relativeScoreTop2 : player.relativeScoreAll}`
-                              : (sortMetric === "top2" ? player.relativeScoreTop2 : player.relativeScoreAll) === 0
+                              : (sortMetric === "top2"
+                                    ? player.relativeScoreTop2
+                                    : player.relativeScoreAll) === 0
                                 ? "E"
-                                : (sortMetric === "top2" ? player.relativeScoreTop2 : player.relativeScoreAll)}
+                                : sortMetric === "top2"
+                                  ? player.relativeScoreTop2
+                                  : player.relativeScoreAll}
                       </p>
                     </div>
                   </div>

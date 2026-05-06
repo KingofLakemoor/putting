@@ -164,7 +164,7 @@ function AdminCoordinators() {
   const loadData = async () => {
     const [coordinatorsData, playersData] = await Promise.all([
       getCoordinators(),
-      getPlayers()
+      getPlayers(),
     ]);
     setCoordinators(coordinatorsData);
     setPlayers(playersData);
@@ -650,7 +650,7 @@ function AdminRounds() {
     const [allRounds, coursesData, settings] = await Promise.all([
       getRounds(),
       getCourses(),
-      getSettings()
+      getSettings(),
     ]);
 
     setRounds(allRounds);
@@ -895,10 +895,14 @@ function AdminRounds() {
 
         <div>
           <h3 className="font-sports text-2xl uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
-            <BookOpen size={20} className="text-kelly-green" /> Dashboard Promo Settings
+            <BookOpen size={20} className="text-kelly-green" /> Dashboard Promo
+            Settings
           </h3>
           <div className="bg-dark-surface border border-slate-800 rounded-2xl p-6 shadow-xl">
-            <form onSubmit={handleSavePromoSettings} className="flex flex-col gap-4">
+            <form
+              onSubmit={handleSavePromoSettings}
+              className="flex flex-col gap-4"
+            >
               <div>
                 <label
                   className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
@@ -915,7 +919,8 @@ function AdminRounds() {
                   onChange={(e) => setPromoLink(e.target.value)}
                 />
                 <p className="text-[10px] text-slate-500 mt-2">
-                  The URL that users will go to when they click the promo box. Leave blank for default.
+                  The URL that users will go to when they click the promo box.
+                  Leave blank for default.
                 </p>
               </div>
               <div>
@@ -934,7 +939,8 @@ function AdminRounds() {
                   onChange={(e) => setPromoImage(e.target.value)}
                 />
                 <p className="text-[10px] text-slate-500 mt-2">
-                  The URL for the image shown in the promo box. Can be an external URL or relative path. Leave blank for default.
+                  The URL for the image shown in the promo box. Can be an
+                  external URL or relative path. Leave blank for default.
                 </p>
               </div>
               <button
@@ -1295,7 +1301,7 @@ function AdminScores() {
     const [scoresData, roundsData, playersData] = await Promise.all([
       getScores(),
       getRounds(),
-      getPlayers()
+      getPlayers(),
     ]);
     setScores(scoresData);
     setRounds(roundsData);
