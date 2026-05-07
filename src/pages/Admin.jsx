@@ -706,12 +706,14 @@ function AdminRounds() {
       numRounds > 1 &&
       (roundFormat === "Cut Down" || roundFormat === "Tour")
     ) {
-      for (let i = 1; i <= numRounds; i++) {
-        await addRound({
-          ...baseRound,
-          name: `${name} - Round ${i}`,
-        });
-      }
+      await Promise.all(
+        Array.from({ length: numRounds }, (_, i) =>
+          addRound({
+            ...baseRound,
+            name: `${name} - Round ${i + 1}`,
+          }),
+        ),
+      );
     } else {
       await addRound({
         ...baseRound,
