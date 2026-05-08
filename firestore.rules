@@ -33,7 +33,16 @@ service cloud.firestore {
     // Scores collection
     match /putting_league_scores/{scoreId} {
       allow read: if true;
-      allow create, update: if request.auth != null;
+      allow create: if request.auth != null && (
+        isAdmin() ||
+        isCoordinator() ||
+        request.resource.data.player_id == request.auth.uid
+      );
+      allow update: if request.auth != null && (
+        isAdmin() ||
+        isCoordinator() ||
+        (resource.data.player_id == request.auth.uid && request.resource.data.player_id == resource.data.player_id)
+      );
       allow delete: if isAdmin() || isCoordinator();
     }
 
