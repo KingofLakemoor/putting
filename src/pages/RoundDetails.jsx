@@ -24,6 +24,7 @@ import {
 } from "../db";
 import { formatDisplayName } from "../utils/format";
 import { useAuth } from "../contexts/AuthContext";
+import { toast } from "react-hot-toast";
 
 function RoundDetails() {
   const auth = useAuth();
@@ -226,6 +227,58 @@ function RoundDetails() {
     }
   };
 
+  const handleSyncChainlink = async () => {
+    try {
+      const chainlinkUrl =
+        import.meta.env.VITE_CHAINLINK_URL || "http://localhost:3000";
+
+      let title = `Putting: The Field vs Par - ${round.name || "Round"}`;
+
+      const isCompleted = (round.status || "").toLowerCase() === "completed";
+
+      const payload = {
+        gameId: id,
+        title,
+        league: "PUTTING",
+        startTime: round.date
+          ? new Date(round.date).getTime()
+          : Date.now(),
+        status: isCompleted ? "STATUS_FINAL" : "STATUS_IN_PROGRESS",
+        active: !isCompleted,
+        homeTeam: {
+          id: "the_field",
+          name: "The Field",
+          image: "/icons/icon-256x256.png",
+          score: 0,
+        },
+        awayTeam: {
+          id: "course_par",
+          name: "Par",
+          image: "/icons/icon-256x256.png",
+          score: 36,
+        },
+      };
+
+      const response = await fetch(
+        `${chainlinkUrl}/api/admin/matchups/external`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (response.ok) {
+        toast.success("Synced to Chainlink!");
+      } else {
+        toast.error("Failed to sync to Chainlink");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Error syncing to Chainlink");
+    }
+  };
+
   if (!round) {
     return <div className="page-container">Loading round...</div>;
   }
@@ -361,24 +414,34 @@ function RoundDetails() {
           </div>
         </div>
 
-        {(round.status || "").toLowerCase() === "active" && (
-          <div className="flex gap-4 w-full md:w-auto flex-col sm:flex-row">
+        <div className="flex gap-4 w-full md:w-auto flex-col sm:flex-row">
+          {(round.status || "").toLowerCase() === "active" && (
             <Link
               to={`/rounds/${id}/scorecard`}
               className="w-full sm:w-auto bg-kelly-green text-dark-bg py-3 px-6 rounded-xl font-bold uppercase tracking-wider hover:bg-green-500 transition-colors flex items-center justify-center gap-2"
             >
               <PlusCircle size={18} /> Fill Scorecard
             </Link>
-            {isAdminOrCoordinator && (
+          )}
+          {isAdminOrCoordinator && (
+            <>
+              {(round.status || "").toLowerCase() === "active" && (
+                <button
+                  onClick={handleEndRound}
+                  className="w-full sm:w-auto bg-red-500/20 text-red-500 py-3 px-6 rounded-xl font-bold uppercase tracking-wider hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-2"
+                >
+                  <CheckCircle size={18} /> End Round
+                </button>
+              )}
               <button
-                onClick={handleEndRound}
-                className="w-full sm:w-auto bg-red-500/20 text-red-500 py-3 px-6 rounded-xl font-bold uppercase tracking-wider hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-2"
+                onClick={handleSyncChainlink}
+                className="w-full sm:w-auto bg-indigo-900/40 text-indigo-400 py-3 px-6 rounded-xl font-bold uppercase tracking-wider hover:bg-indigo-900/60 transition-colors border border-indigo-500/20 flex items-center justify-center gap-2"
               >
-                <CheckCircle size={18} /> End Round
+                SYNC CL
               </button>
-            )}
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
