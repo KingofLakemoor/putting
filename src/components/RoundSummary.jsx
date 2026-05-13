@@ -51,6 +51,56 @@ const RoundSummary = ({
   const roundName =
     roundData?.event_round_name || roundData?.name || "Casual Round";
 
+  const handleSyncChainlink = async () => {
+    try {
+      const chainlinkUrl =
+        import.meta.env.VITE_CHAINLINK_URL || "http://localhost:3000";
+
+      let title = `Putting: The Field vs Par - ${roundName}`;
+
+      const payload = {
+        gameId: roundData.id || `putting_${Date.now()}`,
+        title,
+        league: "PUTTING",
+        startTime: roundData.date
+          ? new Date(roundData.date).getTime()
+          : Date.now(),
+        status: "STATUS_FINAL",
+        active: false,
+        homeTeam: {
+          id: "the_field",
+          name: "The Field",
+          image: "/icons/icon-256x256.png",
+          score: 0, // ChainLink logic will handle score diffs, or you can supply totalScore
+        },
+        awayTeam: {
+          id: "course_par",
+          name: "Par",
+          image: "/icons/icon-256x256.png",
+          score: 36, // Default Par, can be dynamically calculated from course info
+        },
+      };
+
+      const response = await fetch(
+        `${chainlinkUrl}/api/admin/matchups/external`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (response.ok) {
+        toast.success("Synced to Chainlink!");
+      } else {
+        toast.error("Failed to sync to Chainlink");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Error syncing to Chainlink");
+    }
+  };
+
   const handleShare = () => {
     if (navigator.share) {
       navigator
@@ -166,7 +216,13 @@ const RoundSummary = ({
           {isSubmitting ? "SUBMITTING..." : "SUBMIT TO LEADERBOARD"}
         </button>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
+          <button
+            onClick={handleSyncChainlink}
+            className="flex items-center justify-center gap-2 py-4 rounded-xl font-bold bg-indigo-900/40 text-indigo-400 text-sm hover:bg-indigo-900/60 border border-indigo-500/20"
+          >
+            SYNC CL
+          </button>
           <button
             onClick={handleShare}
             className="flex items-center justify-center gap-2 py-4 rounded-xl font-bold bg-slate-800 text-slate-300 text-sm hover:bg-slate-700"
