@@ -243,15 +243,25 @@ const ScorecardPage = () => {
         return;
       }
 
+      let newRoundName = roundData.name || "Casual Round";
+      const opponentPlayer = players.find(p => p.player_id === opponentId);
+      if (opponentPlayer) {
+        const baseName = roundData.event_round_name || "Casual Round";
+        const courseName = courseData?.name || "Unknown Course";
+        newRoundName = `${baseName} - ${courseName} - ${currentPlayerName} & ${opponentPlayer.name}`;
+      }
+
       const roundRef = doc(db, "putting_league_rounds", roundId);
       await updateDoc(roundRef, {
         opponent_id: opponentId,
         opponent_scores: {},
+        name: newRoundName,
       });
       setRoundData((prev) => ({
         ...prev,
         opponent_id: opponentId,
         opponent_scores: {},
+        name: newRoundName,
       }));
     } catch (error) {
       console.error("Error selecting opponent:", error);
