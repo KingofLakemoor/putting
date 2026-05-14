@@ -4,6 +4,7 @@ import Leaderboard from "./pages/Leaderboard";
 import RoundDetails from "./pages/RoundDetails";
 import Scorecard from "./pages/Scorecard";
 import Admin from "./pages/Admin";
+import { AdminScores } from "./pages/Admin";
 import SignIn from "./pages/SignIn";
 import History from "./pages/History";
 import PrivateRoute from "./components/PrivateRoute";

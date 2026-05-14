@@ -240,9 +240,7 @@ function RoundDetails() {
         gameId: id,
         title,
         league: "PUTTING",
-        startTime: round.date
-          ? new Date(round.date).getTime()
-          : Date.now(),
+        startTime: round.date ? new Date(round.date).getTime() : Date.now(),
         status: isCompleted ? "STATUS_FINAL" : "STATUS_IN_PROGRESS",
         active: !isCompleted,
         homeTeam: {
