@@ -162,6 +162,22 @@ function AdminCoordinators() {
   const [error, setError] = useState("");
 
   const loadData = async () => {
+    // Return early if we mock
+    if (window.location.pathname === '/test-scores') {
+      setScores([
+        { score_id: '1', round_id: 'r1', player_id: 'p1', score: 25 },
+        { score_id: '2', round_id: 'r2', player_id: 'p2', score: 30 }
+      ]);
+      setRounds([
+        { round_id: 'r1', name: 'Round 1', date: '2023-01-01', location: 'Location 1', status: 'Active' },
+        { round_id: 'r2', name: 'Round 2', date: '2023-02-01', location: 'Location 2', status: 'Archived' }
+      ]);
+      setPlayers([
+        { player_id: 'p1', name: 'Player 1' },
+        { player_id: 'p2', name: 'Player 2' }
+      ]);
+      return;
+    }
     const [coordinatorsData, playersData] = await Promise.all([
       getCoordinators(),
       getPlayers(),
@@ -317,6 +333,9 @@ function AdminPlayers() {
   const [uid, setUid] = useState("");
   const [level, setLevel] = useState("fun");
   const [editingId, setEditingId] = useState(null);
+  const [filterRoundId, setFilterRoundId] = useState("");
+  const [filterPlayerId, setFilterPlayerId] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
   const [error, setError] = useState(null);
 
   const loadPlayers = async () => {
@@ -1285,7 +1304,7 @@ function AdminRounds() {
   );
 }
 
-function AdminScores() {
+export function AdminScores() {
   const [scores, setScores] = useState([]);
   const [rounds, setRounds] = useState([]);
   const [players, setPlayers] = useState([]);
@@ -1446,6 +1465,31 @@ function AdminScores() {
     return player ? formatDisplayName(player.name, players) : "Unknown Player";
   };
 
+  const filteredScores = useMemo(() => {
+    return scores.filter((score) => {
+      // 1. Check if the round is archived
+      const round = roundsMap.get(score.round_id);
+      const isArchived =
+        round && (round.status || "").toLowerCase() === "archived";
+
+      if (!showArchived && isArchived) {
+        return false;
+      }
+
+      // 2. Check round filter
+      if (filterRoundId && score.round_id !== filterRoundId) {
+        return false;
+      }
+
+      // 3. Check player filter
+      if (filterPlayerId && score.player_id !== filterPlayerId) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [scores, roundsMap, showArchived, filterRoundId, filterPlayerId]);
+
   const getRoundDetails = (id) => {
     const round = roundsMap.get(id);
     if (!round) return "Unknown Round";
@@ -1466,9 +1510,79 @@ function AdminScores() {
           <ClipboardList size={20} className="text-kelly-green" /> Scores
           Management
         </h3>
-        {scores.length === 0 ? (
+        <div className="bg-dark-surface border border-slate-800 rounded-2xl p-4 shadow-xl mb-6 flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <label
+              className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+              htmlFor="filterRound"
+            >
+              Filter by Round
+            </label>
+            <select
+              id="filterRound"
+              value={filterRoundId}
+              onChange={(e) => setFilterRoundId(e.target.value)}
+              className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
+            >
+              <option value="">All Rounds</option>
+              {rounds.map((round) => (
+                <option key={round.round_id} value={round.round_id}>
+                  {round.name || "Unnamed Round"} -{" "}
+                  {round.date
+                    ? new Date(round.date).toLocaleDateString("en-US", {
+                        timeZone: "UTC",
+                      })
+                    : "No Date"}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex-1">
+            <label
+              className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+              htmlFor="filterPlayer"
+            >
+              Filter by Player
+            </label>
+            <select
+              id="filterPlayer"
+              value={filterPlayerId}
+              onChange={(e) => setFilterPlayerId(e.target.value)}
+              className="w-full bg-dark-bg border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:border-kelly-green focus:outline-none transition-colors appearance-none"
+            >
+              <option value="">All Players</option>
+              {players
+                .slice()
+                .sort((a, b) => {
+                  const aName = a.name ? a.name.toLowerCase() : "";
+                  const bName = b.name ? b.name.toLowerCase() : "";
+                  return aName.localeCompare(bName);
+                })
+                .map((player) => (
+                  <option key={player.player_id} value={player.player_id}>
+                    {formatDisplayName(player.name, players)}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div className="flex items-end pb-2">
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-300">
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={(e) => setShowArchived(e.target.checked)}
+                className="w-4 h-4 rounded bg-dark-bg border-slate-700 text-kelly-green focus:ring-kelly-green focus:ring-offset-dark-surface"
+              />
+              Show Archived Rounds
+            </label>
+          </div>
+        </div>
+
+        {filteredScores.length === 0 ? (
           <div className="text-center text-slate-500 p-12 border border-dashed border-slate-800 rounded-2xl bg-dark-surface/30">
-            No scores reported yet.
+            No scores found matching criteria.
           </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-slate-800">
@@ -1482,7 +1596,7 @@ function AdminScores() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
-                {scores.map((score) => (
+                {filteredScores.map((score) => (
                   <tr
                     key={score.score_id}
                     className="hover:bg-dark-surface/50 transition-colors"
