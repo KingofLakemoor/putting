@@ -134,15 +134,28 @@ export const createActiveRound = async (
 ) => {
   const actualId = await getActualPlayerId(userId);
   const round_id = uuidv4();
+
+  let courseName = "Unknown Course";
+  if (eventCourseId) {
+    const course = await getCourse(eventCourseId);
+    if (course) {
+      courseName = course.name;
+    }
+  }
+
+  const baseName = eventRoundName || "Casual Round";
+  const roundName = `${baseName} - ${courseName} - ${userName}`;
+
   const newRound = {
     round_id,
     player_id: actualId,
     player_name: userName,
+    name: roundName,
     status: "active",
     current_hole: 1,
     scores: {},
     created_at: serverTimestamp(),
-    venue: "Dobson Ranch",
+    venue: courseName,
     ...(eventRoundId && { event_round_id: eventRoundId }),
     ...(eventRoundName && { event_round_name: eventRoundName }),
     ...(eventCourseId && { course_id: eventCourseId }),
