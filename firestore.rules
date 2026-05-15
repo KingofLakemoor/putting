@@ -73,7 +73,7 @@ service cloud.firestore {
 
     // Cup Points collection
     match /putting_league_cup_points/{pointId} {
-      allow read: if true;
+      allow read: if request.auth != null;
       allow write: if isAdmin() || isCoordinator();
     }
 
