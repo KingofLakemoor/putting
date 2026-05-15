@@ -8,6 +8,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  writeBatch,
   query,
   where,
   serverTimestamp,
@@ -504,10 +505,17 @@ export const deleteCupPointsForEvent = async (event_id) => {
     where("event_id", "==", event_id),
   );
   const querySnapshot = await getDocs(q);
-  const deletePromises = querySnapshot.docs.map((docSnapshot) =>
-    deleteDoc(docSnapshot.ref),
-  );
-  await Promise.all(deletePromises);
+  const docs = querySnapshot.docs;
+
+  // Firestore batch limit is 500 operations
+  for (let i = 0; i < docs.length; i += 500) {
+    const batch = writeBatch(db);
+    const chunk = docs.slice(i, i + 500);
+    chunk.forEach((docSnapshot) => {
+      batch.delete(docSnapshot.ref);
+    });
+    await batch.commit();
+  }
 };
 
 export const recalculateCupPointsForEvent = async (event_id) => {
