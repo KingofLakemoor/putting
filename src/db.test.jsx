@@ -4,6 +4,7 @@ import {
   getScoresForRound,
   deletePlayer,
   updateRoundStatus,
+  updateCourse,
 } from "./db";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -195,6 +196,39 @@ describe("db.js tests", () => {
 
       await expect(updateRoundStatus(mockRoundId, mockStatus)).rejects.toThrow(
         "Network error",
+      );
+    });
+  });
+
+  describe("updateCourse", () => {
+    it("should call updateDoc with the correct document reference and updated data", async () => {
+      const mockCourseId = "course-123";
+      const mockUpdatedData = { name: "Updated Course Name" };
+      const mockDocRef = { id: mockCourseId };
+
+      doc.mockReturnValue(mockDocRef);
+
+      await updateCourse(mockCourseId, mockUpdatedData);
+
+      expect(doc).toHaveBeenCalledWith(
+        db,
+        "putting_league_courses",
+        mockCourseId,
+      );
+      expect(updateDoc).toHaveBeenCalledWith(mockDocRef, mockUpdatedData);
+    });
+
+    it("should throw an error if updateDoc fails", async () => {
+      const mockCourseId = "course-error";
+      const mockUpdatedData = { name: "Error Course" };
+      const mockError = new Error("Firestore error");
+      const mockDocRef = { id: mockCourseId };
+
+      doc.mockReturnValue(mockDocRef);
+      updateDoc.mockRejectedValueOnce(mockError);
+
+      await expect(updateCourse(mockCourseId, mockUpdatedData)).rejects.toThrow(
+        "Firestore error",
       );
     });
   });
